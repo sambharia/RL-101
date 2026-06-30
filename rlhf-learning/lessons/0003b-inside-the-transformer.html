@@ -1,0 +1,760 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lesson 3b — Inside the Transformer</title>
+  <link rel="stylesheet" href="../assets/lesson.css">
+  <script defer src="../assets/quiz.js"></script>
+
+  <!-- KaTeX -->
+  <link rel="stylesheet"
+        href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css"
+        crossorigin="anonymous">
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js" crossorigin="anonymous"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"
+          crossorigin="anonymous"
+          onload="renderMathInElement(document.body,{delimiters:[
+            {left:'$$',right:'$$',display:true},
+            {left:'$',right:'$',display:false}
+          ],throwOnError:false});"></script>
+
+  <style>
+    /* ── Recall cards ── */
+    .recall-card {
+      background: #f6fbf7; border: 1px solid #b7d9c2;
+      border-left: 4px solid var(--good); border-radius: 8px;
+      padding: 1rem 1.2rem; margin: 1.1rem 0;
+    }
+    .recall-card .rc-q { font-weight: 600; margin: 0 0 0.7rem; }
+    .recall-card .rc-reveal {
+      font-family: ui-sans-serif, sans-serif; font-size: 0.82rem;
+      background: var(--good); color: #fff; border: none; border-radius: 6px;
+      padding: 0.35rem 0.85rem; cursor: pointer;
+    }
+    .recall-card .rc-answer {
+      margin-top: 0.8rem; border-top: 1px solid #b7d9c2;
+      padding-top: 0.8rem; font-size: 0.95rem;
+    }
+
+    /* ── Math box ── */
+    .math-box {
+      background: #fff; border: 1px solid var(--rule);
+      border-left: 4px solid #1d6fb8; border-radius: 8px;
+      padding: 1rem 1.4rem; margin: 1.4rem 0; font-size: 0.96rem;
+    }
+    .math-box .mb-title {
+      font-family: ui-sans-serif, sans-serif; font-size: 0.72rem;
+      text-transform: uppercase; letter-spacing: 0.1em; font-weight: 700;
+      color: #1d6fb8; margin: 0 0 0.7rem;
+    }
+    .sym-row { display: flex; align-items: baseline; gap: 0.6rem; margin: 0.45rem 0; }
+    .sym { font-weight: 700; color: #1d6fb8; min-width: 130px; font-size: 0.93rem; }
+
+    /* ── Surprise callout ── */
+    .surprise {
+      background: #fffbf0; border: 1px solid #e8d87a;
+      border-left: 4px solid #c8a800; border-radius: 8px;
+      padding: 1rem 1.2rem; margin: 1.4rem 0;
+    }
+    .surprise .s-title {
+      font-family: ui-sans-serif, sans-serif; font-size: 0.72rem;
+      text-transform: uppercase; letter-spacing: 0.1em; font-weight: 700;
+      color: #8a6e00; margin: 0 0 0.5rem;
+    }
+
+    /* ── Mastery check ── */
+    .mastery {
+      background: #1a1a1a; color: #f4f1e8;
+      border-radius: 10px; padding: 1.3rem 1.5rem; margin: 2.2rem 0;
+    }
+    .mastery h3 { color: #f4c36a; margin: 0 0 0.7rem; font-size: 1rem; }
+    .mastery .rung {
+      margin: 0.8rem 0; padding: 0.65rem 0.9rem;
+      border-radius: 6px; background: rgba(255,255,255,0.07); font-size: 0.93rem;
+    }
+    .mastery .rung-label {
+      font-family: ui-sans-serif, sans-serif; font-size: 0.7rem;
+      text-transform: uppercase; letter-spacing: 0.1em; opacity: 0.7;
+      display: block; margin-bottom: 0.3rem;
+    }
+    .mastery .gate-note { margin-top: 0.9rem; font-size: 0.82rem; opacity: 0.7; font-style: italic; }
+
+    /* ── Embedding lookup table ── */
+    .embed-table {
+      border-collapse: collapse; width: 100%; font-family: ui-monospace, monospace;
+      font-size: 0.82rem; margin: 1.2rem 0; border-radius: 8px; overflow: hidden;
+      border: 1px solid var(--rule);
+    }
+    .embed-table th {
+      background: #1d6fb8; color: #fff; padding: 0.5rem 0.7rem;
+      text-align: center; font-weight: 600;
+    }
+    .embed-table td {
+      border: 1px solid var(--rule); padding: 0.45rem 0.7rem;
+      text-align: center; background: #fff;
+    }
+    .embed-table tr.highlight td { background: #e9f0fa; font-weight: 700; }
+    .embed-table .dim { color: var(--muted); }
+    .embed-table .vec { color: #1d6fb8; }
+
+    /* ── Transformer block diagram ── */
+    .block-diagram {
+      margin: 1.4rem 0; display: flex; flex-direction: column; align-items: center;
+      gap: 0; font-family: ui-sans-serif, sans-serif; font-size: 0.82rem;
+    }
+    .bd-box {
+      width: 100%; max-width: 380px;
+      border: 2px solid var(--rule); border-radius: 8px;
+      padding: 0.55rem 1rem; text-align: center;
+      background: #fff; font-weight: 600;
+    }
+    .bd-box.attn { border-color: #1d6fb8; background: #eaf3fb; color: #1d6fb8; }
+    .bd-box.mlp  { border-color: #7a1f12; background: #f3e9e2; color: #7a1f12; }
+    .bd-box.norm { border-color: #8a6e00; background: #fffbf0; color: #8a6e00; }
+    .bd-box.residual { border-color: #1c6b3c; background: #f0f8f3; color: #1c6b3c;
+                       font-size: 0.78rem; font-weight: 400; }
+    .bd-box.io   { border-color: var(--muted); color: var(--muted); font-weight: 400; }
+    .bd-arrow {
+      width: 2px; height: 18px; background: var(--muted);
+      position: relative; display: flex; align-items: flex-end; justify-content: center;
+    }
+    .bd-arrow::after {
+      content: '▼'; font-size: 0.6rem; color: var(--muted);
+      position: absolute; bottom: -4px;
+    }
+    .bd-plus {
+      font-size: 1.2rem; color: var(--good); font-weight: 700; margin: 2px 0;
+    }
+
+    /* ── Attention heatmap ── */
+    .attn-demo { margin: 1.4rem 0; }
+    .attn-demo h4 {
+      font-family: ui-sans-serif, sans-serif; font-size: 0.8rem;
+      text-transform: uppercase; letter-spacing: 0.09em;
+      color: var(--muted); margin: 0 0 0.6rem;
+    }
+    .attn-tokens {
+      display: flex; gap: 0.5rem; margin-bottom: 0.7rem; flex-wrap: wrap;
+    }
+    .attn-tok-btn {
+      font: inherit; font-family: ui-monospace, monospace; font-size: 0.88rem;
+      background: #fff; border: 2px solid var(--rule); border-radius: 6px;
+      padding: 0.35rem 0.75rem; cursor: pointer; transition: 0.12s;
+    }
+    .attn-tok-btn.active { border-color: #1d6fb8; background: #eaf3fb; color: #1d6fb8; font-weight: 700; }
+    .attn-grid { display: flex; gap: 0.4rem; flex-wrap: wrap; }
+    .attn-cell {
+      display: flex; flex-direction: column; align-items: center;
+      gap: 0.25rem; min-width: 64px;
+    }
+    .attn-cell .tok-label {
+      font-family: ui-monospace, monospace; font-size: 0.78rem; color: var(--muted);
+    }
+    .attn-cell .attn-bar {
+      width: 64px; border-radius: 6px;
+      transition: height 0.25s, background 0.25s;
+      min-height: 4px;
+    }
+    .attn-cell .attn-pct {
+      font-family: ui-sans-serif, sans-serif; font-size: 0.75rem;
+      font-weight: 700; color: #1d6fb8;
+    }
+
+    /* ── Forward pass summary ── */
+    .fpass {
+      counter-reset: fpass;
+      margin: 1.2rem 0;
+    }
+    .fpass-step {
+      display: grid; grid-template-columns: 32px 1fr;
+      gap: 0 1rem; margin: 0.35rem 0; font-size: 0.93rem;
+    }
+    .fpass-n {
+      width: 32px; height: 32px; border-radius: 50%;
+      background: #1d6fb8; color: #fff;
+      display: flex; align-items: center; justify-content: center;
+      font-family: ui-sans-serif, sans-serif; font-size: 0.78rem; font-weight: 700;
+      flex-shrink: 0; margin-top: 0.05rem;
+    }
+    .fpass-body { padding: 0.1rem 0 0.75rem; border-bottom: 1px dashed var(--rule); }
+    .fpass-step:last-child .fpass-body { border-bottom: none; }
+    .fpass-label {
+      font-family: ui-sans-serif, sans-serif; font-size: 0.7rem;
+      text-transform: uppercase; letter-spacing: 0.09em; color: var(--muted); margin-bottom: 0.15rem;
+    }
+
+    /* ── Code ── */
+    pre.gpt-code {
+      background: #1a1a1a; color: #f4f1e8;
+      border-radius: 8px; padding: 1rem 1.2rem; overflow-x: auto;
+      font-size: 0.81rem; line-height: 1.65; margin: 1.2rem 0;
+    }
+    pre.gpt-code .c { color: #7ec699; }
+    pre.gpt-code .k { color: #f4c36a; }
+    pre.gpt-code .v { color: #79b8e8; }
+    pre.gpt-code .op { color: #f97583; }
+
+    /* ── Teach-back ── */
+    .teachback textarea {
+      width: 100%; min-height: 140px; font: inherit; font-size: 0.95rem;
+      border: 1px solid var(--rule); border-radius: 8px; padding: 0.8rem;
+      resize: vertical; background: #fff;
+    }
+
+    @media (max-width: 480px) {
+      .bd-box { max-width: 100%; }
+    }
+  </style>
+</head>
+<body>
+<div class="wrap">
+
+  <p class="kicker">RLHF for Beginners · Lesson 3b of 23</p>
+  <h1>Inside the Transformer</h1>
+  <p class="subtitle">We've been running gpt() as a black box. Time to open it — and discover why it works.</p>
+  <div class="meta-row">
+    <span>Phase 0 — Foundations</span>
+    <span>Prerequisites: <a href="0002-what-a-language-model-really-is.html">Lesson 2</a> · <a href="0003-how-models-learn.html">Lesson 3</a></span>
+    <span>~40 min</span>
+  </div>
+
+
+  <!-- ═══════════════════════════════════
+       WARM-UP RECALL
+  ════════════════════════════════════════ -->
+  <h2>Warm-up: pull it back from memory</h2>
+  <p>Before we open the black box, recall what's around it. Don't peek — write your answer first, then reveal.</p>
+
+  <div class="recall-card">
+    <p class="rc-q">Q1 (Lesson 3) — What does the training loop do to the model's parameters at each step? Name the five-stage loop.</p>
+    <button class="rc-reveal" onclick="revealAnswer(this)">Reveal</button>
+    <div class="rc-answer" style="display:none">
+      <strong>Forward</strong> → compute the model's prediction → <strong>Loss</strong> → measure how wrong it was (cross-entropy: $-\log P(y_\text{correct})$) → <strong>Zero grad</strong> → clear stale gradients → <strong>Backward</strong> → backprop: compute $\frac{\partial L}{\partial \theta_i}$ for every parameter → <strong>Update</strong> → nudge every parameter downhill: $\theta \leftarrow \theta - \eta \frac{\partial L}{\partial \theta}$.
+    </div>
+  </div>
+
+  <div class="recall-card">
+    <p class="rc-q">Q2 (Lesson 2 + 3) — What does gpt() take as input, and what does it return? What type is each?</p>
+    <button class="rc-reveal" onclick="revealAnswer(this)">Reveal</button>
+    <div class="rc-answer" style="display:none">
+      <strong>Input:</strong> a list of token IDs — integers (e.g. <code>[15496, 11, 314]</code>). <strong>Output:</strong> logits — one floating-point number per vocabulary item, at each position. Softmax turns logits into a probability distribution. The model doesn't know what "Paris" means; it only sees the integer ID for it.
+    </div>
+  </div>
+
+
+  <!-- ═══════════════════════════════════
+       § 1 — THE PROBLEM: INTEGERS
+  ════════════════════════════════════════ -->
+  <h2>1. The problem with integers</h2>
+
+  <p>Every lesson so far, we've fed <code>gpt()</code> a list of token IDs — integers like <code>15496</code> for "Hello" or <code>2318</code> for "cat." The model returns logits. We've never asked: what happens <em>inside</em>?</p>
+
+  <p>Let's start with a simple, uncomfortable fact.</p>
+
+  <div class="box warn">
+    <div class="box-title">The integer problem</div>
+    <p>Token IDs are arbitrary integers. The ID for "cat" is 2318. The ID for "dog" is 3290. The ID for "kitten" is 19090. Those numbers don't mean anything — "cat" and "kitten" are semantically close, but <code>|19090 − 2318| = 16772</code> is a large number. Arithmetic on IDs is meaningless.</p>
+    <p>Yet the transformer has to do <em>math</em> on these. It has to learn that "cat" and "kitten" are similar. How?</p>
+  </div>
+
+  <p>This is the first problem the transformer has to solve before it does anything else. And the solution is one of the simplest ideas in all of machine learning.</p>
+
+
+  <!-- ═══════════════════════════════════
+       § 2 — EMBEDDINGS
+  ════════════════════════════════════════ -->
+  <h2>2. Embeddings: giving each token a meaningful address</h2>
+
+  <p>Instead of using the integer ID directly, the model keeps a big lookup table called the <strong class="term">embedding matrix</strong> (named <code>wte</code> in microgpt.py — "weight token embedding"). Its shape is $V \times d$: one row per vocabulary item, each row is a vector of $d = 768$ floating-point numbers.</p>
+
+  <p>Token ID → row index → 768-dimensional vector. That's it. The embedding of "cat" is just the 2318th row.</p>
+
+  <table class="embed-table">
+    <thead>
+      <tr><th>Token ID</th><th>Token</th><th>Embedding (768 numbers, shown as 4)</th></tr>
+    </thead>
+    <tbody>
+      <tr class="dim"><td>2315</td><td>"car"</td><td class="vec">[ 0.31, −0.12, 0.77, 0.05, … ]</td></tr>
+      <tr class="dim"><td>2316</td><td>"cat"</td><td class="vec">[ 0.28, −0.09, 0.74, 0.08, … ]</td></tr>
+      <tr class="highlight"><td><strong>2318</strong></td><td><strong>"cat"</strong></td><td class="vec"><strong>[ 0.29, −0.11, 0.73, 0.07, … ]</strong></td></tr>
+      <tr class="dim"><td>3290</td><td>"dog"</td><td class="vec">[ 0.27, −0.13, 0.71, 0.09, … ]</td></tr>
+      <tr class="dim"><td>…</td><td>…</td><td class="dim">…50,000+ more rows…</td></tr>
+      <tr class="dim"><td>19090</td><td>"kitten"</td><td class="vec">[ 0.30, −0.10, 0.75, 0.06, … ]</td></tr>
+    </tbody>
+  </table>
+
+  <p>Notice the pattern in the example: "cat," "dog," and "kitten" have <em>similar</em> vectors. Not because we designed them that way — because the model <strong>learned</strong> these vectors from training data, and gradient descent naturally pushes semantically similar tokens towards similar embedding vectors. The rows of <code>wte</code> are parameters — they get updated by backpropagation exactly like any other weight.</p>
+
+  <div class="surprise">
+    <div class="s-title">The surprising consequence</div>
+    <p>Once training is done, you can do meaningful arithmetic on embedding vectors. The famous example: <strong>vec("king") − vec("man") + vec("woman") ≈ vec("queen")</strong>. The 768-dimensional geometry encodes semantic relationships. The model never explicitly learned this — it emerged from predicting the next token on trillions of words.</p>
+  </div>
+
+  <p>So: integer ID → embedding lookup → 768-dimensional vector. Now the model has something it can do math on. But there's a second problem.</p>
+
+
+  <!-- ═══════════════════════════════════
+       § 3 — POSITIONAL EMBEDDINGS
+  ════════════════════════════════════════ -->
+  <h2>3. Position matters: the second embedding</h2>
+
+  <p>Consider these two sentences:</p>
+  <div class="flow">"The dog bit the man"
+"The man bit the dog"</div>
+
+  <p>Same tokens. Completely different meaning. The only difference is position. Yet if we just looked up each token's embedding, we'd get the same four vectors, in a different order — and the transformer's attention mechanism (coming next) is actually <em>permutation-equivariant</em>: if you shuffle the inputs, the outputs shuffle identically. Position would be completely invisible.</p>
+
+  <p>The fix: add a second lookup table, the <strong class="term">positional embedding matrix</strong> (<code>wpe</code> — "weight position embedding"). Its shape is $T_{\max} \times d$ where $T_{\max} = 1024$ is the maximum sequence length. Row 0 is "the vector for position 0," row 1 is for position 1, and so on.</p>
+
+  <p>The final representation for each token is simply:</p>
+
+  <div class="math-box">
+    <div class="mb-title">Input to the transformer stack</div>
+    $$x_i = \underbrace{\text{wte}[\text{token\_id}_i]}_{\text{token embedding}} + \underbrace{\text{wpe}[i]}_{\text{position embedding}}$$
+    <div class="sym-row"><span class="sym">$\text{wte}[\cdot]$</span> Row lookup in token embedding matrix — shape $(768,)$.</div>
+    <div class="sym-row"><span class="sym">$\text{wpe}[i]$</span> Row lookup in positional embedding matrix — shape $(768,)$, one per position $i$.</div>
+    <div class="sym-row"><span class="sym">$x_i$</span> A single 768-dimensional vector for the $i$-th token, encoding both <em>what</em> it is and <em>where</em> it sits.</div>
+    <p style="margin-top:0.8rem;">For a sequence of $T$ tokens, we get a matrix $X$ of shape $(T, 768)$. This is what enters the transformer blocks.</p>
+  </div>
+
+  <p>Both <code>wte</code> and <code>wpe</code> are learned. The model figures out how to encode position in 768 numbers all on its own, through training.</p>
+
+  <p>Now we have a rich vector for each token. The transformer's job is to update these vectors by letting each token look at the others. Which brings us to the hard part.</p>
+
+
+  <!-- ═══════════════════════════════════
+       § 4 — SELF-ATTENTION
+  ════════════════════════════════════════ -->
+  <h2>4. The contextualization problem: self-attention</h2>
+
+  <p>Here's the issue. The word "bank" has one embedding — one point in 768-dimensional space. But "bank" means completely different things in:</p>
+
+  <div class="flow">"She walked to the river bank to fish."
+"She called her investment bank about the loan."</div>
+
+  <p>A fixed embedding for "bank" can't capture both senses. The model needs to <em>update</em> each token's representation by looking at the surrounding tokens. "River" and "fish" should push "bank" toward its geographical meaning. "Investment" and "loan" should push it toward its financial meaning.</p>
+
+  <p>More generally: what the word at position $i$ <em>means</em> depends on which other words are nearby. The transformer needs a mechanism for every token to gather information from every other token it's relevant to.</p>
+
+  <p>The question becomes: <em>for each pair of tokens, how much should one attend to the other?</em></p>
+
+  <h3>Queries, Keys, and Values</h3>
+
+  <p>The attention mechanism works by giving every token three different roles simultaneously:</p>
+
+  <ul>
+    <li><strong>Query (Q):</strong> "What am I looking for?" — the question this token is asking.</li>
+    <li><strong>Key (K):</strong> "What do I advertise?" — the label this token holds up to other queries.</li>
+    <li><strong>Value (V):</strong> "If you pick me, here's what I contribute" — the actual content this token passes along.</li>
+  </ul>
+
+  <p>Each token's embedding gets linearly projected into all three roles:</p>
+
+  <div class="math-box">
+    <div class="mb-title">Projecting into Q, K, V</div>
+    $$Q = X W_Q, \quad K = X W_K, \quad V = X W_V$$
+    <div class="sym-row"><span class="sym">$X$</span> Input matrix, shape $(T, 768)$ — one row per token.</div>
+    <div class="sym-row"><span class="sym">$W_Q, W_K, W_V$</span> Learned weight matrices, each shape $(768, 64)$. These are parameters — updated by gradient descent.</div>
+    <div class="sym-row"><span class="sym">$Q, K, V$</span> Each shape $(T, 64)$ — one 64-d vector per token, per role.</div>
+    <p style="margin-top:0.8rem;">The dimension shrinks from 768 to 64 because (as we'll see) we'll run 12 of these in parallel — each head has $64 \times 12 = 768$ total capacity.</p>
+  </div>
+
+  <h3>Computing attention scores</h3>
+
+  <p>Now: token $i$ asks its query $Q_i$ ("What am I looking for?"). Token $j$ answers with its key $K_j$ ("Here's what I have"). We measure compatibility with a dot product:</p>
+
+  $$\text{score}(i, j) = Q_i \cdot K_j$$
+
+  <p>A high dot product means "token $j$'s key aligns with token $i$'s query." After scaling and softmax, these scores become weights that sum to 1:</p>
+
+  <div class="math-box">
+    <div class="mb-title">The attention equation</div>
+    $$\text{Attention}(Q, K, V) = \text{softmax}\!\left(\frac{QK^\top}{\sqrt{d_k}}\right) V$$
+    <div class="sym-row"><span class="sym">$QK^\top$</span> Matrix of all dot products. Shape $(T, T)$. Entry $(i,j)$ = how much token $i$ attends to token $j$.</div>
+    <div class="sym-row"><span class="sym">$\sqrt{d_k}$</span> Scaling by $\sqrt{64} = 8$. Prevents dot products from growing so large they push softmax into saturation (near-zero gradients).</div>
+    <div class="sym-row"><span class="sym">softmax</span> Applied row-wise: each row sums to 1. Row $i$ is now a probability distribution over all positions $j$.</div>
+    <div class="sym-row"><span class="sym">$(\cdots) V$</span> Weighted sum of value vectors. Token $i$'s output = $\sum_j w_{ij} V_j$ — a blend of all tokens' values, weighted by how much $i$ attends to each.</div>
+  </div>
+
+  <p>Concretely: if token $i$ is "bank" and the attention weights for "river" $(j=3)$ and "fish" $(j=7)$ are high, then the output for "bank" is dominated by those tokens' value vectors. The representation of "bank" is updated to reflect its riverbank context. The model has <em>read</em> the surrounding words.</p>
+
+  <!-- ── Attention demo ── -->
+  <div class="attn-demo">
+    <h4>Interactive: attention weights for "Paris is the capital of France"</h4>
+    <p style="font-size:0.88rem; color:var(--muted);">Click a token to see what it attends to (illustrative weights, not real GPT-2).</p>
+    <div class="attn-tokens" id="attn-query-row">
+      <button class="attn-tok-btn active" data-idx="0" onclick="selectQuery(0)">Paris</button>
+      <button class="attn-tok-btn" data-idx="1" onclick="selectQuery(1)">is</button>
+      <button class="attn-tok-btn" data-idx="2" onclick="selectQuery(2)">the</button>
+      <button class="attn-tok-btn" data-idx="3" onclick="selectQuery(3)">capital</button>
+      <button class="attn-tok-btn" data-idx="4" onclick="selectQuery(4)">of</button>
+      <button class="attn-tok-btn" data-idx="5" onclick="selectQuery(5)">France</button>
+    </div>
+    <div class="attn-grid" id="attn-grid"></div>
+    <p id="attn-note" style="font-size:0.85rem; margin-top:0.7rem; color:var(--muted);"></p>
+  </div>
+
+  <h3>Causal masking: no peeking ahead</h3>
+
+  <p>During training, we predict the next token at every position simultaneously (that's how we can train on so much data efficiently). But token at position $i$ must not see tokens at positions $> i$ — that would be cheating, looking at the answer. So before the softmax, we set future positions to $-\infty$:</p>
+
+  $$\text{score}(i,j) = -\infty \quad \text{if } j > i$$
+
+  <p>After softmax, $e^{-\infty} = 0$, so those positions get zero weight. This is called the <strong class="term">causal mask</strong>, and it's the reason transformers are called "causal" or "decoder-only." It ensures predictions are always made from past tokens only.</p>
+
+  <h3>Multi-head attention</h3>
+
+  <p>One attention head can learn one type of relationship — maybe syntactic subject-verb agreement. But "Paris" relates to "capital" semantically, to "is" grammatically, and to "France" geographically — all at once.</p>
+
+  <p>GPT-2 runs 12 attention heads in parallel, each with its own $W_Q^h, W_K^h, W_V^h$ and $d_k = 64$. Each head attends to the sequence differently. Their outputs (each $(T, 64)$) are concatenated to get $(T, 768)$ and projected back to the model dimension:</p>
+
+  $$\text{MultiHead}(X) = \text{concat}(\text{head}_1, \ldots, \text{head}_{12}) \, W_O$$
+
+  <p>where $W_O$ is a $(768, 768)$ projection matrix. The full attention sub-layer is 12 different "lenses" looking at the sequence, combined into one output.</p>
+
+
+  <!-- ═══════════════════════════════════
+       § 5 — MLP
+  ════════════════════════════════════════ -->
+  <h2>5. After attention: the MLP</h2>
+
+  <p>Attention has done something remarkable: it updated each token's representation by reading from every other relevant token. The representation of "bank" now reflects "river" and "fish." But attention is still a linear operation over the token vectors — it blends them, but the blending is a linear function of the inputs.</p>
+
+  <p>What if the right "understanding" of a word is a complex, non-linear function of its context? That's what the <strong class="term">MLP</strong> (multi-layer perceptron) handles. After attention, every token position independently runs through a two-layer neural network:</p>
+
+  <div class="math-box">
+    <div class="mb-title">The MLP sub-layer (per token, independently)</div>
+    $$\text{MLP}(x) = W_2 \cdot \text{GELU}(W_1 x + b_1) + b_2$$
+    <div class="sym-row"><span class="sym">$W_1$</span> Expands $x$ from $768 \to 3072$ (four times the model size). Learned.</div>
+    <div class="sym-row"><span class="sym">$\text{GELU}$</span> A smooth nonlinearity (like ReLU but differentiable everywhere). Creates non-linear representations.</div>
+    <div class="sym-row"><span class="sym">$W_2$</span> Projects back from $3072 \to 768$. Learned.</div>
+    <p style="margin-top:0.8rem;">Think of it as: attention decides <em>what to gather</em> from context; MLP decides <em>what to make of</em> it — encoding higher-level semantic facts. The expansion to 3072 gives the model room to represent complex intermediate features before projecting back.</p>
+  </div>
+
+  <div class="surprise">
+    <div class="s-title">Where facts live</div>
+    <p>Recent research suggests the MLP weights store factual knowledge — things like "Paris → capital → France" — while attention handles structure and relationships. When you hear "GPT hallucinates," one mechanism is the MLP weights encoding incorrect associations from training data.</p>
+  </div>
+
+
+  <!-- ═══════════════════════════════════
+       § 6 — RESIDUAL CONNECTIONS
+  ════════════════════════════════════════ -->
+  <h2>6. The information highway: residual connections</h2>
+
+  <p>Here's a problem that arises when you stack 12 of these blocks (attention + MLP + attention + MLP + …): the signal from the original embedding gets transformed so many times that gradients struggle to flow all the way back to the first layer. The network becomes hard to train. Early layers stop learning.</p>
+
+  <p>The fix, discovered for ResNet image models in 2015 and adopted everywhere since, is the <strong class="term">residual connection</strong> (also called a skip connection). Instead of replacing $x$ with the transformation, you <em>add</em> the transformation to $x$:</p>
+
+  <div class="math-box">
+    <div class="mb-title">One transformer block, precisely</div>
+    $$x \;\leftarrow\; x + \text{Attention}(\text{LayerNorm}(x))$$
+    $$x \;\leftarrow\; x + \text{MLP}(\text{LayerNorm}(x))$$
+    <div class="sym-row"><span class="sym">$x + \cdots$</span> The "residual": add the transformation to the input. If the transformation outputs zero, $x$ passes through unchanged — a safe default.</div>
+    <div class="sym-row"><span class="sym">LayerNorm</span> Normalizes $x$ to zero mean and unit variance before attention/MLP. Keeps activations in a stable range so gradients don't explode or vanish.</div>
+    <p style="margin-top:0.8rem;">Why does this help training? The gradient of the residual path is: $\frac{\partial (x + f(x))}{\partial x} = 1 + \frac{\partial f}{\partial x}$. The $1$ term is a direct gradient highway that bypasses the transformation entirely. Gradients flow cleanly from the last block back to the first, even through 12 or 96 layers.</p>
+  </div>
+
+  <!-- Block diagram -->
+  <div class="block-diagram">
+    <div class="bd-box io">Input $x$ — shape $(T, 768)$</div>
+    <div class="bd-arrow"></div>
+    <div class="bd-box norm">LayerNorm</div>
+    <div class="bd-arrow"></div>
+    <div class="bd-box attn">Multi-Head Self-Attention</div>
+    <div class="bd-arrow"></div>
+    <div class="bd-plus">⊕  (add residual)</div>
+    <div class="bd-arrow"></div>
+    <div class="bd-box norm">LayerNorm</div>
+    <div class="bd-arrow"></div>
+    <div class="bd-box mlp">MLP  (768 → 3072 → 768)</div>
+    <div class="bd-arrow"></div>
+    <div class="bd-plus">⊕  (add residual)</div>
+    <div class="bd-arrow"></div>
+    <div class="bd-box io">Output $x$ — shape $(T, 768)$</div>
+  </div>
+  <p style="text-align:center; font-size:0.82rem; color:var(--muted);">One transformer block. GPT-2 stacks 12 of these.</p>
+
+
+  <!-- ═══════════════════════════════════
+       § 7 — THE FULL FORWARD PASS
+  ════════════════════════════════════════ -->
+  <h2>7. The full picture: gpt() from input to logits</h2>
+
+  <p>Now we can trace the complete forward pass of <code>gpt()</code> — microgpt.py lines 73–143:</p>
+
+  <div class="fpass">
+    <div class="fpass-step">
+      <div class="fpass-n">1</div>
+      <div class="fpass-body">
+        <div class="fpass-label">Token + positional embeddings</div>
+        Token IDs → <code>wte</code> lookup → token vectors, shape $(T, 768)$.<br>
+        Positions $0, 1, \ldots, T-1$ → <code>wpe</code> lookup → position vectors, shape $(T, 768)$.<br>
+        Add element-wise: $X = \text{wte}[\text{ids}] + \text{wpe}[\text{positions}]$.
+      </div>
+    </div>
+    <div class="fpass-step">
+      <div class="fpass-n">2</div>
+      <div class="fpass-body">
+        <div class="fpass-label">Stack of 12 transformer blocks</div>
+        Each block: <code>x = x + Attention(LN(x))</code>, then <code>x = x + MLP(LN(x))</code>.<br>
+        After 12 blocks: $X$ still has shape $(T, 768)$, but now every token's vector is richly informed by the full context.
+      </div>
+    </div>
+    <div class="fpass-step">
+      <div class="fpass-n">3</div>
+      <div class="fpass-body">
+        <div class="fpass-label">Final LayerNorm</div>
+        One last normalization pass over the output of the last block.
+      </div>
+    </div>
+    <div class="fpass-step">
+      <div class="fpass-n">4</div>
+      <div class="fpass-body">
+        <div class="fpass-label">Linear head → logits</div>
+        Multiply by <code>lm_head</code>, shape $(768, 50257)$ — one number per vocab item.<br>
+        Output: shape $(T, 50257)$. Row $i$ = logits for position $i$. Softmax → probability distribution over 50,257 tokens.
+      </div>
+    </div>
+  </div>
+
+  <pre class="gpt-code"><span class="k">def</span> <span class="v">gpt</span>(token_ids, positions):
+    <span class="c"># Step 1: embeddings (microgpt lines ~73–85)</span>
+    tok_emb = wte[token_ids]          <span class="c"># (T, 768)</span>
+    pos_emb = wpe[positions]          <span class="c"># (T, 768)</span>
+    x = tok_emb + pos_emb             <span class="c"># (T, 768)</span>
+
+    <span class="c"># Step 2: transformer blocks (lines ~86–125)</span>
+    <span class="k">for</span> block <span class="k">in</span> blocks:              <span class="c"># 12 blocks for GPT-2</span>
+        x = x + attn(layer_norm(x))   <span class="c"># attention + residual</span>
+        x = x + mlp(layer_norm(x))    <span class="c"># MLP + residual</span>
+
+    <span class="c"># Step 3: final norm + head (lines ~126–143)</span>
+    x = layer_norm_final(x)           <span class="c"># (T, 768)</span>
+    logits = lm_head(x)               <span class="c"># (T, 50257)</span>
+    <span class="k">return</span> logits</pre>
+
+  <p>Notice: the shape is $(T, 768)$ from step 1 all the way through step 3. The transformer blocks update the values inside the vectors — they don't change the shape. Only the final linear head changes it to $(T, 50257)$.</p>
+
+  <div class="box analogy">
+    <div class="box-title">The analogy</div>
+    <p>Embeddings give each token a <em>sticky note</em> with initial information. Each transformer block lets every token read and update every other token's sticky note. After 12 rounds of reading and updating, each sticky note has been enriched by the full context. The linear head then turns the final sticky note at position $T-1$ into a probability distribution over what comes next.</p>
+  </div>
+
+
+  <!-- ═══════════════════════════════════
+       SELF-CHECK MCQ
+  ════════════════════════════════════════ -->
+  <h2>Self-check</h2>
+  <p>Low-stakes warm-up — just for you, not the gate.</p>
+
+  <div class="quiz" data-answer="3">
+    <p class="q">Q1 — The embedding matrix <code>wte</code> has shape $(50257, 768)$. What does the number 50257 represent?</p>
+    <ul class="opts">
+      <li><button class="opt">The number of transformer blocks in the model</button></li>
+      <li><button class="opt">The size of each token's embedding vector</button></li>
+      <li><button class="opt">The size of the vocabulary — one row per token</button></li>
+      <li><button class="opt">The maximum sequence length the model can handle</button></li>
+    </ul>
+    <p class="feedback right" data-when="right">Correct. One row per vocabulary token. Looking up token ID 2318 retrieves row 2318 — a 768-dimensional vector. The 768 is the embedding dimension, not the vocab size.</p>
+    <p class="feedback nope" data-when="nope">Not quite. The rows of the embedding matrix are indexed by token ID — so the number of rows equals the vocabulary size. 50,257 = size of GPT-2's vocabulary.</p>
+  </div>
+
+  <div class="quiz" data-answer="2">
+    <p class="q">Q2 — A sentence has 6 tokens. After the embedding step but before the attention blocks, what is the shape of the data matrix $X$?</p>
+    <ul class="opts">
+      <li><button class="opt">(6, 50257) — one probability distribution per token</button></li>
+      <li><button class="opt">(6, 768) — one 768-d vector per token</button></li>
+      <li><button class="opt">(1, 768) — a single summary vector for the whole sentence</button></li>
+      <li><button class="opt">(768, 768) — a square attention matrix</button></li>
+    </ul>
+    <p class="feedback right" data-when="right">Correct. $(T, d_{\text{model}}) = (6, 768)$. This shape persists all the way through all 12 transformer blocks — only the final linear head changes it to $(6, 50257)$.</p>
+    <p class="feedback nope" data-when="nope">Not quite. The embedding step produces one 768-dimensional vector per token. For $T = 6$ tokens, that's a $(6, 768)$ matrix. The $(T, 50257)$ shape only appears at the very end, after the linear head.</p>
+  </div>
+
+  <div class="quiz" data-answer="4">
+    <p class="q">Q3 (hard) — Attention weights for token $i$ over all positions $j$ sum to 1.0. What would it mean if all 6 weights were exactly $\frac{1}{6}$?</p>
+    <ul class="opts">
+      <li><button class="opt">Token $i$ attends maximally to itself and ignores others</button></li>
+      <li><button class="opt">The causal mask is blocking all future tokens from view</button></li>
+      <li><button class="opt">The model has found the most informative token in context</button></li>
+      <li><button class="opt">Token $i$ finds all positions equally relevant — a diffuse, uninformative pattern</button></li>
+    </ul>
+    <p class="feedback right" data-when="right">Correct. Uniform attention means the query $Q_i$ doesn't have a strong dot-product match with any particular key. The output is just the average of all value vectors — no contextual sharpening. High-entropy attention = the model didn't find a strongly relevant neighbor. Sharp attention (one weight near 1.0) = strong, specific dependency found.</p>
+    <p class="feedback nope" data-when="nope">Think about what uniform weights mean computationally: output = $\frac{1}{6}(V_1 + \ldots + V_6)$ — a plain average of all value vectors. The model learned nothing specific about which tokens matter. This is a diffuse, low-information pattern — the opposite of a sharp, focused dependency.</p>
+  </div>
+
+
+  <!-- ═══════════════════════════════════
+       MASTERY CHECK
+  ════════════════════════════════════════ -->
+  <h2>Mastery check</h2>
+  <p>This is the gate. Post your answers in chat — I'll grade them against the bar below.</p>
+
+  <div class="mastery">
+    <h3>🔒 Lesson 3b Mastery Check</h3>
+
+    <div class="rung">
+      <span class="rung-label">Rung 1 — Recall (necessary, not sufficient)</span>
+      Name the four stages of the <code>gpt()</code> forward pass in order: what happens to the input at each stage, and what shape does the data have leaving each stage? (Shapes for a 6-token input, GPT-2 scale.)
+    </div>
+
+    <div class="rung">
+      <span class="rung-label">Rung 2 — Apply (must pass)</span>
+      Consider the sentence "The surgeon removed the tumor carefully." Focus on the token "removed."
+      <ol style="margin:0.5rem 0 0; padding-left:1.2rem; font-size:0.93rem;">
+        <li>Its initial embedding is the same whether the sentence is "The surgeon removed the tumor" or "The accountant removed the invoice." How does the transformer produce different representations for "removed" in these two contexts?</li>
+        <li>Why does the causal mask mean the embedding for "The" at position 0 can never be updated by information from "carefully" at position 5?</li>
+      </ol>
+    </div>
+
+    <div class="rung">
+      <span class="rung-label">Rung 3 — Explain/Transfer (must pass)</span>
+      A researcher claims: "We could remove all residual connections from GPT-2 and it would still work — it would just be slower to train." Explain precisely why this claim is wrong. What would actually happen, and why?
+    </div>
+
+    <p class="gate-note">Pass = Rung 2 AND Rung 3 both correct. Post answers in chat and I'll tell you exactly where you stand.</p>
+  </div>
+
+
+  <!-- ═══════════════════════════════════
+       SPACED RECALL FOR NEXT LESSON
+  ════════════════════════════════════════ -->
+  <h2>For next time: questions to answer from memory</h2>
+  <p>Before Lesson 4 opens, answer these without looking back. Write them down.</p>
+
+  <div class="recall-card">
+    <p class="rc-q">SR1 — Describe the attention mechanism in one sentence: what goes in, what comes out, and what does it compute?</p>
+    <button class="rc-reveal" onclick="revealAnswer(this)">Reveal (only after you've tried)</button>
+    <div class="rc-answer" style="display:none">
+      Each token projects its embedding into Query, Key, and Value vectors; dot products between every Query and Key produce attention weights (softmaxed to sum to 1); the output for each token is a weighted sum of all Value vectors, so each token's representation is updated by the context it attends to most strongly.
+    </div>
+  </div>
+
+  <div class="recall-card">
+    <p class="rc-q">SR2 — What specific problem does the residual connection solve? State the mechanism that makes it work.</p>
+    <button class="rc-reveal" onclick="revealAnswer(this)">Reveal (only after you've tried)</button>
+    <div class="rc-answer" style="display:none">
+      Gradient vanishing in deep networks — gradients shrink to near-zero as they propagate back through many layers, so early layers stop learning. The residual mechanism adds 1 to the gradient: $\frac{\partial}{\partial x}(x + f(x)) = 1 + \frac{\partial f}{\partial x}$. The +1 is a direct highway for gradients, independent of the layer's transformation.
+    </div>
+  </div>
+
+
+  <!-- ═══════════════════════════════════
+       PRIMARY SOURCE
+  ════════════════════════════════════════ -->
+  <div class="box" style="border-left-color:#1c6b3c;">
+    <div class="box-title" style="color:#1c6b3c;">Primary source recommendation</div>
+    <p><strong><a href="https://jalammar.github.io/illustrated-transformer/" target="_blank">The Illustrated Transformer</a></strong> — Jay Alammar (2018). The best visual walkthrough of the transformer architecture: step-by-step diagrams for Q/K/V, attention scores, multi-head attention, and the encoder-decoder structure. Read after completing your mastery check — use it to verify and reinforce what you built from first principles here.</p>
+  </div>
+
+
+  <!-- ═══════════════════════════════════
+       ASK TEACHER
+  ════════════════════════════════════════ -->
+  <div class="ask-teacher">
+    <strong>Stuck? Confused? Ask.</strong> Post any question in chat — your teacher can re-explain any section, give you a worked example, or go deeper on the math. The mastery check is a conversation, not an exam.
+  </div>
+
+
+  <!-- ═══════════════════════════════════
+       NAV
+  ════════════════════════════════════════ -->
+  <div class="lesson-nav">
+    <a href="0003-how-models-learn.html">← Lesson 3: How Models Learn</a>
+    <a href="#" style="color:var(--muted); pointer-events:none;">Lesson 4: Probability you need →</a>
+  </div>
+
+</div><!-- /wrap -->
+
+<script>
+  // ── Reveal answers ──────────────────────────────────────
+  function revealAnswer(btn) {
+    var ans = btn.nextElementSibling;
+    if (ans.style.display === 'none') {
+      ans.style.display = 'block';
+      btn.textContent = 'Hide';
+    } else {
+      ans.style.display = 'none';
+      btn.textContent = 'Reveal';
+    }
+  }
+
+  // ── Attention demo ──────────────────────────────────────
+  // Illustrative (not real GPT-2 weights).
+  // Each row = attention weights when that token is the query.
+  // Tokens: Paris(0) is(1) the(2) capital(3) of(4) France(5)
+  // Causal mask: token i can only attend to j <= i.
+  var TOKENS = ['Paris', 'is', 'the', 'capital', 'of', 'France'];
+  var WEIGHTS = [
+    // Paris attends to:  Paris   is      the     capital of      France
+    [1.00,   0,      0,      0,       0,     0     ],  // causal: only self
+    [0.42,   0.58,   0,      0,       0,     0     ],
+    [0.18,   0.39,   0.43,   0,       0,     0     ],
+    [0.41,   0.08,   0.05,   0.46,    0,     0     ],  // capital attends strongly to Paris + itself
+    [0.09,   0.12,   0.07,   0.35,    0.37,  0     ],
+    [0.38,   0.06,   0.04,   0.28,    0.11,  0.13  ],  // France attends back to Paris, capital
+  ];
+  var NOTES = [
+    '"Paris" can only see itself (position 0) — causal mask blocks all future tokens.',
+    '"is" splits attention between itself and Paris — mostly structural.',
+    '"the" is a common function word; it attends roughly uniformly to the context so far.',
+    '"capital" strongly attends to "Paris" — the model is linking the concept to the city.',
+    '"of" attends to "capital" and itself — it\'s building the "capital of" phrase.',
+    '"France" attends back to "Paris" and "capital" — completing the factual association.',
+  ];
+  var BAR_COLORS = [
+    '#1d6fb8', '#2d7fc8', '#3d8fd8', '#4d9fe8', '#5dafe8', '#6dbff8'
+  ];
+
+  function renderGrid(queryIdx) {
+    var grid = document.getElementById('attn-grid');
+    grid.innerHTML = '';
+    var weights = WEIGHTS[queryIdx];
+    var maxW = Math.max.apply(null, weights) || 1;
+
+    TOKENS.forEach(function(tok, j) {
+      var cell = document.createElement('div');
+      cell.className = 'attn-cell';
+
+      var label = document.createElement('div');
+      label.className = 'tok-label';
+      label.textContent = tok;
+
+      var bar = document.createElement('div');
+      bar.className = 'attn-bar';
+      var h = Math.round(8 + weights[j] * 80);
+      bar.style.height = h + 'px';
+      var opacity = weights[j] === 0 ? 0.12 : (0.3 + 0.7 * weights[j] / maxW);
+      bar.style.background = weights[j] === 0
+        ? '#ddd'
+        : 'rgba(29, 111, 184, ' + opacity.toFixed(2) + ')';
+
+      var pct = document.createElement('div');
+      pct.className = 'attn-pct';
+      pct.textContent = weights[j] === 0 ? '—' : Math.round(weights[j] * 100) + '%';
+      pct.style.color = weights[j] === 0 ? '#ccc' : '#1d6fb8';
+
+      cell.appendChild(label);
+      cell.appendChild(bar);
+      cell.appendChild(pct);
+      grid.appendChild(cell);
+    });
+
+    document.getElementById('attn-note').textContent = NOTES[queryIdx];
+  }
+
+  function selectQuery(idx) {
+    document.querySelectorAll('.attn-tok-btn').forEach(function(b) {
+      b.classList.toggle('active', parseInt(b.dataset.idx) === idx);
+    });
+    renderGrid(idx);
+  }
+
+  document.addEventListener('DOMContentLoaded', function() {
+    renderGrid(0);
+  });
+</script>
+</body>
+</html>

@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Math Notation Crash Course</title>
+  <link rel="stylesheet" href="../assets/lesson.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css" crossorigin="anonymous">
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js" crossorigin="anonymous"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js" crossorigin="anonymous"
+    onload="renderMathInElement(document.body,{delimiters:[{left:'$$',right:'$$',display:true},{left:'$',right:'$',display:false}],throwOnError:false});"></script>
+  <style>
+    .piece {
+      display: grid;
+      grid-template-columns: 120px 1fr;
+      gap: 0.5rem 1.2rem;
+      align-items: start;
+      margin: 0.8rem 0;
+      font-size: 0.97rem;
+    }
+    .piece .symbol {
+      background: #f3e9e2;
+      border-radius: 6px;
+      padding: 0.4rem 0.6rem;
+      text-align: center;
+      font-size: 1.05rem;
+    }
+    .piece .meaning {
+      padding-top: 0.35rem;
+    }
+    .rule {
+      border: 1px solid #e3ded2;
+      border-left: 4px solid #7a1f12;
+      border-radius: 8px;
+      padding: 0.8rem 1rem;
+      margin: 1rem 0;
+      font-size: 0.95rem;
+    }
+    .rule-title {
+      font-family: ui-sans-serif, system-ui, sans-serif;
+      font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.1em;
+      font-weight: 700; color: #7a1f12; margin-bottom: 0.4rem;
+    }
+    .big-formula {
+      text-align: center;
+      background: #fff;
+      border: 1px solid #e3ded2;
+      border-radius: 8px;
+      padding: 1.2rem;
+      margin: 1.4rem 0;
+      font-size: 1.1rem;
+    }
+    table { width: 100%; border-collapse: collapse; margin: 1rem 0; font-size: 0.93rem; }
+    th { text-align: left; border-bottom: 2px solid #e3ded2; padding: 0.4rem 0.6rem; font-family: ui-sans-serif, system-ui, sans-serif; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.08em; color: #6b6b6b; }
+    td { padding: 0.5rem 0.6rem; border-bottom: 1px solid #f0ede4; vertical-align: top; }
+    tr:last-child td { border-bottom: none; }
+    .log-table td:first-child { font-family: "SF Mono", monospace; color: #1d6fb8; }
+  </style>
+</head>
+<body>
+<div class="wrap">
+
+  <p class="kicker">Reference · Math Notation</p>
+  <h1>How to Read Math Formulas</h1>
+  <p class="subtitle">A focused crash course on the notation you'll see in RLHF — starting from the formula that triggered this.</p>
+
+  <!-- THE FORMULA -->
+  <h2>The formula you were looking at</h2>
+
+  <div class="big-formula">
+    $$L = -\log\, P(\,y_{\text{correct}} \mid \text{context};\, \theta\,)$$
+  </div>
+
+  <p>Five pieces. Let's take each one apart.</p>
+
+
+  <!-- PIECE BY PIECE -->
+  <h2>Breaking it down, piece by piece</h2>
+
+  <div class="rule">
+    <div class="rule-title">Piece 1 — $L$</div>
+    <p style="margin:0"><strong>L = Loss.</strong> Just a name for "the number we're trying to minimise." Authors could have called it anything. $L$ is convention for loss.</p>
+  </div>
+
+  <div class="rule">
+    <div class="rule-title">Piece 2 — $P(\cdots)$</div>
+    <p style="margin:0 0 0.4rem"><strong>P = probability.</strong> A number between 0 and 1. Always. $P(\text{something}) = 0.7$ means "70% chance of something."</p>
+    <p style="margin:0">In ML, $P$ usually means "the model assigns this probability." It's the output of softmax from Lesson 2.</p>
+  </div>
+
+  <div class="rule">
+    <div class="rule-title">Piece 3 — the vertical bar $\mid$ (the conditional bar)</div>
+    <p style="margin:0 0 0.4rem">Read as <strong>"given"</strong>. Everything to the left of $\mid$ is what you're computing the probability of. Everything to the right is what you already know / are conditioning on.</p>
+    <p style="margin:0 0 0.4rem">$P(\text{rain} \mid \text{clouds})$ = "probability of rain, given that I know it's cloudy."</p>
+    <p style="margin:0">$P(y_{\text{correct}} \mid \text{context})$ = "probability the model assigns to the correct next token, given all the previous tokens."</p>
+  </div>
+
+  <div class="rule">
+    <div class="rule-title">Piece 4 — the semicolon $;\, \theta$</div>
+    <p style="margin:0 0 0.4rem">The semicolon means <strong>"parameterised by"</strong> — it's saying which model/version you're using. $\theta$ (theta) is the collection of all the model's parameters (weights).</p>
+    <p style="margin:0">$P(y \mid x;\, \theta)$ means "the probability this specific model (with these specific weights) assigns to $y$ given $x$." If you change $\theta$, the probability changes.</p>
+  </div>
+
+  <div class="rule">
+    <div class="rule-title">Piece 5 — $-\log(\cdots)$</div>
+    <p style="margin:0">The negative log. This is the key operation. See the full section below.</p>
+  </div>
+
+
+  <!-- THE LOG SECTION -->
+  <h2>The $\log$ — what it does and why</h2>
+
+  <p>If you've forgotten logs: $\log(x)$ is the inverse of the exponential. But you don't need to remember that. You need three facts:</p>
+
+  <div class="rule">
+    <div class="rule-title">Fact 1 — log turns multiplication into addition</div>
+    $$\log(A \times B) = \log A + \log B$$
+    <p style="margin:0.4rem 0 0">This is why it's used everywhere in ML. Probabilities multiply across steps. Computers can't multiply millions of tiny numbers (they underflow to zero). The log turns the product into a sum — safe and easy.</p>
+  </div>
+
+  <div class="rule">
+    <div class="rule-title">Fact 2 — log of a small probability is a large negative number</div>
+
+    <table class="log-table">
+      <thead><tr><th>Probability $P$</th><th>$\log P$ (natural log)</th><th>$-\log P$ (the loss)</th></tr></thead>
+      <tbody>
+        <tr><td>1.0 (perfect)</td><td>0</td><td><strong>0</strong> — no loss</td></tr>
+        <tr><td>0.5</td><td>−0.69</td><td><strong>0.69</strong> — small loss</td></tr>
+        <tr><td>0.1</td><td>−2.30</td><td><strong>2.30</strong> — real loss</td></tr>
+        <tr><td>0.01</td><td>−4.60</td><td><strong>4.60</strong> — bad</td></tr>
+        <tr><td>0.001</td><td>−6.91</td><td><strong>6.91</strong> — very bad</td></tr>
+        <tr><td>0.0001</td><td>−9.21</td><td><strong>9.21</strong> — terrible</td></tr>
+      </tbody>
+    </table>
+
+    <p style="margin:0.4rem 0 0">Pattern: when the model assigns near-zero probability to the correct answer, the loss explodes. When it assigns near-1, loss → 0. That's the entire design.</p>
+  </div>
+
+  <div class="rule">
+    <div class="rule-title">Fact 3 — why the negative sign</div>
+    <p style="margin:0">$\log P$ is always negative (because $P$ is between 0 and 1, and $\log$ of anything less than 1 is negative). We want loss to be a positive number — higher = worse. So we flip the sign: $-\log P$ is always positive, and smaller probabilities → larger losses.</p>
+  </div>
+
+
+  <!-- READING NOTATION IN GENERAL -->
+  <h2>General rules for reading any ML formula</h2>
+
+  <table>
+    <thead><tr><th>Symbol / Pattern</th><th>What it means</th><th>Example</th></tr></thead>
+    <tbody>
+      <tr>
+        <td>$\theta$ (theta)</td>
+        <td>Model parameters (all the weights collected into one label)</td>
+        <td>$\pi_\theta$ = the model (policy) with these weights</td>
+      </tr>
+      <tr>
+        <td>$\mid$ (vertical bar)</td>
+        <td>"given" — probability of left side, knowing right side is fixed</td>
+        <td>$P(y \mid x)$ = prob of $y$ given $x$</td>
+      </tr>
+      <tr>
+        <td>$;$ (semicolon)</td>
+        <td>"parameterised by" — which model/version you're using</td>
+        <td>$P(y \mid x;\, \theta)$ = prob from this specific model</td>
+      </tr>
+      <tr>
+        <td>Subscript $y_t$</td>
+        <td>The $t$-th item in a sequence (indexing)</td>
+        <td>$y_3$ = the 3rd generated token</td>
+      </tr>
+      <tr>
+        <td>$\mathbb{E}[\cdots]$</td>
+        <td>Expected value — weighted average over all possibilities</td>
+        <td>$\mathbb{E}[r(y)]$ = average reward the policy earns</td>
+      </tr>
+      <tr>
+        <td>$\sum$ (sigma)</td>
+        <td>Sum over a range of values</td>
+        <td>$\sum_{i=1}^{N} x_i = x_1 + x_2 + \cdots + x_N$</td>
+      </tr>
+      <tr>
+        <td>$\prod$ (pi)</td>
+        <td>Product over a range (multiply, not add)</td>
+        <td>$\prod_{t=1}^{T} P(y_t)$ = all per-step probs multiplied</td>
+      </tr>
+      <tr>
+        <td>$\nabla_\theta$ (nabla)</td>
+        <td>Gradient with respect to $\theta$ — "which direction is uphill?"</td>
+        <td>$\nabla_\theta L$ = gradient of the loss</td>
+      </tr>
+      <tr>
+        <td>$\frac{\partial L}{\partial \theta_i}$</td>
+        <td>Partial derivative — same idea as gradient, one parameter at a time</td>
+        <td>How much does $L$ change if I nudge $\theta_i$ slightly?</td>
+      </tr>
+      <tr>
+        <td>$\leftarrow$</td>
+        <td>Assignment — "update this value to be…" (not equals)</td>
+        <td>$\theta \leftarrow \theta - \eta \nabla_\theta L$ = the gradient descent step</td>
+      </tr>
+      <tr>
+        <td>$\approx$</td>
+        <td>Approximately equal</td>
+        <td>$-\log(0.002) \approx 6.21$</td>
+      </tr>
+    </tbody>
+  </table>
+
+
+  <!-- PUTTING IT BACK TOGETHER -->
+  <h2>Now read the formula again — all at once</h2>
+
+  <div class="big-formula">
+    $$L = -\log\, P(\,y_{\text{correct}} \mid \text{context};\, \theta\,)$$
+  </div>
+
+  <p><strong>In plain English:</strong> "The loss equals the negative log of the probability that <em>this model</em> (with weights $\theta$) assigned to the correct next token, given all the previous tokens."</p>
+
+  <p>If the model is confident and correct — high $P$ → low $-\log P$ → small loss. If the model is wrong or uncertain — low $P$ → high $-\log P$ → large loss. Training pushes the loss down, which means training pushes the model to assign higher probability to correct tokens.</p>
+
+  <div class="box" style="border-left-color:#1c6b3c; background:#f6fbf7; margin-top:1.4rem;">
+    <div class="box-title" style="color:#1c6b3c;">You now know enough to read most RLHF math</div>
+    <p style="margin:0">Every RLHF formula uses combinations of: $P(\cdot \mid \cdot;\,\theta)$, $\log$, $\mathbb{E}$, $\sum$, and $\nabla_\theta$. You have all of them above. When a new symbol appears, ask — but 90% of what you'll see is on this page.</p>
+  </div>
+
+  <nav class="lesson-nav" style="margin-top:2.4rem;">
+    <a href="../lessons/0003-how-models-learn.html">← Back to Lesson 3</a>
+  </nav>
+
+</div>
+</body>
+</html>

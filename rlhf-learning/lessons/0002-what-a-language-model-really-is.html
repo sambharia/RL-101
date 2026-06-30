@@ -1,0 +1,564 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lesson 2 — What a Language Model Really Is</title>
+  <link rel="stylesheet" href="../assets/lesson.css">
+
+  <!-- KaTeX — more reliable than MathJax for local files -->
+  <link rel="stylesheet"
+        href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css"
+        crossorigin="anonymous">
+  <script defer
+          src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"
+          crossorigin="anonymous"></script>
+  <script defer
+          src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"
+          crossorigin="anonymous"
+          onload="renderMathInElement(document.body, {
+            delimiters: [
+              {left: '$$', right: '$$', display: true},
+              {left: '$', right: '$',   display: false}
+            ],
+            throwOnError: false
+          });"></script>
+
+  <style>
+    /* ── Spaced-recall cards ── */
+    .recall-card {
+      background: #f6fbf7;
+      border: 1px solid #b7d9c2;
+      border-left: 4px solid var(--good);
+      border-radius: 8px;
+      padding: 1rem 1.2rem;
+      margin: 1.1rem 0;
+    }
+    .recall-card .rc-q { font-weight: 600; margin: 0 0 0.7rem; }
+    .recall-card .rc-reveal {
+      font-family: ui-sans-serif, system-ui, sans-serif;
+      font-size: 0.82rem;
+      background: var(--good);
+      color: #fff;
+      border: none;
+      border-radius: 6px;
+      padding: 0.35rem 0.85rem;
+      cursor: pointer;
+    }
+    .recall-card .rc-answer {
+      margin-top: 0.8rem;
+      border-top: 1px solid #b7d9c2;
+      padding-top: 0.8rem;
+      font-size: 0.95rem;
+    }
+
+    /* ── Token chips ── */
+    .token-vis {
+      display: flex; flex-wrap: wrap; gap: 0.3rem;
+      margin: 1.2rem 0;
+      font-family: "SF Mono", ui-monospace, Menlo, Consolas, monospace;
+      font-size: 0.9rem;
+    }
+    .tok {
+      display: inline-flex; align-items: center;
+      padding: 0.22rem 0.55rem; border-radius: 6px; border: 1px solid;
+      font-weight: 600;
+    }
+    .tok-a { background:#e8f0fe; border-color:#4a80d4; color:#1a3a7c; }
+    .tok-b { background:#fce8e6; border-color:#d44a4a; color:#7c1a1a; }
+    .tok-c { background:#e6f4ea; border-color:#4ab06a; color:#1a5c35; }
+    .tok-d { background:#fef3e2; border-color:#d49a4a; color:#7c4a1a; }
+    .tok-e { background:#f3e8fd; border-color:#9a4ad4; color:#4a1a7c; }
+    .tok-f { background:#e2f6fe; border-color:#4ac8d4; color:#1a5c7c; }
+    .tok-id { font-size:0.62rem; font-weight:400; margin-left:0.3rem; opacity:0.65; }
+    .token-caption {
+      font-family: ui-sans-serif, system-ui, sans-serif;
+      font-size: 0.8rem; color: var(--muted); margin-top: 0.4rem;
+    }
+
+    /* ── Probability bar chart ── */
+    .prob-vis { margin: 1.4rem 0; font-family: "SF Mono", ui-monospace, Menlo, monospace; font-size: 0.82rem; }
+    .prob-row { display:flex; align-items:center; gap:0.6rem; margin:0.35rem 0; }
+    .prob-label { width:110px; text-align:right; color:var(--ink); flex-shrink:0; }
+    .prob-bar-wrap { flex:1; background:#f0ede4; border-radius:4px; height:18px; overflow:hidden; }
+    .prob-bar { height:100%; border-radius:4px; background:#4a80d4; }
+    .prob-pct { width:42px; color:var(--muted); font-size:0.78rem; }
+
+    /* ── Inline step-by-step trace ── */
+    .gen-trace { margin: 1.6rem 0; }
+    .gen-step {
+      display: grid;
+      grid-template-columns: 28px 1fr;
+      gap: 0 1rem;
+      margin: 0.5rem 0;
+      font-size: 0.93rem;
+    }
+    .gen-step .step-n {
+      width: 28px; height: 28px; border-radius: 50%;
+      background: var(--accent); color: #fff;
+      display: flex; align-items: center; justify-content: center;
+      font-family: ui-sans-serif, sans-serif; font-size: 0.78rem; font-weight: 700;
+      flex-shrink: 0; margin-top: 0.1rem;
+    }
+    .gen-step .step-body { padding: 0.15rem 0 0.9rem; border-bottom: 1px dashed var(--rule); }
+    .gen-step:last-child .step-body { border-bottom: none; }
+    .label { font-family: ui-sans-serif, sans-serif; font-size:0.7rem; text-transform:uppercase; letter-spacing:0.09em; color:var(--muted); margin-bottom:0.2rem; }
+
+    /* ── Math inline box ── */
+    .math-reveal {
+      background: #fff;
+      border: 1px solid var(--rule);
+      border-left: 4px solid #1d6fb8;
+      border-radius: 8px;
+      padding: 1rem 1.4rem;
+      margin: 1.6rem 0;
+      font-size: 0.96rem;
+    }
+    .math-reveal .mr-title {
+      font-family: ui-sans-serif, system-ui, sans-serif;
+      font-size: 0.72rem; text-transform:uppercase; letter-spacing:0.1em;
+      font-weight:700; color:#1d6fb8; margin:0 0 0.7rem;
+    }
+    .math-reveal .sym-row { display:flex; align-items:baseline; gap:0.6rem; margin:0.45rem 0; }
+    .math-reveal .sym { font-weight:700; color:#1d6fb8; min-width:110px; font-size:0.93rem; }
+
+    /* ── Mastery check ── */
+    .mastery {
+      background: #1a1a1a; color: #f4f1e8;
+      border-radius: 10px; padding: 1.3rem 1.5rem; margin: 2.2rem 0;
+    }
+    .mastery h3 { color: #f4c36a; margin: 0 0 0.7rem; font-size: 1rem; }
+    .mastery .rung {
+      margin: 0.8rem 0; padding: 0.65rem 0.9rem;
+      border-radius: 6px; background: rgba(255,255,255,0.07); font-size: 0.93rem;
+    }
+    .mastery .rung-label {
+      font-family: ui-sans-serif, sans-serif; font-size:0.7rem;
+      text-transform:uppercase; letter-spacing:0.1em; opacity:0.7;
+      display:block; margin-bottom:0.3rem;
+    }
+    .mastery .gate-note { margin-top:0.9rem; font-size:0.82rem; opacity:0.7; font-style:italic; }
+
+    /* ── RLHF preview ── */
+    .preview-box {
+      background: var(--accent-soft); border-radius:8px;
+      padding: 1rem 1.2rem; margin: 1.6rem 0; font-size: 0.95rem;
+    }
+    .preview-box .box-title {
+      font-family: ui-sans-serif, sans-serif; font-size:0.72rem;
+      text-transform:uppercase; letter-spacing:0.1em; font-weight:700;
+      color:var(--accent); margin:0 0 0.5rem;
+    }
+
+    /* ── Sampling diagram ── */
+    .sample-diagram { margin: 1.4rem 0; }
+    .sample-row { display:flex; align-items:center; gap:0.6rem; margin:0.4rem 0; font-size:0.85rem; font-family:"SF Mono",monospace; }
+    .sample-bar-wrap { flex:1; background:#f0ede4; border-radius:4px; height:22px; overflow:hidden; position:relative; }
+    .sample-bar { height:100%; border-radius:4px; }
+    .die-marker {
+      position:absolute; top:0; height:100%; width:2px; background:#d44a4a;
+      transition: left 0.5s ease;
+    }
+    .sample-controls { display:flex; gap:0.6rem; margin:0.8rem 0; flex-wrap:wrap; }
+    .sample-btn {
+      font: inherit; font-family: ui-sans-serif,sans-serif; font-size:0.82rem;
+      background: #1a1a1a; color:#f4f1e8; border:none; border-radius:6px;
+      padding:0.4rem 0.9rem; cursor:pointer;
+    }
+    .sample-btn:hover { background:#333; }
+    .sample-result {
+      font-family: ui-sans-serif,sans-serif; font-size:0.88rem;
+      padding:0.5rem 0.8rem; background:#fff; border:1px solid var(--rule);
+      border-radius:6px; min-height:1.8rem;
+    }
+  </style>
+</head>
+
+<body>
+<div class="wrap">
+
+  <!-- ── Header ── -->
+  <p class="kicker">RLHF for Beginners · Lesson 2 of 23</p>
+  <h1>What a Language Model Really Is</h1>
+  <p class="subtitle">The exact algorithm — tokens, next-token prediction, autoregression — and only the math that explains it.</p>
+  <div class="meta-row">
+    <span>Phase 0 — Foundations</span>
+    <span>Prerequisite: <a href="0001-the-big-picture.html">Lesson 1</a></span>
+    <span>~25 min</span>
+  </div>
+
+
+  <!-- ══════════════════════════════════════
+       WARM-UP: SPACED RECALL
+  ═══════════════════════════════════════════ -->
+  <h2>Warm-up: recall from memory</h2>
+  <p>Before the new material: pull Lesson 1 back out without re-reading it. Answer mentally before you reveal.</p>
+
+  <div class="recall-card">
+    <p class="rc-q">Q1 — Name the three post-training stages in order, and state the data type each needs.</p>
+    <button class="rc-reveal" onclick="revealAnswer(this)">Reveal answer</button>
+    <div class="rc-answer" style="display:none">
+      <strong>SFT</strong> — demonstration data: human-written example completions.<br><br>
+      <strong>Reward model training</strong> — comparison pairs: two answers to the same prompt, human picks the better one.<br><br>
+      <strong>RL optimisation</strong> — the policy generates completions; the reward model scores them; gradient descent moves the policy toward higher scores.
+    </div>
+  </div>
+
+  <div class="recall-card">
+    <p class="rc-q">Q2 — Why does RLHF need SFT first? What breaks if you skip it?</p>
+    <button class="rc-reveal" onclick="revealAnswer(this)">Reveal answer</button>
+    <div class="rc-answer" style="display:none">
+      A base model rambles — it continues training text, not answers. A reward model needs two coherent completions to compare. If neither makes sense, the preference signal is noise. SFT instills the Q&amp;A format first so there is something meaningful to rank.
+    </div>
+  </div>
+
+
+  <!-- ══════════════════════════════════════
+       § 1 — THE ALGORITHM
+  ═══════════════════════════════════════════ -->
+  <h2>1. Start here: the exact algorithm ChatGPT runs</h2>
+
+  <p>Everything in this lesson is an explanation of this one block of code:</p>
+
+<pre><code>tokens = tokenize(prompt)          # break text into integer IDs
+
+while True:
+    logits = transformer(tokens)   # neural net → one score per vocabulary entry
+    probs  = softmax(logits)       # scores → probabilities that sum to 1
+    next   = sample(probs)         # draw one token from that distribution
+    tokens.append(next)            # grow the context, feed it back in
+    if next == END_TOKEN:
+        break
+
+response = detokenize(tokens)      # integers → readable text</code></pre>
+
+  <p>This loop runs <em>once per output token</em>. A 200-word response is 200 passes through this loop. There is nothing else. Each section below explains one line.</p>
+
+  <div class="box analogy">
+    <div class="box-title">What is <code>transformer(tokens)</code> physically?</div>
+    <p>A Transformer is a large neural network — for GPT-4, roughly 96 layers deep — that reads all the tokens at once using a mechanism called <strong>attention</strong> (letting each token "look at" every other token) and outputs a score for every token in the vocabulary. We'll go deep on the architecture in a later lesson. For now: treat <code>transformer(tokens)</code> as a black box that outputs one raw number per vocabulary entry. Those numbers are called <strong>logits</strong>. The word comes from "log-odds" — they can be any real number, positive or negative.</p>
+  </div>
+
+
+  <!-- ══════════════════════════════════════
+       § 2 — TOKENS
+  ═══════════════════════════════════════════ -->
+  <h2>2. <code>tokenize(prompt)</code> — what is a token?</h2>
+
+  <p>A language model does not see characters, and it does not see words. It sees <strong class="term">tokens</strong> — subword chunks produced by a fixed compression algorithm that runs before the model ever starts. Here is the phrase <em>"RLHF is surprisingly powerful"</em> as a modern tokenizer sees it:</p>
+
+  <div class="token-vis">
+    <span class="tok tok-a">RL<span class="tok-id">#9987</span></span>
+    <span class="tok tok-b">HF<span class="tok-id">#13909</span></span>
+    <span class="tok tok-c">&nbsp;is<span class="tok-id">#374</span></span>
+    <span class="tok tok-d">&nbsp;sur<span class="tok-id">#15382</span></span>
+    <span class="tok tok-e">pris<span class="tok-id">#29473</span></span>
+    <span class="tok tok-f">ingly<span class="tok-id">#4315</span></span>
+    <span class="tok tok-a">&nbsp;powerful<span class="tok-id">#6787</span></span>
+  </div>
+  <p class="token-caption">7 tokens total. Each chip = one token. The small ID is its integer index in the vocabulary. Notice: "RLHF" splits into [RL][HF]; the space before "is" is <em>part of</em> the " is" token.</p>
+
+  <p>After tokenisation, the prompt is just a Python list of integers: <code>[9987, 13909, 374, 15382, 29473, 4315, 6787]</code>. That integer list is what gets passed into the neural network.</p>
+
+  <p>The <strong>vocabulary</strong> is the fixed master list of all possible tokens. GPT-2 had ~50,000; modern models use 100,000–200,000. Every token the model reads or writes must be in this list. "Tokenize" encodes text into IDs; "detokenize" reverses it.</p>
+
+  <div class="box warn">
+    <div class="box-title">Why subwords — not characters or words?</div>
+    <p><strong>Characters</strong> make sequences very long (expensive) and give the model no useful structure to learn from. <strong>Whole words</strong> would need millions of entries to cover all morphological variants, technical terms, and new words (GPT-4, COVID-19, etc.). <strong>Subwords</strong> are the Goldilocks answer: common words get one token; rare words break into recognizable pieces the model can compose. "unprecedented" → ["un", "prec", "edented"].</p>
+  </div>
+
+
+  <!-- ══════════════════════════════════════
+       § 3 — PROBABILITIES
+  ═══════════════════════════════════════════ -->
+  <h2>3. <code>softmax(logits)</code> — why probabilities at all?</h2>
+
+  <p>After the transformer runs, you have one raw score (logit) per vocabulary token. But why convert them to probabilities? Why doesn't the model just pick a word?</p>
+
+  <p>Because language is genuinely uncertain. After "The cat sat on the", there is no single right next token — <em>" mat"</em>, <em>" floor"</em>, <em>" sofa"</em> are all valid. A probability distribution captures that uncertainty: it says how plausible each option is, rather than committing to one. This lets you make different choices depending on context (safe factual answer vs. creative writing).</p>
+
+  <p>For context <em>"The cat sat on the"</em>, the model's output after softmax might look like:</p>
+
+  <div class="prob-vis">
+    <div class="prob-row">
+      <span class="prob-label">" mat"</span>
+      <div class="prob-bar-wrap"><div class="prob-bar" style="width:52%"></div></div>
+      <span class="prob-pct">11.4%</span>
+    </div>
+    <div class="prob-row">
+      <span class="prob-label">" floor"</span>
+      <div class="prob-bar-wrap"><div class="prob-bar" style="width:34%"></div></div>
+      <span class="prob-pct">7.5%</span>
+    </div>
+    <div class="prob-row">
+      <span class="prob-label">" sofa"</span>
+      <div class="prob-bar-wrap"><div class="prob-bar" style="width:24%"></div></div>
+      <span class="prob-pct">5.2%</span>
+    </div>
+    <div class="prob-row">
+      <span class="prob-label">" roof"</span>
+      <div class="prob-bar-wrap"><div class="prob-bar" style="width:18%"></div></div>
+      <span class="prob-pct">3.9%</span>
+    </div>
+    <div class="prob-row">
+      <span class="prob-label">"…99,996 more…"</span>
+      <div class="prob-bar-wrap"><div class="prob-bar" style="width:72%; background:#c8c0b0"></div></div>
+      <span class="prob-pct">72.0%</span>
+    </div>
+  </div>
+
+  <p>The remaining 72% is spread across thousands of other plausible tokens. All the numbers add up to exactly 1. This is the <strong>full probability distribution over the vocabulary</strong> — and it is what the model outputs at every step.</p>
+
+  <div class="math-reveal">
+    <div class="mr-title">The math behind softmax — how logits become probabilities</div>
+    <p>The transformer outputs raw scores $z_1, z_2, \ldots, z_V$ (one per vocabulary token, $V \approx 100{,}000$). Softmax converts them:</p>
+    $$P(\text{token}_i) = \frac{e^{z_i}}{\displaystyle\sum_{j=1}^{V} e^{z_j}}$$
+    <p>Reading each piece:</p>
+    <div class="sym-row"><span class="sym">$z_i$</span> The raw logit for token $i$ — any real number.</div>
+    <div class="sym-row"><span class="sym">$e^{z_i}$</span> Exponential: makes every value positive, since $e^x \gt 0$ for all $x$.</div>
+    <div class="sym-row"><span class="sym">$\sum_j e^{z_j}$</span> Normalises: dividing by this sum ensures all outputs add to 1.</div>
+    <p>The higher the logit, the higher the probability. A token whose logit is 5 points above average will dominate the distribution. Softmax preserves ranking while turning arbitrary numbers into a valid probability distribution.</p>
+    <p><strong>Temperature</strong> $\tau$ is a knob that scales the logits before softmax: $z_i / \tau$. At $\tau \to 0$ the highest logit takes all the probability (pure greedy). At $\tau = 1$ you get the model's natural distribution. At $\tau \gt 1$ the distribution flattens — more tokens become plausible, output becomes more random. ChatGPT typically runs around $\tau = 0.7$–$1.0$.</p>
+  </div>
+
+
+  <!-- ══════════════════════════════════════
+       § 4 — SAMPLING
+  ═══════════════════════════════════════════ -->
+  <h2>4. <code>sample(probs)</code> — how a token gets picked</h2>
+
+  <p>You have a probability distribution. Now you need to draw one token from it. There are two main strategies:</p>
+
+  <p><strong>Greedy (argmax):</strong> always pick the single highest-probability token. Deterministic — run the same prompt twice, get the same answer. Safe for factual tasks, but can produce flat repetitive text.</p>
+
+  <p><strong>Sampling:</strong> treat the probabilities as a weighted die and roll it. The higher a token's probability, the more likely it is to be chosen — but <em>any</em> token can win, just with varying odds. Run the same prompt twice: you may get different answers. This is how ChatGPT can say "sure!" and also "of course!" to the same greeting.</p>
+
+  <div class="box analogy">
+    <div class="box-title">Analogy: the weighted lottery</div>
+    <p>Imagine a lottery where " mat" has 11,400 tickets out of 100,000, " floor" has 7,500, " sofa" has 5,200, and the remaining 75,900 tickets are split among every other token. You draw one ticket at random. " mat" wins most often — but " floor" or " sofa" sometimes win too. Greedy would just hand you the ticket with the highest count without any draw.</p>
+    <p>Temperature changes the ticket counts. Low temperature ($\tau \lt 1$): give " mat" a much larger share, shrink everyone else's. High temperature ($\tau \gt 1$): give everyone a more equal share.</p>
+  </div>
+
+
+  <!-- ══════════════════════════════════════
+       § 5 — THE LOOP (AUTOREGRESSION)
+  ═══════════════════════════════════════════ -->
+  <h2>5. <code>tokens.append(next)</code> — the generation loop</h2>
+
+  <p>Here is the key that makes text generation work: <strong>after picking a token, append it to the context and run the model again</strong>. Each step, the context grows by one token. Each step, the model conditions on everything that came before — including the tokens it just generated. This self-feeding loop is called <strong class="term">autoregression</strong>: auto (self) + regression (prediction from prior values).</p>
+
+  <p>Concrete trace for prompt <em>"Gravity pulls objects"</em>:</p>
+
+  <div class="gen-trace">
+    <div class="gen-step">
+      <div class="step-n">1</div>
+      <div class="step-body">
+        <div class="label">Input to model</div>
+        <code>["Gravity", "▁pulls", "▁objects"]</code>
+        <div class="label" style="margin-top:0.5rem">Model outputs distribution — top picks</div>
+        <code>" downward"&nbsp;18%,&nbsp;&nbsp;" toward"&nbsp;14%,&nbsp;&nbsp;" together"&nbsp;7%,&nbsp;&nbsp;…</code>
+        <div class="label" style="margin-top:0.5rem">Sampled token</div>
+        <code>" downward"</code>
+      </div>
+    </div>
+    <div class="gen-step">
+      <div class="step-n">2</div>
+      <div class="step-body">
+        <div class="label">Input to model (prompt + step 1 output)</div>
+        <code>["Gravity", "▁pulls", "▁objects", "▁downward"]</code>
+        <div class="label" style="margin-top:0.5rem">Model outputs distribution — top picks</div>
+        <code>"."&nbsp;42%,&nbsp;&nbsp;" with"&nbsp;11%,&nbsp;&nbsp;" due"&nbsp;9%,&nbsp;&nbsp;…</code>
+        <div class="label" style="margin-top:0.5rem">Sampled token</div>
+        <code>"."</code>
+      </div>
+    </div>
+    <div class="gen-step">
+      <div class="step-n">3</div>
+      <div class="step-body">
+        <div class="label">Input to model (prompt + steps 1–2)</div>
+        <code>["Gravity", "▁pulls", "▁objects", "▁downward", "."]</code>
+        <div class="label" style="margin-top:0.5rem">Model outputs distribution — top picks</div>
+        <code>&lt;END&gt;&nbsp;71%,&nbsp;&nbsp;" This"&nbsp;9%,&nbsp;&nbsp;" It"&nbsp;6%,&nbsp;&nbsp;…</code>
+        <div class="label" style="margin-top:0.5rem">Sampled token → loop ends</div>
+        <code>&lt;END&gt;</code>
+      </div>
+    </div>
+  </div>
+
+  <p>Final response: <strong>"Gravity pulls objects downward."</strong></p>
+
+  <p>The model sees the entire growing context at each step. That's why the output is coherent: every new token is conditioned on everything that came before it — both the original prompt and all previously generated tokens.</p>
+
+  <div class="math-reveal">
+    <div class="mr-title">Writing the loop precisely — conditional probability &amp; the chain rule</div>
+    <p>Now that you understand the loop, here is how to write it in compact mathematical notation.</p>
+
+    <p>At step $t$, let $y_1, y_2, \ldots, y_{t-1}$ be all tokens seen so far. The model computes:</p>
+    $$P(y_t \mid y_1, y_2, \ldots, y_{t-1})$$
+    <div class="sym-row"><span class="sym">$y_t$</span> The token we're predicting at step $t$.</div>
+    <div class="sym-row"><span class="sym">$y_1 \ldots y_{t-1}$</span> All previous tokens (prompt + everything generated so far).</div>
+    <div class="sym-row"><span class="sym">$P(\cdot \mid \cdot)$</span> Conditional probability: "the probability of the left side, <em>given</em> the right side is fixed."</div>
+
+    <p>This is just notation for what the pseudocode does: the model reads the whole token list and outputs a probability distribution.</p>
+
+    <p><strong>Probability of a whole sequence:</strong> the chain rule of probability (you saw this form in JEE: $P(A,B) = P(A) \cdot P(B \mid A)$) extends naturally to T tokens:</p>
+    $$P(y_1, y_2, \ldots, y_T) = P(y_1) \cdot P(y_2 \mid y_1) \cdot P(y_3 \mid y_1, y_2) \cdots P(y_T \mid y_1, \ldots, y_{T-1})$$
+
+    <p>In compact notation using the product symbol $\prod$:</p>
+    $$P(y_{1:T}) = \prod_{t=1}^{T} P(y_t \mid y_{\lt t})$$
+
+    <p>where $y_{\lt t}$ is shorthand for "all tokens before position $t$". This is the probability a trained language model assigns to an entire sequence — it's the product of all the per-step probabilities in the loop.</p>
+
+    <p><strong>Why we take the log:</strong> products of hundreds of small probabilities (each perhaps 0.05) underflow to zero on a computer. The log turns the product into a safe sum:</p>
+    $$\log P(y_{1:T}) = \sum_{t=1}^{T} \log P(y_t \mid y_{\lt t})$$
+
+    <p>Sums of numbers around $-2$ to $-10$ are numerically safe. This is why <em>every</em> formula in RLHF math uses log-probabilities — not because mathematicians love logs, but because computers need them.</p>
+  </div>
+
+
+  <!-- ══════════════════════════════════════
+       § 6 — WHAT THE MODEL IS
+  ═══════════════════════════════════════════ -->
+  <h2>6. What the model is — parameters and the policy</h2>
+
+  <p>You've now seen what the model does. What is it?</p>
+
+  <p>A language model is a <strong>function with learnable parameters</strong>. The parameters, written $\theta$, are the billions of floating-point weights stored inside the neural network. The function maps a sequence of tokens to a probability distribution over the vocabulary:</p>
+
+  $$f_\theta : \underbrace{\text{(sequence of token IDs)}}_{\text{input}} \;\longrightarrow\; \underbrace{P(y_t \mid y_{\lt t};\, \theta)}_{\text{probability distribution over \sim100k tokens}}$$
+
+  <p>Pre-training adjusts $\theta$ to make the model good at predicting real text from the internet. Every gradient update is just asking: "which direction do I nudge $\theta$ so that $P(y_t \mid y_{\lt t}; \theta)$ gets higher for the actual next token?" That's the entire training objective.</p>
+
+  <p>The <a href="https://github.com/karpathy/nanoGPT" target="_blank" rel="noopener">nanoGPT</a> codebase by Andrej Karpathy implements exactly this — a working GPT in ~300 lines of Python. The generation loop is literally the pseudocode above. It's a great read if you want to see the real thing with no abstraction.</p>
+
+  <div class="preview-box">
+    <div class="box-title">Why this is the foundation of RLHF — preview</div>
+    <p>In RLHF, the language model is called the <strong>policy</strong> — the same word as in reinforcement learning. The "action" the policy takes at each step is sampling a token from $P(y_t \mid y_{\lt t}; \theta)$. The entire goal of RLHF is to adjust $\theta$ so that the policy generates tokens that score highly on human preferences.</p>
+    <p>When you later see expressions like $\mathbb{E}_{y \sim \pi_\theta}[\, r(y) \,]$ in an RLHF paper — "expected reward under the policy" — the policy $\pi_\theta$ is exactly this function, running the generation loop to produce the sequence $y$.</p>
+  </div>
+
+
+  <!-- ══════════════════════════════════════
+       § SELF-CHECK QUIZ
+  ═══════════════════════════════════════════ -->
+  <h2>Self-check</h2>
+  <p>These are warm-up checks, not the gate. Answer from memory before clicking.</p>
+
+  <div class="quiz" data-answer="2">
+    <p class="q">Q1 — What does <code>softmax(logits)</code> return?</p>
+    <ul class="opts">
+      <li><button class="opt">The single most likely next word.</button></li>
+      <li><button class="opt">A probability distribution over every token in the vocabulary — all values between 0 and 1, summing to exactly 1.</button></li>
+      <li><button class="opt">A score rating whether the context makes grammatical sense.</button></li>
+      <li><button class="opt">A compressed vector summarising the meaning of the context.</button></li>
+    </ul>
+    <p class="feedback right" data-when="right">Correct. Softmax maps the transformer's raw logits into a valid probability distribution over the full vocabulary at each step.</p>
+    <p class="feedback nope" data-when="nope">Softmax doesn't pick — it outputs a <em>distribution</em>. Picking a single token (greedy/sampling) is a separate step applied to that distribution.</p>
+  </div>
+
+  <div class="quiz" data-answer="2">
+    <p class="q">Q2 — At step 4 of generation, what is the input to the model?</p>
+    <ul class="opts">
+      <li><button class="opt">Only the original prompt — the model re-reads it fresh each step.</button></li>
+      <li><button class="opt">The original prompt plus all 3 tokens generated so far.</button></li>
+      <li><button class="opt">Only the most recently generated token.</button></li>
+      <li><button class="opt">A fixed summary of the prompt computed once before generation.</button></li>
+    </ul>
+    <p class="feedback right" data-when="right">Exactly. The context grows by one token each step — original prompt plus everything generated so far. That's the "auto" in autoregression: the output feeds back in as input.</p>
+    <p class="feedback nope" data-when="nope">Look at line 5 of the pseudocode: <code>tokens.append(next)</code>. Every new token gets appended — so by step 4, the model sees the prompt plus tokens 1, 2, and 3.</p>
+  </div>
+
+  <div class="quiz" data-answer="2">
+    <p class="q">Q3 (hard) — Greedy decoding picks the highest-probability token at every step. Yet beam search can sometimes find a sequence with higher <em>total</em> probability $P(y_{1:T})$ than greedy. How?</p>
+    <ul class="opts">
+      <li><button class="opt">This is impossible — greedy is always optimal because it picks the best token at each step.</button></li>
+      <li><button class="opt">From the chain rule, total probability is a <em>product</em> across steps. Maximising each factor independently doesn't maximise the product — a slightly lower-probability first token might unlock much higher probabilities for all later tokens.</button></li>
+      <li><button class="opt">Greedy never runs softmax, so its probabilities are not comparable.</button></li>
+      <li><button class="opt">Total probability is undefined for sequences of different lengths.</button></li>
+    </ul>
+    <p class="feedback right" data-when="right">
+      Exactly right — this is a direct consequence of the chain rule. $P(y_1, y_2) = P(y_1) \cdot P(y_2 \mid y_1)$. Greedy maximises $P(y_1)$, but the winning $y_1$ might lead to a terrible $P(y_2 \mid y_1)$. A slightly weaker $y_1$ might open a path where $P(y_2 \mid y_1)$ is dramatically higher, giving a larger product overall. Beam search keeps several "candidate paths" alive to find such globally better sequences. Greedy is locally optimal; the chain rule is why that doesn't guarantee global optimality.
+    </p>
+    <p class="feedback nope" data-when="nope">
+      Think about the chain rule: $P(y_{1:T}) = \prod_t P(y_t \mid y_{\lt t})$. Greedy maximises each <em>factor</em> one at a time. But maximising each factor of a product doesn't maximise the product — early choices change what probabilities are available later.
+    </p>
+  </div>
+
+
+  <!-- ══════════════════════════════════════
+       MASTERY CHECK
+  ═══════════════════════════════════════════ -->
+  <div class="mastery">
+    <h3>Mastery Check — respond in chat</h3>
+    <p style="font-size:0.88rem; opacity:0.75; margin:0 0 0.8rem;">Gate: Rung 2 AND Rung 3 must pass. Fail either → targeted re-teach + fresh variant. Don't advance until solid.</p>
+
+    <div class="rung">
+      <span class="rung-label">Rung 1 · Recall (necessary, not sufficient)</span>
+      In one sentence each, define: (a) token, (b) what the model's output is at each step, (c) autoregression.
+    </div>
+
+    <div class="rung">
+      <span class="rung-label">Rung 2 · Apply — must pass</span>
+      Walk me through the generation loop for the prompt <em>"The sky is"</em>. Trace exactly 3 steps: at each step, what is the model's input, what does it produce, and what gets appended? Be precise about what the model actually outputs (not just "a word").
+    </div>
+
+    <div class="rung">
+      <span class="rung-label">Rung 3 · Explain / Transfer — must pass</span>
+      Two neural networks both read the prompt <em>"Explain Newton's law."</em>: a <strong>language model</strong> and a <strong>reward model</strong>. Both are Transformers trained on text. What does each compute? Describe the shape and meaning of each output precisely, and explain why they are fundamentally different.
+    </div>
+
+    <p class="gate-note">Pass both → Lesson 3 unlocks: How models learn — parameters, loss, and gradient descent.</p>
+  </div>
+
+
+  <!-- ══════════════════════════════════════
+       PRIMARY SOURCE
+  ═══════════════════════════════════════════ -->
+  <div class="source-pick box">
+    <div class="box-title">Primary source — strongly recommended</div>
+    <p><strong><a href="https://www.youtube.com/watch?v=kCc8FmEb1nY" target="_blank" rel="noopener">Let's build GPT: from scratch, in code, spelled out</a></strong> — Andrej Karpathy (YouTube, 2h). Builds the exact algorithm above from zero Python. The generation loop appears literally as pseudocode. If you want to see what <code>transformer(tokens)</code> does inside, this is the definitive walkthrough. Even watching the first 30 minutes cements the loop.</p>
+    <p class="cite">Also see: <a href="https://jalammar.github.io/illustrated-gpt2/" target="_blank" rel="noopener">The Illustrated GPT-2</a> — Jay Alammar. Visual walkthrough of the same ideas, no coding required.</p>
+  </div>
+
+
+  <!-- ══════════════════════════════════════
+       ASK TEACHER
+  ═══════════════════════════════════════════ -->
+  <div class="ask-teacher">
+    <strong>Questions?</strong> Ask me anything — what does "attention" actually do, how does temperature work mechanically, how does sampling differ from greedy in practice, what the chain rule is doing. I'm your teacher: push back, ask for a different angle, tell me where it felt hand-wavy.
+  </div>
+
+
+  <!-- ══════════════════════════════════════
+       WHAT YOU ARE BUILDING TOWARD
+  ═══════════════════════════════════════════ -->
+  <div class="box" style="border-left-color:#1c6b3c; background:#f6fbf7; margin-top:2.4rem;">
+    <div class="box-title" style="color:#1c6b3c;">Phase 0 capstone — what you are building toward</div>
+    <p>The <strong>microgpt.py</strong> file by Karpathy is a complete, runnable GPT in 199 lines of pure Python. No dependencies. Every concept in Phase 0 is a piece of it:</p>
+    <ul style="font-size:0.93rem;">
+      <li><strong>This lesson (Lesson 2)</strong> → lines 185–199: the inference/generation loop. You now understand these lines completely.</li>
+      <li><strong>Lesson 3</strong> → lines 73–143: the <code>gpt()</code> forward pass — embeddings, attention, MLP.</li>
+      <li><strong>Lesson 4</strong> → lines 29–71 &amp; 150–183: autograd, loss, backward pass, Adam optimizer.</li>
+      <li><strong>Capstone (Lesson 0005b)</strong> → close the file, open a blank editor, and write all 199 lines from scratch.</li>
+    </ul>
+    <p style="margin:0; font-size:0.92rem;">You are building toward something real and runnable — not just abstract understanding.</p>
+  </div>
+
+
+  <!-- ── Footer nav ── -->
+  <nav class="lesson-nav">
+    <a href="0001-the-big-picture.html">← Lesson 1: The Big Picture</a>
+    <a href="0003-how-models-learn.html">Lesson 3: How Models Learn →</a>
+  </nav>
+
+</div><!-- /.wrap -->
+
+<script src="../assets/quiz.js"></script>
+<script>
+  function revealAnswer(btn) {
+    btn.style.display = 'none';
+    btn.nextElementSibling.style.display = 'block';
+  }
+</script>
+</body>
+</html>

@@ -1,0 +1,652 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lesson 3 — How Models Learn</title>
+  <link rel="stylesheet" href="../assets/lesson.css">
+
+  <link rel="stylesheet"
+        href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css"
+        crossorigin="anonymous">
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js" crossorigin="anonymous"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"
+          crossorigin="anonymous"
+          onload="renderMathInElement(document.body,{delimiters:[{left:'$$',right:'$$',display:true},{left:'$',right:'$',display:false}],throwOnError:false});"></script>
+
+  <style>
+    /* Spaced recall */
+    .recall-card {
+      background:#f6fbf7; border:1px solid #b7d9c2;
+      border-left:4px solid var(--good); border-radius:8px;
+      padding:1rem 1.2rem; margin:1.1rem 0;
+    }
+    .recall-card .rc-q { font-weight:600; margin:0 0 0.7rem; }
+    .recall-card .rc-reveal {
+      font-family:ui-sans-serif,system-ui,sans-serif; font-size:0.82rem;
+      background:var(--good); color:#fff; border:none; border-radius:6px;
+      padding:0.35rem 0.85rem; cursor:pointer;
+    }
+    .recall-card .rc-answer {
+      margin-top:0.8rem; border-top:1px solid #b7d9c2;
+      padding-top:0.8rem; font-size:0.95rem;
+    }
+
+    /* Math box */
+    .math-box {
+      background:#fff; border:1px solid var(--rule);
+      border-left:4px solid #1d6fb8; border-radius:8px;
+      padding:1rem 1.4rem; margin:1.4rem 0; font-size:0.96rem;
+    }
+    .math-box .mb-title {
+      font-family:ui-sans-serif,system-ui,sans-serif; font-size:0.72rem;
+      text-transform:uppercase; letter-spacing:0.1em; font-weight:700;
+      color:#1d6fb8; margin:0 0 0.7rem;
+    }
+    .sym-row { display:flex; align-items:baseline; gap:0.6rem; margin:0.45rem 0; }
+    .sym { font-weight:700; color:#1d6fb8; min-width:130px; font-size:0.93rem; }
+
+    /* Surprise callout */
+    .surprise {
+      background:#fffbf0; border:1px solid #e8d87a;
+      border-left:4px solid #c8a800; border-radius:8px;
+      padding:1rem 1.2rem; margin:1.4rem 0;
+    }
+    .surprise .s-title {
+      font-family:ui-sans-serif,system-ui,sans-serif; font-size:0.72rem;
+      text-transform:uppercase; letter-spacing:0.1em; font-weight:700;
+      color:#8a6e00; margin:0 0 0.5rem;
+    }
+
+    /* Mastery check */
+    .mastery {
+      background:#1a1a1a; color:#f4f1e8;
+      border-radius:10px; padding:1.3rem 1.5rem; margin:2.2rem 0;
+    }
+    .mastery h3 { color:#f4c36a; margin:0 0 0.7rem; font-size:1rem; }
+    .mastery .rung {
+      margin:0.8rem 0; padding:0.65rem 0.9rem;
+      border-radius:6px; background:rgba(255,255,255,0.07); font-size:0.93rem;
+    }
+    .mastery .rung-label {
+      font-family:ui-sans-serif,sans-serif; font-size:0.7rem;
+      text-transform:uppercase; letter-spacing:0.1em; opacity:0.7;
+      display:block; margin-bottom:0.3rem;
+    }
+    .mastery .gate-note { margin-top:0.9rem; font-size:0.82rem; opacity:0.7; font-style:italic; }
+
+    /* Gradient descent canvas */
+    #gd-canvas { display:block; width:100%; max-width:500px; height:220px;
+                 border:1px solid var(--rule); border-radius:8px;
+                 margin:0.8rem auto; cursor:pointer; }
+    .gd-controls { display:flex; gap:0.6rem; align-items:center;
+                   flex-wrap:wrap; justify-content:center; margin:0.5rem 0 0.5rem; }
+    .gd-btn {
+      font:inherit; font-family:ui-sans-serif,sans-serif; font-size:0.82rem;
+      background:#1a1a1a; color:#f4f1e8; border:none; border-radius:6px;
+      padding:0.4rem 0.9rem; cursor:pointer;
+    }
+    .gd-btn:hover { background:#333; }
+    .gd-info { font-family:ui-sans-serif,sans-serif; font-size:0.82rem;
+               color:var(--muted); text-align:center; margin-bottom:1.2rem; }
+
+    /* Chain trace */
+    .chain-trace {
+      background:#fff; border:1px solid var(--rule); border-radius:8px;
+      padding:1rem 1.2rem; margin:1.2rem 0; font-size:0.88rem;
+      font-family:"SF Mono",ui-monospace,monospace; line-height:2;
+    }
+    .cn { color:var(--accent); font-weight:700; }
+    .gv { color:#1d6fb8; font-weight:700; }
+    .dim { color:var(--muted); }
+
+    /* Training loop steps */
+    .tloop { margin:1.4rem 0; }
+    .tl-step {
+      display:grid; grid-template-columns:28px 1fr;
+      gap:0 1rem; margin:0.4rem 0; font-size:0.93rem;
+    }
+    .tl-n {
+      width:28px; height:28px; border-radius:50%;
+      background:var(--accent); color:#fff;
+      display:flex; align-items:center; justify-content:center;
+      font-family:ui-sans-serif,sans-serif; font-size:0.78rem; font-weight:700;
+      flex-shrink:0; margin-top:0.1rem;
+    }
+    .tl-body { padding:0.1rem 0 0.85rem; border-bottom:1px dashed var(--rule); }
+    .tl-step:last-child .tl-body { border-bottom:none; }
+    .tl-label { font-family:ui-sans-serif,sans-serif; font-size:0.7rem;
+                text-transform:uppercase; letter-spacing:0.09em;
+                color:var(--muted); margin-bottom:0.15rem; }
+
+    /* Teach-back */
+    .teachback textarea {
+      width:100%; min-height:140px; font:inherit; font-size:0.95rem;
+      border:1px solid var(--rule); border-radius:8px; padding:0.8rem;
+      resize:vertical; background:#fff;
+    }
+  </style>
+</head>
+<body>
+<div class="wrap">
+
+  <p class="kicker">RLHF for Beginners · Lesson 3 of 23</p>
+  <h1>How Models Learn</h1>
+  <p class="subtitle">Starting from one question: you have a model producing gibberish — how do you even begin to fix it?</p>
+  <div class="meta-row">
+    <span>Phase 0 — Foundations</span>
+    <span>Prerequisite: <a href="0002-what-a-language-model-really-is.html">Lesson 2</a></span>
+    <span>~35 min</span>
+  </div>
+
+
+  <!-- ══════════════════════════
+       WARM-UP RECALL
+  ═══════════════════════════════ -->
+  <h2>Warm-up: pull it back from memory</h2>
+  <p>Don't re-read. Recall from scratch — that's the exercise.</p>
+
+  <div class="recall-card">
+    <p class="rc-q">Q1 — At each step of generation, what does the model output? Give the shape, meaning of each number, and the one property they all satisfy together.</p>
+    <button class="rc-reveal" onclick="revealAnswer(this)">Reveal</button>
+    <div class="rc-answer" style="display:none">
+      A probability distribution over the full vocabulary — roughly 100,000 numbers. Each number is the model's estimate of how likely that token comes next. They are all between 0 and 1, and they sum to exactly 1.
+    </div>
+  </div>
+
+  <div class="recall-card">
+    <p class="rc-q">Q2 — Describe the autoregressive loop. What changes each step? What stops it?</p>
+    <button class="rc-reveal" onclick="revealAnswer(this)">Reveal</button>
+    <div class="rc-answer" style="display:none">
+      Feed the full token list into the model → get a probability distribution → sample one token → append it to the list. Repeat. The context grows by one token each step. The loop stops when the sampled token is the special END token.
+    </div>
+  </div>
+
+
+  <!-- ══════════════════════════
+       § 1 — THE PROBLEM
+  ═══════════════════════════════ -->
+  <h2>1. The problem you actually have</h2>
+
+  <p>Here is the situation. A language model has billions of floating-point numbers inside it — its <strong class="term">parameters</strong>. Before training, they are set randomly. Truly randomly. Run a prompt through it and you get pure noise — not even grammatical, let alone useful.</p>
+
+  <p>You want to fix this. How?</p>
+
+  <p>Your first instinct might be: just try different values. Pick a parameter. Change it. See if the output gets better. If it does, keep the change. If not, revert. Repeat for every parameter.</p>
+
+  <p>Here's the problem with that plan: GPT-3 has 175 billion parameters. If you tested each one individually — even one microsecond per test — it would take over 5,000 years per training step. This approach is not slow. It is impossibly slow.</p>
+
+  <p>So the real question is: <em>is there a smarter way to figure out which direction to nudge every parameter, without testing them one by one?</em></p>
+
+  <p>The answer is yes. And to get there, we need to solve two smaller problems first:</p>
+  <ol>
+    <li><strong>How do we measure "how wrong" the model is?</strong> Right now we just said "the output is bad" — that's not precise enough to do math on.</li>
+    <li><strong>How do we figure out, for every parameter, whether increasing or decreasing it would make things better?</strong></li>
+  </ol>
+
+  <p>Solve those two, and training becomes a five-line loop.</p>
+
+
+  <!-- ══════════════════════════
+       § 2 — LOSS
+  ═══════════════════════════════ -->
+  <h2>2. Measuring wrongness: the loss</h2>
+
+  <p>We need a single number that says "this is how bad the model is right now." Small = good. Large = bad. This number is called the <strong class="term">loss</strong>.</p>
+
+  <p>Here's how we get it for a language model. We already know (from Lesson 2) that the model produces a probability distribution over every token in the vocabulary at each step. We also know what the <em>correct</em> next token is — it's whatever comes next in the training text.</p>
+
+  <p>So the question becomes: <em>how much probability did the model give to the correct token?</em></p>
+
+  <p>Concretely. The training text says: after "The cat sat on the", the next word is " mat." The model outputs this distribution:</p>
+
+  <div class="flow">
+" mat"   →   0.8%
+" floor" →  14.3%
+" table" →  11.2%
+…99,997 other tokens… →  73.7%</div>
+
+  <p>The model put only 0.8% probability on the right answer. That's bad. But how do we turn "0.8%" into a loss number?</p>
+
+  <p>The natural choice: use the negative log. Here's why the log specifically:</p>
+
+  <div class="math-box">
+    <div class="mb-title">Cross-entropy loss — derived from first principles</div>
+    <p>We want a function $f(p)$ where $p$ is the probability assigned to the correct token. It should satisfy:</p>
+    <ul>
+      <li>$f(1.0) = 0$ — if the model is certain and correct, loss is zero.</li>
+      <li>$f(0.0) = \infty$ — if the model assigns zero probability to the correct answer, the loss is infinite.</li>
+      <li>Smooth and decreasing as $p$ increases.</li>
+    </ul>
+    <p>The negative log does exactly this:</p>
+    $$L = -\log P(y_{\text{correct}} \mid \text{context};\, \theta)$$
+    <div class="sym-row"><span class="sym">$y_{\text{correct}}$</span> The actual next token from the training data.</div>
+    <div class="sym-row"><span class="sym">$P(\cdot \mid \text{context};\, \theta)$</span> The probability the model (with parameters $\theta$) gives that token.</div>
+    <div class="sym-row"><span class="sym">$-\log(\cdot)$</span> Negative log: turns a probability near 1 into a loss near 0; a probability near 0 into a very large loss.</div>
+    <p style="margin-top:0.8rem;">For our example: $L = -\log(0.008) \approx 4.82$. If training works and the model reaches 52% on " mat": $L = -\log(0.52) \approx 0.65$. Training is the process of pushing this number down.</p>
+    <p>In practice we average the loss over a batch of many tokens: $L = -\frac{1}{N}\sum_{i=1}^{N} \log P(y_i \mid y_{&lt;i};\, \theta)$. One number, representing how wrong the model is across all positions in the batch.</p>
+  </div>
+
+  <p>We now have a precise measure of wrongness. On to the harder problem.</p>
+
+
+  <!-- ══════════════════════════
+       § 3 — THE GRADIENT
+  ═══════════════════════════════ -->
+  <h2>3. Which direction? The gradient</h2>
+
+  <p>You have a loss — a single number. You have billions of parameters. You want to adjust the parameters to make the loss smaller.</p>
+
+  <p>Here's the key question, asked about <em>one single parameter</em> first:</p>
+
+  <p style="padding:0.8rem 1rem; background:var(--accent-soft); border-radius:8px; font-style:italic;">If I increase this one parameter by a tiny amount — say, from 2.370000 to 2.370001 — does the loss go up or down? And by exactly how much?</p>
+
+  <p>That question has an answer. It's a number. We call it the <strong class="term">gradient</strong> of the loss with respect to that parameter, written $\frac{\partial L}{\partial \theta_i}$.</p>
+
+  <p>If the gradient is positive — increasing $\theta_i$ increases the loss — you want to <em>decrease</em> $\theta_i$.</p>
+  <p>If the gradient is negative — increasing $\theta_i$ decreases the loss — you want to <em>increase</em> $\theta_i$.</p>
+  <p>In both cases, the update rule is the same: subtract the gradient.</p>
+
+  <div class="math-box">
+    <div class="mb-title">Gradient descent — the update rule</div>
+    $$\theta_i \;\leftarrow\; \theta_i \;-\; \eta \cdot \frac{\partial L}{\partial \theta_i}$$
+    <div class="sym-row"><span class="sym">$\theta_i$</span> One parameter. Apply this to every parameter.</div>
+    <div class="sym-row"><span class="sym">$\frac{\partial L}{\partial \theta_i}$</span> The gradient: if positive, parameter is making loss worse; if negative, it's helping.</div>
+    <div class="sym-row"><span class="sym">$\eta$ (eta)</span> Learning rate — a small positive number like 0.0001. Controls how big a step you take.</div>
+    <p style="margin-top:0.8rem;">Subtract the gradient → always move in the direction that reduces loss. Do this for all 175 billion parameters, every step. This is <strong>gradient descent</strong> — you are descending the loss surface.</p>
+  </div>
+
+  <p>The mountain analogy, precisely: imagine your position on a hilly landscape represents the current values of all parameters. Altitude represents loss. The gradient at your position tells you the direction of steepest ascent — uphill. You want to go downhill, so you step in the opposite direction. Repeat until you reach a valley.</p>
+
+  <!-- Interactive demo -->
+  <canvas id="gd-canvas" title="Click anywhere to move the ball"></canvas>
+  <div class="gd-controls">
+    <button class="gd-btn" id="gd-step">Step once</button>
+    <button class="gd-btn" id="gd-run">Run</button>
+    <button class="gd-btn" id="gd-reset">Reset</button>
+    <label style="font-family:ui-sans-serif,sans-serif; font-size:0.8rem; color:var(--muted);">
+      η =&nbsp;<input id="gd-lr" type="range" min="1" max="35" value="8" style="vertical-align:middle; width:80px;">
+      <span id="gd-lr-val">0.08</span>
+    </label>
+  </div>
+  <p class="gd-info">Red dot = current parameter value. Blue = loss surface. Yellow arrow = gradient (direction &amp; size). Try a <strong>high η</strong> — watch it overshoot the valley and oscillate.</p>
+
+  <div class="box warn">
+    <div class="box-title">The learning rate problem</div>
+    <p>If $\eta$ is too large, each step overshoots the valley — the ball flies past the minimum and lands on the other side, then overshoots back. Loss oscillates wildly instead of decreasing. If $\eta$ is too small, learning crawls. Picking $\eta$ is one of the most practically important decisions in training. This is why you saw the oscillation in the demo — it's not a bug, it's the exact failure mode of gradient descent with a bad learning rate.</p>
+  </div>
+
+
+  <!-- ══════════════════════════
+       § 4 — BACKPROP
+  ═══════════════════════════════ -->
+  <h2>4. The efficiency problem: backpropagation</h2>
+
+  <p>Wait. We said computing gradients by nudging one parameter at a time takes thousands of years. But we also just said gradient descent requires knowing $\frac{\partial L}{\partial \theta_i}$ for <em>every parameter</em>. How do we actually compute those?</p>
+
+  <div class="surprise">
+    <div class="s-title">The remarkable fact</div>
+    <p>You can compute the gradient for all 175 billion parameters at once — in a single backward pass through the network. One pass. Same cost as running the model forward. This is what makes deep learning computationally viable. The algorithm is called <strong>backpropagation</strong>.</p>
+  </div>
+
+  <p>How? One rule: the <strong>chain rule of calculus</strong>.</p>
+
+  <p>You already know this from JEE, probably written as $\frac{d}{dx}f(g(x)) = f'(g(x)) \cdot g'(x)$. For our purposes it says: if $L$ depends on $z$, and $z$ depends on $w$, then:</p>
+
+  $$\frac{dL}{dw} = \frac{dL}{dz} \cdot \frac{dz}{dw}$$
+
+  <p>"To find how much $L$ cares about $w$ — find how much $L$ cares about $z$, and how much $z$ cares about $w$. Multiply."</p>
+
+  <p>A neural network is just a long chain of operations — multiplications, additions, nonlinearities — each one applied to the previous. The chain rule lets you walk backward through that chain, computing each gradient from the one after it. By the time you reach the first parameter, you have every gradient. One backward walk.</p>
+
+  <p>Here's the tiniest possible example. A single neuron: $L = w \cdot x + b$, with $w = 2$, $x = 3$, $b = 1$.</p>
+
+  <div class="chain-trace">
+    <span class="dim">Forward:</span><br>
+    <span class="cn">wx</span> = w × x = 2 × 3 = <strong>6</strong><br>
+    <span class="cn">L</span> &nbsp;= wx + b = 6 + 1 = <strong>7</strong><br><br>
+    <span class="dim">Backward (start from L, walk to the parameters):</span><br><br>
+    dL/dL = <span class="gv">1.0</span> &nbsp; <span class="dim">(always — a thing's rate of change w.r.t. itself is 1)</span><br><br>
+    <span class="dim">L = wx + b. For addition, gradient passes through unchanged:</span><br>
+    dL/d(wx) = <span class="gv">1.0</span><br>
+    dL/db &nbsp;&nbsp;= <span class="gv">1.0</span> &nbsp; <span class="dim">(increasing b by 1 increases L by 1 ✓)</span><br><br>
+    <span class="dim">wx = w × x. For multiplication, chain rule: scale by the other factor:</span><br>
+    dL/dw = dL/d(wx) × x = 1.0 × 3 = <span class="gv">3.0</span><br>
+    dL/dx = dL/d(wx) × w = 1.0 × 2 = <span class="gv">2.0</span><br><br>
+    <span class="dim">Verify: L = w·x + b. So ∂L/∂w = x = 3. ✓</span>
+  </div>
+
+  <p>A real GPT has billions of parameters and hundreds of layers, but the process is identical: every operation stores its chain-rule function, and one backward walk computes everything. In code, this is <code>loss.backward()</code>. One line. All gradients filled in.</p>
+
+  <p>In microgpt.py (lines 29–71), every number is wrapped in a <code>Value</code> object with two fields: <code>.data</code> (the number) and <code>.grad</code> (its gradient, computed by backprop). When you call <code>loss.backward()</code>, it walks the computation graph from the loss back to every parameter and fills in <code>.grad</code>. That's it. That's all backpropagation is.</p>
+
+
+  <!-- ══════════════════════════
+       § 5 — THE FULL LOOP
+  ═══════════════════════════════ -->
+  <h2>5. Now the training loop — every line makes sense</h2>
+
+  <p>We have all the pieces. Here is the complete training algorithm. You now know exactly what every line does:</p>
+
+<pre><code>for step in range(max_steps):
+
+    # 1. Forward pass — run the model, get predictions
+    xb, yb = get_batch()         # a chunk of real training text
+    logits = gpt(xb)             # model predicts a distribution at each position
+
+    # 2. Loss — how wrong are we?
+    loss = cross_entropy(logits, yb)   # –log P(correct token), averaged
+
+    # 3. Zero old gradients
+    for p in parameters:
+        p.grad = 0.0             # grads accumulate with +=, must reset each step
+
+    # 4. Backward pass — compute every gradient in one walk
+    loss.backward()              # fills p.grad for every parameter p
+
+    # 5. Update — step downhill
+    for p in parameters:
+        p.data -= learning_rate * p.grad   # θ ← θ – η · ∇L</code></pre>
+
+  <p>Run this loop hundreds of thousands of times on billions of tokens. The loss goes from ~4.5 (random model) toward ~1.5–2.0 (fluent text). A random net becomes GPT.</p>
+
+  <div class="tloop">
+    <div class="tl-step">
+      <div class="tl-n">1</div>
+      <div class="tl-body">
+        <div class="tl-label">Forward pass</div>
+        Run the model on a batch of real text. A batch is 32–512 consecutive tokens sampled from the training data — not one example at a time, because averaging over many tokens makes each gradient more reliable and less noisy.
+      </div>
+    </div>
+    <div class="tl-step">
+      <div class="tl-n">2</div>
+      <div class="tl-body">
+        <div class="tl-label">Loss</div>
+        Compute $-\frac{1}{N}\sum \log P(y_i | y_{&lt;i}; \theta)$ across all positions in the batch. One scalar. Smaller = model is assigning more probability to the correct tokens.
+      </div>
+    </div>
+    <div class="tl-step">
+      <div class="tl-n">3</div>
+      <div class="tl-body">
+        <div class="tl-label">Zero gradients</div>
+        Gradients accumulate with <code>+=</code> inside backprop. If you don't reset them, this step's gradients add on top of last step's — completely corrupting the update. Always zero before backward.
+      </div>
+    </div>
+    <div class="tl-step">
+      <div class="tl-n">4</div>
+      <div class="tl-body">
+        <div class="tl-label">Backward pass</div>
+        One call. Walks the entire computation graph backward. Fills <code>p.grad</code> for every parameter using the chain rule. After this line, every parameter knows exactly which direction to move.
+      </div>
+    </div>
+    <div class="tl-step">
+      <div class="tl-n">5</div>
+      <div class="tl-body">
+        <div class="tl-label">Update</div>
+        $\theta_i \leftarrow \theta_i - \eta \cdot \nabla_{\theta_i} L$. Step every parameter downhill by a small amount. Repeat from step 1.
+      </div>
+    </div>
+  </div>
+
+
+  <!-- ══════════════════════════
+       § 6 — ADAM
+  ═══════════════════════════════ -->
+  <h2>6. One problem with plain gradient descent: noise</h2>
+
+  <p>Plain gradient descent has a problem. Each batch is only a small random slice of the training data. The gradient you compute from batch 1 might point slightly differently than the gradient from batch 2. The update direction jiggles around. You are descending a bumpy approximation of the real loss surface, not the smooth one.</p>
+
+  <p><strong>Adam</strong> fixes this with two ideas:</p>
+
+  <p><strong>Momentum:</strong> instead of using the raw gradient each step, keep a running average of recent gradients. If the last 10 steps all pointed roughly the same direction, the average is a more reliable signal than any single noisy step. Think of the ball on the loss surface accumulating speed — it rolls through small bumps rather than bouncing off them.</p>
+
+  <p><strong>Adaptive learning rate:</strong> some parameters need big updates (they haven't moved much), others need small ones (they're already near their optimal value). Adam tracks how large recent gradients have been for each parameter and scales the step size accordingly. Parameters with consistently large gradients get smaller steps; parameters with tiny gradients get bigger ones.</p>
+
+  <div class="math-box">
+    <div class="mb-title">Adam — what the equations say (for reference, not memorisation)</div>
+    $$m_t = \beta_1 m_{t-1} + (1-\beta_1)\,g_t \qquad \text{(running average of gradients)}$$
+    $$v_t = \beta_2 v_{t-1} + (1-\beta_2)\,g_t^2 \qquad \text{(running average of squared gradients)}$$
+    $$\theta_t = \theta_{t-1} - \eta \cdot \frac{\hat{m}_t}{\sqrt{\hat{v}_t} + \varepsilon}$$
+    <div class="sym-row"><span class="sym">$g_t$</span> Raw gradient this step.</div>
+    <div class="sym-row"><span class="sym">$m_t$</span> Smoothed gradient — momentum. $\beta_1 = 0.9$: 90% old, 10% new each step.</div>
+    <div class="sym-row"><span class="sym">$v_t$</span> Smoothed squared gradient — measures recent gradient size. $\beta_2 = 0.999$.</div>
+    <div class="sym-row"><span class="sym">$\hat{m}_t / \sqrt{\hat{v}_t}$</span> The adaptive step: divide the smoothed gradient by recent gradient magnitude. Large recent gradients → smaller effective step.</div>
+    <p style="margin-top:0.8rem;">In practice: replace the manual update loop with <code>optimizer = Adam(params, lr=1e-4)</code> then <code>optimizer.step()</code>. The math runs under the hood. Adam is used in virtually every modern LLM training run.</p>
+  </div>
+
+
+  <!-- ══════════════════════════
+       § 7 — RLHF BRIDGE
+  ═══════════════════════════════ -->
+  <div class="box" style="border-left-color:#1c6b3c; background:#f6fbf7; margin-top:2.4rem;">
+    <div class="box-title" style="color:#1c6b3c;">Why this is the foundation of everything in RLHF</div>
+    <p>Every stage of the RLHF pipeline runs the same five-step loop. What changes is only <em>what the loss measures</em>:</p>
+    <ul style="font-size:0.93rem; margin:0.5rem 0;">
+      <li><strong>Pre-training:</strong> loss = $-\log P(\text{correct token})$ on internet text.</li>
+      <li><strong>SFT:</strong> loss = $-\log P(\text{correct token})$ on curated demonstrations. Same formula, different data.</li>
+      <li><strong>Reward model:</strong> loss = a ranking loss on human preference pairs — push the score of the preferred response above the rejected one.</li>
+      <li><strong>RL fine-tuning (PPO/GRPO):</strong> loss = $-\text{reward} + \text{KL penalty}$ — reward comes from the reward model; KL penalty keeps the policy from drifting too far from SFT.</li>
+    </ul>
+    <p style="margin:0;">Forward → loss → zero grad → backward → update. The same five lines, always. Once you own this loop, every RLHF algorithm is just a question of "what's in the loss?"</p>
+  </div>
+
+
+  <!-- ══════════════════════════
+       SELF-CHECK QUIZ
+  ═══════════════════════════════ -->
+  <h2>Self-check</h2>
+  <p>Low-stakes warm-up. Answer from memory before clicking.</p>
+
+  <div class="quiz" data-answer="2">
+    <p class="q">Q1 — The model assigns 0.3% probability to the correct next token. What is the cross-entropy loss for this prediction?</p>
+    <ul class="opts">
+      <li><button class="opt">$1 - 0.003 = 0.997$ — the probability mass on wrong tokens.</button></li>
+      <li><button class="opt">$-\log(0.003) \approx 5.81$ — the negative log of the correct token's probability.</button></li>
+      <li><button class="opt">$\log(0.997) \approx -0.003$ — log of the wrong-token mass.</button></li>
+      <li><button class="opt">$0.003$ — the raw probability, unchanged.</button></li>
+    </ul>
+    <p class="feedback right" data-when="right">Correct. $L = -\log P(y_{\text{correct}}) = -\log(0.003) \approx 5.81$. The loss only looks at the correct token's probability — not what the model assigned to wrong tokens.</p>
+    <p class="feedback nope" data-when="nope">The formula is $L = -\log P(y_{\text{correct}})$. Plug in the correct token's probability: $-\log(0.003) \approx 5.81$.</p>
+  </div>
+
+  <div class="quiz" data-answer="3">
+    <p class="q">Q2 — After <code>loss.backward()</code> runs, where do you find the gradient for parameter <code>p</code>?</p>
+    <ul class="opts">
+      <li><button class="opt">Returned as a dictionary from <code>backward()</code>.</button></li>
+      <li><button class="opt">In <code>loss.grad</code> — the loss accumulates all gradients.</button></li>
+      <li><button class="opt">In <code>p.grad</code> — <code>backward()</code> fills it in on each parameter directly.</button></li>
+      <li><button class="opt">You must call <code>p.compute_grad(loss)</code> separately.</button></li>
+    </ul>
+    <p class="feedback right" data-when="right">Correct. Backprop writes the gradient directly onto each parameter's <code>.grad</code> field. No extra call needed.</p>
+    <p class="feedback nope" data-when="nope"><code>backward()</code> writes each gradient directly onto <code>p.grad</code> for every parameter <code>p</code>. That's the whole point — one call, all gradients filled.</p>
+  </div>
+
+  <div class="quiz" data-answer="2">
+    <p class="q">Q3 (hard) — You notice a training run where the loss drops for the first 1000 steps, then suddenly spikes to a very large value and never recovers. What is the most likely cause?</p>
+    <ul class="opts">
+      <li><button class="opt">Learning rate too high — the ball overshot and is now oscillating.</button></li>
+      <li><button class="opt">Gradients not being zeroed between steps — they accumulate until the update becomes enormous and the parameters blow up.</button></li>
+      <li><button class="opt">Batch size too small — the gradient estimates are too noisy.</button></li>
+      <li><button class="opt">Loss function is wrong — cross-entropy is not appropriate here.</button></li>
+    </ul>
+    <p class="feedback right" data-when="right">
+      Correct. When gradients aren't zeroed, they pile up step after step — each step adds to what the previous steps left behind. The effective gradient grows without bound. Eventually the update is so large it completely destroys the parameter values. Loss spikes to infinity and doesn't recover. Contrast: high learning rate causes <em>oscillation</em> (up-down-up-down), not a clean spike-and-never-recover. The failure mode's signature tells you the cause.
+    </p>
+    <p class="feedback nope" data-when="nope">
+      Think about what accumulating gradients means: every step adds to the previous gradient, so the effective gradient grows larger and larger over 1000 steps — until one update is catastrophically large. High learning rate causes oscillation (bounce up and down around the valley), not a clean catastrophic spike at step 1000. The <em>shape</em> of the failure curve is the diagnostic.
+    </p>
+  </div>
+
+
+  <!-- ══════════════════════════
+       MASTERY CHECK
+  ═══════════════════════════════ -->
+  <div class="mastery">
+    <h3>Mastery Check — respond in chat</h3>
+    <p style="font-size:0.88rem; opacity:0.75; margin:0 0 0.8rem;">Gate: Rung 2 AND Rung 3 must pass. Fail either → targeted re-teach + fresh variant.</p>
+
+    <div class="rung">
+      <span class="rung-label">Rung 1 · Recall</span>
+      In your own words: (a) what are parameters? (b) what does the loss measure, and why negative log? (c) what does the gradient tell you and how is it used?
+    </div>
+
+    <div class="rung">
+      <span class="rung-label">Rung 2 · Apply — must pass</span>
+      A toy model is trained on the text "dogs like bones." At one training step, for the position after "dogs like", the model outputs: "cats" 40%, "bones" 5%, "running" 30%, everything else 25%.<br><br>
+      Trace all five steps of the training loop. Be specific: what is the loss? Which direction does the gradient for the "bones" token's weight point? What happens to that weight in the update step?
+    </div>
+
+    <div class="rung">
+      <span class="rung-label">Rung 3 · Explain / Transfer — must pass</span>
+      In RLHF's RL fine-tuning stage, we no longer train on ground-truth next tokens. Instead, the model generates full responses and a reward model scores them. Explain what changes in the five-step training loop and what stays exactly the same. Where does the loss come from now?
+    </div>
+
+    <p class="gate-note">Pass both → Lesson 3b: Inside the transformer — embeddings, attention, the MLP (lines 73–143 of microgpt.py).</p>
+  </div>
+
+
+  <!-- ══════════════════════════
+       BLOG PARAGRAPH
+  ═══════════════════════════════ -->
+  <h2>Blog paragraph — write after you pass</h2>
+  <p>Your mission deliverable. Once the Mastery Check is cleared, write the "How Models Learn" section for your RLHF blog. Aim at a curious reader who has never touched ML. Auto-saves locally.</p>
+  <div class="teachback">
+    <textarea id="tb-l3" placeholder="Explain what parameters are, what loss measures, and how gradient descent adjusts the model. In plain language — the Feynman test: could a smart friend with no ML background follow this?"></textarea>
+    <p style="font-family:ui-sans-serif,sans-serif; font-size:0.85rem; color:var(--muted); margin-top:0.4rem;">
+      Word count: <span data-count-for="tb-l3">0 words</span>. Aim for 100–200.
+    </p>
+  </div>
+
+
+  <!-- ══════════════════════════
+       PRIMARY SOURCE
+  ═══════════════════════════════ -->
+  <div class="source-pick box">
+    <div class="box-title">Primary source — strongly recommended</div>
+    <p><strong><a href="https://www.youtube.com/watch?v=VMj-3S1tku0" target="_blank" rel="noopener">The spelled-out intro to neural networks and backpropagation: building micrograd</a></strong> — Andrej Karpathy (YouTube, 2h25m). Builds the exact <code>Value</code> class from scratch, deriving every line from the chain rule. Watch at least the first 45 minutes — the section building the multiplication and addition backward passes is this lesson made video, by one of the best teachers in ML.</p>
+    <p class="cite">Also see: <a href="https://colah.github.io/posts/2015-08-Backprop/" target="_blank" rel="noopener">Calculus on Computational Graphs: Backpropagation</a> — Chris Olah. Short, visual, and precise. Best written explanation of the chain rule applied to computation graphs.</p>
+  </div>
+
+
+  <div class="ask-teacher">
+    <strong>Questions?</strong> Ask anything. Why does the chain rule work for matrices, not just scalars? What exactly is a "computation graph"? How does PyTorch's autograd differ from the Value class? Why does Adam's $\sqrt{v_t}$ in the denominator help? What happens when gradients vanish (become tiny) in deep networks? I'm your teacher.
+  </div>
+
+
+  <nav class="lesson-nav">
+    <a href="0002-what-a-language-model-really-is.html">← Lesson 2: What a Language Model Really Is</a>
+    <a href="0003b-inside-the-transformer.html">Lesson 3b: Inside the Transformer →</a>
+  </nav>
+
+</div>
+
+<script src="../assets/quiz.js"></script>
+<script>
+function revealAnswer(btn) {
+  btn.style.display = 'none';
+  btn.nextElementSibling.style.display = 'block';
+}
+
+/* ── Gradient Descent Demo ── */
+(function () {
+  var canvas  = document.getElementById('gd-canvas');
+  var ctx     = canvas.getContext('2d');
+  var lrSlide = document.getElementById('gd-lr');
+  var lrLabel = document.getElementById('gd-lr-val');
+  var W, H;
+
+  function resize() {
+    W = canvas.offsetWidth; H = canvas.offsetHeight;
+    canvas.width  = W * devicePixelRatio;
+    canvas.height = H * devicePixelRatio;
+    ctx.scale(devicePixelRatio, devicePixelRatio);
+  }
+  resize();
+  window.addEventListener('resize', function(){ resize(); draw(); });
+
+  function loss(x) {
+    var t = x * Math.PI * 2;
+    return 0.18 + 0.42 * Math.pow(Math.sin(t * 0.8 + 0.4), 2)
+               + 0.12 * Math.sin(t * 2.5 + 1.2)
+               + 0.07 * Math.cos(t * 4 + 0.9);
+  }
+  function grad(x) {
+    var e = 0.0005;
+    return (loss(x + e) - loss(x - e)) / (2 * e);
+  }
+  function cx(x) { return 40 + x * (W - 80); }
+  function cy(l) { return H - 24 - l * (H - 48); }
+
+  var bx = 0.78, running = false, animId = null;
+
+  function getLR() { return parseFloat(lrSlide.value) / 100; }
+  lrSlide.addEventListener('input', function(){ lrLabel.textContent = getLR().toFixed(2); draw(); });
+  lrLabel.textContent = getLR().toFixed(2);
+
+  function step() {
+    bx = Math.max(0.01, Math.min(0.99, bx - getLR() * grad(bx)));
+    draw();
+  }
+
+  function draw() {
+    ctx.clearRect(0, 0, W, H);
+
+    // Curve
+    ctx.beginPath(); ctx.strokeStyle = '#1d6fb8'; ctx.lineWidth = 2.5;
+    for (var i = 0; i <= 300; i++) {
+      var xi = i / 300;
+      if (i === 0) ctx.moveTo(cx(xi), cy(loss(xi)));
+      else ctx.lineTo(cx(xi), cy(loss(xi)));
+    }
+    ctx.stroke();
+
+    // Axis labels
+    ctx.fillStyle = '#6b6b6b'; ctx.font = '11px ui-sans-serif,sans-serif';
+    ctx.fillText('Loss ↑', 4, 14); ctx.fillText('θ →', W - 32, H - 6);
+
+    // Gradient arrow
+    var g = grad(bx), bpx = cx(bx), bpy = cy(loss(bx));
+    var aLen = Math.min(Math.abs(g) * 70, 55) * Math.sign(g);
+    ctx.beginPath(); ctx.moveTo(bpx, bpy - 22); ctx.lineTo(bpx + aLen, bpy - 22);
+    ctx.strokeStyle = '#c8a800'; ctx.lineWidth = 2; ctx.stroke();
+    var d = aLen >= 0 ? 1 : -1;
+    ctx.beginPath(); ctx.moveTo(bpx + aLen, bpy - 22);
+    ctx.lineTo(bpx + aLen - d*7, bpy - 27); ctx.lineTo(bpx + aLen - d*7, bpy - 17);
+    ctx.closePath(); ctx.fillStyle = '#c8a800'; ctx.fill();
+
+    // Ball
+    ctx.beginPath(); ctx.arc(bpx, bpy, 7, 0, Math.PI * 2);
+    ctx.fillStyle = '#d44a4a'; ctx.fill();
+    ctx.strokeStyle = '#fff'; ctx.lineWidth = 2; ctx.stroke();
+
+    // Loss label
+    ctx.fillStyle = '#6b6b6b'; ctx.font = '11px ui-sans-serif,sans-serif';
+    ctx.fillText('Loss = ' + loss(bx).toFixed(3), bpx + 10, bpy - 8);
+  }
+
+  document.getElementById('gd-step').onclick = step;
+  document.getElementById('gd-reset').onclick = function() {
+    running = false; document.getElementById('gd-run').textContent = 'Run';
+    if (animId) cancelAnimationFrame(animId);
+    bx = 0.78; draw();
+  };
+  document.getElementById('gd-run').onclick = function() {
+    if (running) {
+      running = false; this.textContent = 'Run';
+      if (animId) cancelAnimationFrame(animId);
+    } else {
+      running = true; this.textContent = 'Pause';
+      (function loop(){ if (!running) return; step(); animId = requestAnimationFrame(loop); })();
+    }
+  };
+  canvas.onclick = function(e) {
+    var r = canvas.getBoundingClientRect();
+    bx = Math.max(0.01, Math.min(0.99, (e.clientX - r.left - 40) / (W - 80)));
+    draw();
+  };
+
+  draw();
+})();
+</script>
+</body>
+</html>

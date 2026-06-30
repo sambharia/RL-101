@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 1 · The Big Picture of RLHF</title>
+<link rel="stylesheet" href="../assets/lesson.css">
+<script src="../assets/quiz.js"></script>
+<script>
+  window.MathJax = { tex: { inlineMath: [['\\(', '\\)']], displayMath: [['\\[', '\\]']] } };
+</script>
+<script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js" async></script>
+</head>
+<body>
+<div class="wrap">
+
+  <p class="kicker">RLHF for Beginners · Lesson 1 · Phase 0: Foundations</p>
+  <h1>The Big Picture: how a text-completer becomes a helpful assistant</h1>
+  <p class="subtitle">Before any math, get the one mental model everything else hangs on.</p>
+  <div class="meta-row">
+    <span>~15 min</span>
+    <span>Book: Chapter 1 (Introduction)</span>
+    <span>Win: explain what RLHF <em>is</em> and where it fits</span>
+  </div>
+
+  <p>Welcome to lesson one. Our whole mission is that by the end of this course you can
+  <strong>explain RLHF to a beginner in your own words</strong> — a blog series. So we
+  start the way every good blog starts: with the single idea the reader must grasp before
+  anything else makes sense.</p>
+
+  <p>Here it is, in one sentence:</p>
+
+  <div class="box">
+    <p class="box-title">The whole idea</p>
+    <p style="margin:0">A raw AI language model out of training can only <em>continue text</em>.
+    <span class="term">RLHF</span> is part of the process that turns that text-continuer into
+    something that <em>answers you helpfully</em> — by learning from humans which answers are better.</p>
+  </div>
+
+  <h2>1. A base model just continues text</h2>
+  <p>A <span class="term">language model</span> is trained on enormous amounts of internet
+  text with one simple objective: <em>predict the next word</em>. Do that billions of times
+  and you get a <span class="term">base model</span> (also called a pretrained model). It is
+  startlingly knowledgeable — but it does not "answer questions." It just continues whatever
+  text you give it, the way autocomplete would.</p>
+
+  <p>Give a strong base model the prompt <em>"The president of the United States in 2006 was"</em>
+  and it produces a sprawl of plausible internet text:</p>
+
+  <pre>George W. Bush, the governor of Florida in 2006 was Jeb Bush, and
+John McCain was an Arizona senator... September 1 -- U.S. President
+Bush signs an executive order... 2009 was a common year starting on
+Thursday of the Gregorian calendar...</pre>
+
+  <p>It is not <em>wrong</em>, exactly — it is doing its job: continuing the text with more
+  text that looks like the internet. It just isn't <em>useful</em>.</p>
+
+  <h2>2. Post-training turns it into an assistant</h2>
+  <p>Everything we do <em>after</em> that giant pretraining run, to make the model useful, is
+  called <span class="term">post-training</span>. After post-training, the same question gets
+  a clean answer:</p>
+
+  <pre>George W. Bush was the president of the United States in 2006.
+He served two terms, from January 20, 2001 to January 20, 2009.</pre>
+
+  <p>Post-training has three main tools. This is the map for our entire course — keep it in
+  your head:</p>
+
+  <div class="flow">┌─────────────┐   ① SFT        ┌──────────────┐   ②③ RLHF      ┌────────────────┐
+│  BASE MODEL │ ─────────────▶ │  CAN ANSWER  │ ─────────────▶ │  HELPFUL,      │
+│ (completes  │  show it Q→A   │  (right      │  learn from    │  PREFERRED     │
+│  text)      │  examples      │   format)    │  human prefs   │  ASSISTANT     │
+└─────────────┘                └──────────────┘                └────────────────┘</div>
+
+  <ol>
+    <li><strong>SFT (instruction / supervised fine-tuning)</strong> — show the model lots of
+    example <em>question → good answer</em> pairs so it learns the <em>format</em> of being a
+    helpful assistant. This teaches the <em>shape</em> of an answer.</li>
+    <li><strong>Reward modeling</strong> — collect humans' judgments of which answers are
+    better, and train a separate model (the <span class="term">reward model</span>) to predict
+    that "goodness" as a single number.</li>
+    <li><strong>RL optimization</strong> — let the model generate answers, score them with the
+    reward model, and nudge the model to produce more of the high-scoring kind.</li>
+  </ol>
+
+  <p>Steps ② and ③ together <em>are</em> RLHF: <strong>R</strong>einforcement
+  <strong>L</strong>earning from <strong>H</strong>uman <strong>F</strong>eedback. SFT teaches
+  the model <em>a</em> good answer; RLHF teaches it what makes one answer <em>better than another</em>.</p>
+
+  <div class="box analogy">
+    <p class="box-title">Analogy · the F1 car</p>
+    <p style="margin:0">Nathan Lambert (the book's author) compares the base model to a
+    Formula 1 <em>chassis</em>. The chassis sets the ceiling of what's possible, but teams win
+    or lose the season on everything they bolt on afterward — aerodynamics, tuning, systems.
+    Post-training is that tuning: it doesn't build a new car, it <em>extracts the performance
+    already latent in the chassis.</em> The book calls this the <span class="term">elicitation
+    theory</span> of post-training.</p>
+  </div>
+
+  <h2>3. Why not just write rules?</h2>
+  <p>Why bother with human feedback at all — why not just tell the model the rules for a good
+  answer? Because "a good answer" is mostly <em>unspecifiable</em>. What makes a reply feel
+  warm, well-formatted, helpful, or safe is something humans recognize instantly but struggle
+  to write down. RLHF's founding question was exactly this:</p>
+
+  <div class="box">
+    <p style="margin:0;font-style:italic">"Can we solve hard problems using only basic
+    preference signals — humans saying <em>this one is better than that one</em> — to guide the
+    optimization?"</p>
+  </div>
+
+  <p>That word <strong>preference</strong> is the heart of it. Instead of grading an answer in
+  isolation, we compare two and ask a human (or later, another AI) which is better. Learning
+  from comparisons like this is called a <span class="term">contrastive</span> signal, and it
+  is the recurring theme of this whole book.</p>
+
+  <div class="box warn">
+    <p class="box-title">Watch out</p>
+    <p style="margin:0">A common myth (you'll hear it as "instruction tuning is enough") is that
+    RLHF only adds surface-level "style." It does shape style — but modern post-training also
+    unlocks real <em>behaviors</em> like step-by-step reasoning. Don't file RLHF under "cosmetic."</p>
+  </div>
+
+  <div class="source-pick box">
+    <p class="box-title">Your primary source for this lesson</p>
+    <p style="margin:0">Read <strong>Chapter 1 (Introduction)</strong> of the RLHF Book —
+    especially the sections <em>"What Does RLHF Do?"</em> and <em>"An Intuition for Post-Training."</em>
+    Web: <a href="https://rlhfbook.com">rlhfbook.com</a>. Prefer to listen? Watch
+    <a href="https://www.youtube.com/watch?v=o6l6tJQgUg4&list=PLL1tdVxB1CpVpEtMHxwuR4uI4Lxjw00_y&index=2">Lecture 1: Overview</a>.</p>
+  </div>
+
+  <div class="box">
+    <p class="box-title">Where's the math?</p>
+    <p style="margin:0">This lesson is the map, so it stays conceptual. We bring in the math
+    <em>exactly when the concept needs it</em>, and when we do, we'll walk through every symbol
+    until the equation feels obvious. The first real equation — a language model as a
+    probability distribution \(p_\theta(y\mid x)\) — gets taught properly in <strong>Lesson 2</strong>,
+    where it's the whole point. By the end of the course you'll read these formulas as
+    comfortably as the words.</p>
+  </div>
+
+  <h2>Self-check (low-stakes, instant feedback)</h2>
+  <p>This is just a warm-up so you can feel where you stand — it is <em>not</em> the real test.
+  Answer from memory; getting one wrong and seeing why is how it sticks.</p>
+  <p>Answer from memory — getting it slightly wrong and seeing why is how this sticks.</p>
+
+  <div class="quiz" data-answer="2">
+    <p class="q">1. What does a <em>base model</em> (fresh from pretraining) actually do?</p>
+    <ul class="opts">
+      <li><button class="opt">It answers questions in a clean assistant format</button></li>
+      <li><button class="opt">It continues text by predicting the next word</button></li>
+      <li><button class="opt">It ranks answers by human preference scores</button></li>
+      <li><button class="opt">It writes its own training rules automatically</button></li>
+    </ul>
+    <p class="feedback right" data-when="right">Exactly. A base model is a next-word predictor —
+    knowledgeable, but it continues text rather than answering helpfully.</p>
+    <p class="feedback nope" data-when="nope">Not quite — those come <em>later</em>, from
+    post-training. The base model's only trained skill is predicting the next word (continuing text).</p>
+  </div>
+
+  <div class="quiz" data-answer="3">
+    <p class="q">2. Which two steps together make up RLHF?</p>
+    <ul class="opts">
+      <li><button class="opt">Pretraining and instruction fine-tuning</button></li>
+      <li><button class="opt">Tokenizing text and predicting next words</button></li>
+      <li><button class="opt">Training a reward model and RL optimization</button></li>
+      <li><button class="opt">Writing rules and checking math answers</button></li>
+    </ul>
+    <p class="feedback right" data-when="right">Right. RLHF = building a reward model from human
+    preferences, then using RL to push the model toward high-reward answers.</p>
+    <p class="feedback nope" data-when="nope">Close, but RLHF is specifically the reward-model
+    step plus the RL-optimization step. SFT/pretraining come before it.</p>
+  </div>
+
+  <div class="quiz" data-answer="1">
+    <p class="q">3. Why use human <em>preferences</em> instead of hand-written rules?</p>
+    <ul class="opts">
+      <li><button class="opt">Because "a good answer" is easy to recognize, hard to specify</button></li>
+      <li><button class="opt">Because preferences are cheaper than computing power always</button></li>
+      <li><button class="opt">Because rules make the base model forget its pretraining</button></li>
+      <li><button class="opt">Because models cannot read written instructions at all</button></li>
+    </ul>
+    <p class="feedback right" data-when="right">Yes. The quality we want is unspecifiable in
+    rules, but humans can reliably say which of two answers is better — a contrastive signal.</p>
+    <p class="feedback nope" data-when="nope">The core reason is specifiability: we can't write
+    down what makes an answer "good," but humans can compare two and pick the better one.</p>
+  </div>
+
+  <h2 id="mastery">The Mastery Check (this is the real test)</h2>
+  <p>One clear test per lesson. It has three rungs that climb from "do you remember" to "do you
+  truly understand." <strong>You pass only if you clear the top two rungs (Apply + Explain).</strong>
+  Recall alone doesn't count — you can memorize words without understanding. Answer all three in
+  the chat; I grade them and tell you plainly: pass, or here's the exact gap we fix.</p>
+
+  <div class="box recall">
+    <p class="box-title">Rung 1 · Recall</p>
+    <p style="margin:0">In one sentence each, define: a <em>base model</em>, and what the two
+    RLHF steps are.</p>
+  </div>
+  <div class="box">
+    <p class="box-title">Rung 2 · Apply (must pass)</p>
+    <p style="margin:0">Here's a new situation: a startup has a powerful base model that, when
+    asked "Write a polite refund email," instead produces three unrelated paragraphs of
+    web-like text. They have a budget to hire people. <em>Which post-training step(s) do they
+    need first, and why that one before the others?</em></p>
+  </div>
+  <div class="box warn">
+    <p class="box-title">Rung 3 · Explain / Transfer (must pass)</p>
+    <p style="margin:0">RLHF learns from people picking the better of two answers, rather than
+    from being shown one "correct" answer. <em>Give one concrete reason this comparison-based
+    signal can teach things that showing correct answers (SFT) cannot.</em> Think about the
+    kinds of qualities humans can <em>compare</em> but struggle to <em>write down</em>.</p>
+  </div>
+
+  <div class="ask-teacher">
+    <strong>Answer all three rungs in the chat.</strong> I'll grade against a clear bar: pass =
+    Rung 2 and Rung 3 both correct. If you miss one, I pinpoint the gap, re-teach that one piece,
+    and give you a fresh variant — no moving on until it's solid. Stuck anywhere? Just ask. No
+    question is too basic; that's the whole point.
+  </div>
+
+  <div class="box analogy">
+    <p class="box-title">Your blog (the mission output, not the test)</p>
+    <p style="margin:0">Once you pass, you'll turn this lesson into a short "RLHF for Beginners"
+    post in your own words — that's <em>why</em> we're learning, and it's saved as a deliverable
+    at the end of each phase. But passing the Mastery Check is what unlocks the next lesson.</p>
+  </div>
+
+  <p class="cite">New terms this lesson are in the
+  <a href="../GLOSSARY.md">glossary</a>: base model, post-training, SFT, reward model, RLHF,
+  contrastive loss, elicitation theory. Source: RLHF Book, Ch.1 (Lambert).</p>
+
+  <div class="lesson-nav">
+    <span>Lesson 1 of the journey</span>
+    <span>Next → 0002: What a language model really is</span>
+  </div>
+
+</div>
+</body>
+</html>
