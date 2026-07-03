@@ -202,6 +202,43 @@
       resize: vertical; background: #fff;
     }
 
+    /* ── Worked example ── */
+    .worked {
+      background: #f0f7ff; border: 1px solid #b0d0f0;
+      border-left: 4px solid #2980b9; border-radius: 8px;
+      padding: 1rem 1.3rem; margin: 1.4rem 0; font-size: 0.95rem;
+    }
+    .worked .w-title {
+      font-family: ui-sans-serif, sans-serif; font-size: 0.72rem;
+      text-transform: uppercase; letter-spacing: 0.1em; font-weight: 700;
+      color: #2980b9; margin: 0 0 0.7rem;
+    }
+    .worked table {
+      border-collapse: collapse; font-family: ui-monospace, monospace;
+      font-size: 0.85rem; margin: 0.6rem 0;
+    }
+    .worked table th, .worked table td {
+      border: 1px solid #b0d0f0; padding: 0.35rem 0.65rem; text-align: center;
+    }
+    .worked table th { background: #d6e9fa; font-weight: 700; }
+    .worked .step { margin: 0.6rem 0; }
+    .worked .step-label {
+      font-weight: 700; color: #2980b9; margin-bottom: 0.2rem;
+    }
+    .worked code { background: #dce9f7; padding: 0.1rem 0.3rem; border-radius: 3px; }
+
+    /* ── Feynman callout ── */
+    .feynman {
+      background: #faf5eb; border: 1px solid #e0d5b8;
+      border-left: 4px solid #b8860b; border-radius: 8px;
+      padding: 1rem 1.2rem; margin: 1.4rem 0;
+    }
+    .feynman .f-title {
+      font-family: ui-sans-serif, sans-serif; font-size: 0.72rem;
+      text-transform: uppercase; letter-spacing: 0.1em; font-weight: 700;
+      color: #8a6e00; margin: 0 0 0.5rem;
+    }
+
     @media (max-width: 480px) {
       .bd-box { max-width: 100%; }
     }
@@ -212,7 +249,7 @@
 
   <p class="kicker">RLHF for Beginners · Lesson 3b of 23</p>
   <h1>Inside the Transformer</h1>
-  <p class="subtitle">We've been running gpt() as a black box. Time to open it — and discover why it works.</p>
+  <p class="subtitle">We've been running gpt() as a black box. Time to open it — with tiny examples you can compute in your head.</p>
   <div class="meta-row">
     <span>Phase 0 — Foundations</span>
     <span>Prerequisites: <a href="0002-what-a-language-model-really-is.html">Lesson 2</a> · <a href="0003-how-models-learn.html">Lesson 3</a></span>
@@ -248,17 +285,22 @@
   ════════════════════════════════════════ -->
   <h2>1. The problem with integers</h2>
 
-  <p>Every lesson so far, we've fed <code>gpt()</code> a list of token IDs — integers like <code>15496</code> for "Hello" or <code>2318</code> for "cat." The model returns logits. We've never asked: what happens <em>inside</em>?</p>
+  <p>Every lesson so far, we've fed <code>gpt()</code> a list of token IDs — integers like <code>15496</code> for "Hello." We never asked: what happens <em>inside</em>?</p>
 
-  <p>Let's start with a simple, uncomfortable fact.</p>
+  <p>Let's start with a fact that should bother you.</p>
 
   <div class="box warn">
     <div class="box-title">The integer problem</div>
-    <p>Token IDs are arbitrary integers. The ID for "cat" is 2318. The ID for "dog" is 3290. The ID for "kitten" is 19090. Those numbers don't mean anything — "cat" and "kitten" are semantically close, but <code>|19090 − 2318| = 16772</code> is a large number. Arithmetic on IDs is meaningless.</p>
-    <p>Yet the transformer has to do <em>math</em> on these. It has to learn that "cat" and "kitten" are similar. How?</p>
+    <p>Token IDs are arbitrary integers. "cat" = 2318. "dog" = 3290. "kitten" = 19090.</p>
+    <p>But "cat" and "kitten" mean almost the same thing! Yet their IDs are 16,772 apart. And "cat" (2318) is closer in number to "car" (2315) — a completely unrelated word. The numbers are random labels. You can't do meaningful math on them.</p>
+    <p>But the transformer <em>has</em> to do math. So what does it do?</p>
   </div>
 
-  <p>This is the first problem the transformer has to solve before it does anything else. And the solution is one of the simplest ideas in all of machine learning.</p>
+  <div class="feynman">
+    <div class="f-title">Think of it this way</div>
+    <p>Imagine you're organizing a library, and every book has a random barcode number. You can't tell from the barcodes that two books are both about cooking. What you need is a <em>description card</em> for each book — a list of properties like "topic: food, difficulty: easy, language: English." Now similar books have similar description cards, even if their barcodes are nothing alike.</p>
+    <p>That's exactly what the transformer does. It replaces each meaningless ID with a rich description vector — 768 numbers that <em>do</em> capture meaning. Let's see how.</p>
+  </div>
 
 
   <!-- ═══════════════════════════════════
@@ -266,32 +308,54 @@
   ════════════════════════════════════════ -->
   <h2>2. Embeddings: giving each token a meaningful address</h2>
 
-  <p>Instead of using the integer ID directly, the model keeps a big lookup table called the <strong class="term">embedding matrix</strong> (named <code>wte</code> in microgpt.py — "weight token embedding"). Its shape is $V \times d$: one row per vocabulary item, each row is a vector of $d = 768$ floating-point numbers.</p>
+  <p>The model keeps a giant lookup table called the <strong class="term">embedding matrix</strong> (<code>wte</code> in microgpt.py — "weight token embedding"). Think of it as a dictionary: you give it a token ID, it gives you back a list of 768 numbers.</p>
 
-  <p>Token ID → row index → 768-dimensional vector. That's it. The embedding of "cat" is just the 2318th row.</p>
+  <div class="feynman">
+    <div class="f-title">Let's make it tiny to see how it works</div>
+    <p>Forget 768 dimensions — imagine our embedding only has <strong>3 numbers</strong> per word, and our vocabulary is only 5 words. The entire embedding table might look like this:</p>
+  </div>
 
   <table class="embed-table">
     <thead>
-      <tr><th>Token ID</th><th>Token</th><th>Embedding (768 numbers, shown as 4)</th></tr>
+      <tr><th>Token ID</th><th>Token</th><th>Embedding vector (3 numbers)</th></tr>
     </thead>
     <tbody>
-      <tr class="dim"><td>2315</td><td>"car"</td><td class="vec">[ 0.31, −0.12, 0.77, 0.05, … ]</td></tr>
-      <tr class="dim"><td>2316</td><td>"cat"</td><td class="vec">[ 0.28, −0.09, 0.74, 0.08, … ]</td></tr>
-      <tr class="highlight"><td><strong>2318</strong></td><td><strong>"cat"</strong></td><td class="vec"><strong>[ 0.29, −0.11, 0.73, 0.07, … ]</strong></td></tr>
-      <tr class="dim"><td>3290</td><td>"dog"</td><td class="vec">[ 0.27, −0.13, 0.71, 0.09, … ]</td></tr>
-      <tr class="dim"><td>…</td><td>…</td><td class="dim">…50,000+ more rows…</td></tr>
-      <tr class="dim"><td>19090</td><td>"kitten"</td><td class="vec">[ 0.30, −0.10, 0.75, 0.06, … ]</td></tr>
+      <tr><td>0</td><td>"cat"</td><td class="vec">[ 0.9, 0.1, 0.8 ]</td></tr>
+      <tr><td>1</td><td>"dog"</td><td class="vec">[ 0.8, 0.2, 0.7 ]</td></tr>
+      <tr><td>2</td><td>"car"</td><td class="vec">[ 0.1, 0.9, 0.2 ]</td></tr>
+      <tr><td>3</td><td>"kitten"</td><td class="vec">[ 0.85, 0.15, 0.75 ]</td></tr>
+      <tr><td>4</td><td>"truck"</td><td class="vec">[ 0.15, 0.85, 0.25 ]</td></tr>
     </tbody>
   </table>
 
-  <p>Notice the pattern in the example: "cat," "dog," and "kitten" have <em>similar</em> vectors. Not because we designed them that way — because the model <strong>learned</strong> these vectors from training data, and gradient descent naturally pushes semantically similar tokens towards similar embedding vectors. The rows of <code>wte</code> are parameters — they get updated by backpropagation exactly like any other weight.</p>
+  <p>Look at the numbers. "cat" is <code>[0.9, 0.1, 0.8]</code> and "kitten" is <code>[0.85, 0.15, 0.75]</code> — almost the same! Meanwhile "car" is <code>[0.1, 0.9, 0.2]</code> — totally different from "cat," even though their <em>IDs</em> (0 and 2) are close. The numbers encode <em>meaning</em>, not alphabetical order.</p>
+
+  <p>Maybe the first number captures "animal-ness," the second captures "vehicle-ness," and the third captures something else. We didn't program this — the model <strong>learned</strong> these numbers through training. Gradient descent naturally pushed similar words toward similar vectors, because words that appear in similar contexts should have similar representations.</p>
+
+  <div class="worked">
+    <div class="w-title">Worked example: looking up an embedding</div>
+    <div class="step">
+      <div class="step-label">Input:</div>
+      The sentence "cat dog" → token IDs <code>[0, 1]</code>
+    </div>
+    <div class="step">
+      <div class="step-label">Lookup:</div>
+      ID 0 → row 0 of the table → <code>[0.9, 0.1, 0.8]</code><br>
+      ID 1 → row 1 of the table → <code>[0.8, 0.2, 0.7]</code>
+    </div>
+    <div class="step">
+      <div class="step-label">Result:</div>
+      Our input matrix $X$ is now: $\begin{bmatrix} 0.9 & 0.1 & 0.8 \\ 0.8 & 0.2 & 0.7 \end{bmatrix}$ — shape $(2, 3)$.<br>
+      In real GPT-2, this would be shape $(T, 768)$. Same idea, bigger numbers.
+    </div>
+  </div>
 
   <div class="surprise">
     <div class="s-title">The surprising consequence</div>
-    <p>Once training is done, you can do meaningful arithmetic on embedding vectors. The famous example: <strong>vec("king") − vec("man") + vec("woman") ≈ vec("queen")</strong>. The 768-dimensional geometry encodes semantic relationships. The model never explicitly learned this — it emerged from predicting the next token on trillions of words.</p>
+    <p>Because similar words end up with similar vectors, you can do meaningful <em>arithmetic</em> on them. The famous example: <strong>vec("king") − vec("man") + vec("woman") ≈ vec("queen")</strong>. Nobody programmed this — it emerged from predicting the next word on billions of sentences.</p>
   </div>
 
-  <p>So: integer ID → embedding lookup → 768-dimensional vector. Now the model has something it can do math on. But there's a second problem.</p>
+  <p>So: integer ID → table lookup → meaningful vector. Now the model has something it can do real math on. But there's a second problem.</p>
 
 
   <!-- ═══════════════════════════════════
@@ -299,85 +363,225 @@
   ════════════════════════════════════════ -->
   <h2>3. Position matters: the second embedding</h2>
 
-  <p>Consider these two sentences:</p>
+  <p>Here's a puzzle. Consider these two sentences:</p>
   <div class="flow">"The dog bit the man"
 "The man bit the dog"</div>
 
-  <p>Same tokens. Completely different meaning. The only difference is position. Yet if we just looked up each token's embedding, we'd get the same four vectors, in a different order — and the transformer's attention mechanism (coming next) is actually <em>permutation-equivariant</em>: if you shuffle the inputs, the outputs shuffle identically. Position would be completely invisible.</p>
+  <p>Same exact words. Completely different meaning. One person is having a very bad day. The only difference is <em>which word goes where</em>.</p>
 
-  <p>The fix: add a second lookup table, the <strong class="term">positional embedding matrix</strong> (<code>wpe</code> — "weight position embedding"). Its shape is $T_{\max} \times d$ where $T_{\max} = 1024$ is the maximum sequence length. Row 0 is "the vector for position 0," row 1 is for position 1, and so on.</p>
+  <p>But our embedding lookup doesn't know about position! It always gives the same vector for "dog" whether it's the first word or the last. The model would be completely blind to word order.</p>
 
-  <p>The final representation for each token is simply:</p>
+  <div class="feynman">
+    <div class="f-title">The fix is beautifully simple</div>
+    <p>Add a <em>second</em> lookup table — one that encodes <em>position</em>. Position 0 gets its own vector. Position 1 gets a different one. And so on. Then you just <strong>add</strong> the two vectors together: "what the word is" + "where it sits."</p>
+  </div>
+
+  <div class="worked">
+    <div class="w-title">Worked example: adding position information</div>
+    <p>Continuing our tiny 3-dimensional world. Say the position table looks like:</p>
+    <table>
+      <tr><th>Position</th><th>Position vector</th></tr>
+      <tr><td>0 (first word)</td><td><code>[0.1, 0.0, 0.1]</code></td></tr>
+      <tr><td>1 (second word)</td><td><code>[0.0, 0.1, 0.0]</code></td></tr>
+    </table>
+    <div class="step">
+      <div class="step-label">For "cat dog" (IDs [0, 1]):</div>
+      "cat" at position 0: <code>[0.9, 0.1, 0.8]</code> + <code>[0.1, 0.0, 0.1]</code> = <code>[1.0, 0.1, 0.9]</code><br>
+      "dog" at position 1: <code>[0.8, 0.2, 0.7]</code> + <code>[0.0, 0.1, 0.0]</code> = <code>[0.8, 0.3, 0.7]</code>
+    </div>
+    <div class="step">
+      <div class="step-label">For "dog cat" (IDs [1, 0]):</div>
+      "dog" at position 0: <code>[0.8, 0.2, 0.7]</code> + <code>[0.1, 0.0, 0.1]</code> = <code>[0.9, 0.2, 0.8]</code><br>
+      "cat" at position 1: <code>[0.9, 0.1, 0.8]</code> + <code>[0.0, 0.1, 0.0]</code> = <code>[0.9, 0.2, 0.8]</code>
+    </div>
+    <p>Now "dog-at-position-0" and "dog-at-position-1" have <em>different</em> vectors. The model can tell them apart. Problem solved.</p>
+  </div>
 
   <div class="math-box">
     <div class="mb-title">Input to the transformer stack</div>
-    $$x_i = \underbrace{\text{wte}[\text{token\_id}_i]}_{\text{token embedding}} + \underbrace{\text{wpe}[i]}_{\text{position embedding}}$$
-    <div class="sym-row"><span class="sym">$\text{wte}[\cdot]$</span> Row lookup in token embedding matrix — shape $(768,)$.</div>
-    <div class="sym-row"><span class="sym">$\text{wpe}[i]$</span> Row lookup in positional embedding matrix — shape $(768,)$, one per position $i$.</div>
-    <div class="sym-row"><span class="sym">$x_i$</span> A single 768-dimensional vector for the $i$-th token, encoding both <em>what</em> it is and <em>where</em> it sits.</div>
-    <p style="margin-top:0.8rem;">For a sequence of $T$ tokens, we get a matrix $X$ of shape $(T, 768)$. This is what enters the transformer blocks.</p>
+    $$x_i = \underbrace{\text{wte}[\text{token\_id}_i]}_{\text{what the word is}} + \underbrace{\text{wpe}[i]}_{\text{where it sits}}$$
+    <p style="margin-top:0.8rem;">For $T$ tokens, we get a matrix $X$ of shape $(T, 768)$. In our toy example, $(2, 3)$. This is what enters the transformer blocks.</p>
   </div>
 
-  <p>Both <code>wte</code> and <code>wpe</code> are learned. The model figures out how to encode position in 768 numbers all on its own, through training.</p>
+  <p>Both tables are <strong>learned</strong> — the model figures out how to encode meaning and position through training. We just provide the lookup; gradient descent fills in the numbers.</p>
 
-  <p>Now we have a rich vector for each token. The transformer's job is to update these vectors by letting each token look at the others. Which brings us to the hard part.</p>
+  <p>Now we have a rich vector for each token that captures <em>both</em> what it is and where it sits. The transformer's job is to let each token look at the others and update itself. Which brings us to the core idea.</p>
 
 
   <!-- ═══════════════════════════════════
        § 4 — SELF-ATTENTION
   ════════════════════════════════════════ -->
-  <h2>4. The contextualization problem: self-attention</h2>
+  <h2>4. Self-attention: the core idea</h2>
 
-  <p>Here's the issue. The word "bank" has one embedding — one point in 768-dimensional space. But "bank" means completely different things in:</p>
+  <p>Here's the problem we need to solve. The word "bank" has one embedding — one fixed vector. But "bank" means completely different things here:</p>
 
   <div class="flow">"She walked to the river bank to fish."
 "She called her investment bank about the loan."</div>
 
-  <p>A fixed embedding for "bank" can't capture both senses. The model needs to <em>update</em> each token's representation by looking at the surrounding tokens. "River" and "fish" should push "bank" toward its geographical meaning. "Investment" and "loan" should push it toward its financial meaning.</p>
+  <p>A fixed vector for "bank" can't capture both meanings. What we need is a way for "bank" to <em>look around</em> at the other words and update itself. When it sees "river" and "fish" nearby, it should shift toward its riverbank meaning. When it sees "investment" and "loan," it should shift toward its financial meaning.</p>
 
-  <p>More generally: what the word at position $i$ <em>means</em> depends on which other words are nearby. The transformer needs a mechanism for every token to gather information from every other token it's relevant to.</p>
+  <p>That's attention. Let's build it from scratch with a tiny example.</p>
 
-  <p>The question becomes: <em>for each pair of tokens, how much should one attend to the other?</em></p>
+  <h3>The party analogy</h3>
 
-  <h3>Queries, Keys, and Values</h3>
-
-  <p>The attention mechanism works by giving every token three different roles simultaneously:</p>
-
-  <ul>
-    <li><strong>Query (Q):</strong> "What am I looking for?" — the question this token is asking.</li>
-    <li><strong>Key (K):</strong> "What do I advertise?" — the label this token holds up to other queries.</li>
-    <li><strong>Value (V):</strong> "If you pick me, here's what I contribute" — the actual content this token passes along.</li>
-  </ul>
-
-  <p>Each token's embedding gets linearly projected into all three roles:</p>
-
-  <div class="math-box">
-    <div class="mb-title">Projecting into Q, K, V</div>
-    $$Q = X W_Q, \quad K = X W_K, \quad V = X W_V$$
-    <div class="sym-row"><span class="sym">$X$</span> Input matrix, shape $(T, 768)$ — one row per token.</div>
-    <div class="sym-row"><span class="sym">$W_Q, W_K, W_V$</span> Learned weight matrices, each shape $(768, 64)$. These are parameters — updated by gradient descent.</div>
-    <div class="sym-row"><span class="sym">$Q, K, V$</span> Each shape $(T, 64)$ — one 64-d vector per token, per role.</div>
-    <p style="margin-top:0.8rem;">The dimension shrinks from 768 to 64 because (as we'll see) we'll run 12 of these in parallel — each head has $64 \times 12 = 768$ total capacity.</p>
+  <div class="feynman">
+    <div class="f-title">Think of a cocktail party</div>
+    <p>You walk into a party. You're interested in talking about <em>cooking</em> (that's your <strong>Query</strong> — what you're looking for).</p>
+    <p>Every other person at the party is wearing a name tag that says what they know about (that's their <strong>Key</strong> — what they advertise).</p>
+    <p>You scan the room. The person whose name tag says "chef" — high match with your interest! The person whose tag says "accountant" — low match. You walk over to the chef.</p>
+    <p>When you talk to the chef, they share their actual knowledge with you (that's their <strong>Value</strong> — the content they contribute).</p>
+    <p>Now imagine you don't just talk to one person — you talk to <em>everyone</em>, but you pay more attention to the ones whose tags match your interest. You come away with a blend of information, weighted by relevance.</p>
+    <p>That's attention. Every token is simultaneously a partygoer with a question (Query), a name tag (Key), and knowledge to share (Value).</p>
   </div>
 
-  <h3>Computing attention scores</h3>
+  <h3>Step 1: Create Q, K, V from the embeddings</h3>
 
-  <p>Now: token $i$ asks its query $Q_i$ ("What am I looking for?"). Token $j$ answers with its key $K_j$ ("Here's what I have"). We measure compatibility with a dot product:</p>
+  <p>Each token's embedding gets transformed into three separate vectors via matrix multiplication. Let's see this with actual numbers.</p>
 
-  $$\text{score}(i, j) = Q_i \cdot K_j$$
+  <div class="worked">
+    <div class="w-title">Worked example: computing Q, K, V for 3 tokens</div>
+    <p>Let's say we have the sentence <strong>"The cat sat"</strong> and (to keep it tiny) our embeddings are just 2 numbers each:</p>
 
-  <p>A high dot product means "token $j$'s key aligns with token $i$'s query." After scaling and softmax, these scores become weights that sum to 1:</p>
+    <table>
+      <tr><th>Token</th><th>Embedding</th></tr>
+      <tr><td>"The"</td><td><code>[1, 0]</code></td></tr>
+      <tr><td>"cat"</td><td><code>[0, 1]</code></td></tr>
+      <tr><td>"sat"</td><td><code>[1, 1]</code></td></tr>
+    </table>
+
+    <p>The model has learned weight matrices that transform each embedding into a Query, Key, and Value. Suppose the learned weights are:</p>
+
+    <div class="step">
+      <div class="step-label">$W_Q$ (query weights):</div>
+      $\begin{bmatrix} 1 & 0 \\ 0 & 1 \end{bmatrix}$ — in this toy case, it happens to be the identity (in real life it's a learned 768×64 matrix)
+    </div>
+
+    <div class="step">
+      <div class="step-label">$W_K$ (key weights):</div>
+      $\begin{bmatrix} 0 & 1 \\ 1 & 0 \end{bmatrix}$ — this swaps the two values
+    </div>
+
+    <div class="step">
+      <div class="step-label">$W_V$ (value weights):</div>
+      $\begin{bmatrix} 1 & 1 \\ 0 & 1 \end{bmatrix}$
+    </div>
+
+    <p>Now we multiply each embedding by each weight matrix:</p>
+
+    <table>
+      <tr><th>Token</th><th>Query (embedding × $W_Q$)</th><th>Key (embedding × $W_K$)</th><th>Value (embedding × $W_V$)</th></tr>
+      <tr><td>"The" [1,0]</td><td><code>[1, 0]</code></td><td><code>[0, 1]</code></td><td><code>[1, 1]</code></td></tr>
+      <tr><td>"cat" [0,1]</td><td><code>[0, 1]</code></td><td><code>[1, 0]</code></td><td><code>[0, 1]</code></td></tr>
+      <tr><td>"sat" [1,1]</td><td><code>[1, 1]</code></td><td><code>[1, 1]</code></td><td><code>[1, 2]</code></td></tr>
+    </table>
+
+    <p>Now each token has three roles: what it's looking for (Q), what it advertises (K), and what it'll share (V).</p>
+  </div>
+
+  <h3>Step 2: Compute attention scores (who should talk to whom?)</h3>
+
+  <p>Here's the key insight: to find out how much token A should attend to token B, we take the <strong>dot product</strong> of A's Query with B's Key. A high dot product = "B has what A is looking for."</p>
+
+  <div class="feynman">
+    <div class="f-title">What does the dot product actually measure?</div>
+    <p>The dot product of two vectors measures how much they point in the same direction. If I'm looking for <code>[1, 0]</code> (pointing east) and your name tag says <code>[1, 0]</code> (also east) — dot product is $1 \times 1 + 0 \times 0 = 1$. High match!</p>
+    <p>If your tag says <code>[0, 1]</code> (pointing north) — dot product is $1 \times 0 + 0 \times 1 = 0$. No match at all.</p>
+    <p>It's literally asking: "are these two vectors aligned?"</p>
+  </div>
+
+  <div class="worked">
+    <div class="w-title">Worked example: computing all attention scores</div>
+    <p>Let's compute how much <strong>"cat"</strong> (Query = <code>[0, 1]</code>) attends to each token:</p>
+
+    <div class="step">
+      <div class="step-label">"cat" Q · "The" K:</div>
+      <code>[0, 1] · [0, 1] = 0×0 + 1×1 = 1</code> — moderate match
+    </div>
+    <div class="step">
+      <div class="step-label">"cat" Q · "cat" K:</div>
+      <code>[0, 1] · [1, 0] = 0×1 + 1×0 = 0</code> — no match (cat doesn't find itself interesting here!)
+    </div>
+    <div class="step">
+      <div class="step-label">"cat" Q · "sat" K:</div>
+      <code>[0, 1] · [1, 1] = 0×1 + 1×1 = 1</code> — moderate match
+    </div>
+
+    <p>The full score matrix for all tokens (every Query dotted with every Key):</p>
+    <table>
+      <tr><th></th><th>"The" K</th><th>"cat" K</th><th>"sat" K</th></tr>
+      <tr><th>"The" Q</th><td>0</td><td>1</td><td>1</td></tr>
+      <tr><th>"cat" Q</th><td>1</td><td>0</td><td>1</td></tr>
+      <tr><th>"sat" Q</th><td>1</td><td>1</td><td>2</td></tr>
+    </table>
+
+    <p>Read row by row: "The" scores <code>[0, 1, 1]</code> — it finds "cat" and "sat" relevant. "sat" scores <code>[1, 1, 2]</code> — it finds itself most interesting (score 2).</p>
+  </div>
+
+  <h3>Step 3: Scale and softmax (turn scores into percentages)</h3>
+
+  <p>Raw dot products can be big numbers (especially with 64-dimensional vectors). Big numbers make softmax "peaky" — it would put nearly 100% weight on one token and ignore the rest. So we divide by $\sqrt{d_k}$ to keep things gentle.</p>
+
+  <p>Then softmax turns each row of scores into probabilities that sum to 1.</p>
+
+  <div class="worked">
+    <div class="w-title">Worked example: softmax on "cat"'s scores</div>
+    <div class="step">
+      <div class="step-label">Raw scores for "cat":</div>
+      <code>[1, 0, 1]</code>
+    </div>
+    <div class="step">
+      <div class="step-label">Scale by $\sqrt{d_k}$ (in our toy case $\sqrt{2} \approx 1.41$):</div>
+      <code>[0.71, 0.00, 0.71]</code>
+    </div>
+    <div class="step">
+      <div class="step-label">Softmax — compute $e^x$ for each, then normalize:</div>
+      $e^{0.71} = 2.03, \quad e^{0.00} = 1.00, \quad e^{0.71} = 2.03$<br>
+      Sum = $2.03 + 1.00 + 2.03 = 5.06$<br>
+      Weights = <code>[2.03/5.06, 1.00/5.06, 2.03/5.06]</code> = <code>[0.40, 0.20, 0.40]</code>
+    </div>
+    <p>So "cat" puts <strong>40% attention on "The,"</strong> 20% on itself, and <strong>40% on "sat."</strong> These weights sum to 1.0 — it's a probability distribution.</p>
+  </div>
+
+  <h3>Step 4: Weighted sum of Values (the actual output)</h3>
+
+  <p>Now we use those attention weights to blend the Value vectors. The output for "cat" is a weighted average of everyone's Values:</p>
+
+  <div class="worked">
+    <div class="w-title">Worked example: computing "cat"'s new representation</div>
+    <div class="step">
+      <div class="step-label">Attention weights for "cat":</div>
+      "The" = 0.40, "cat" = 0.20, "sat" = 0.40
+    </div>
+    <div class="step">
+      <div class="step-label">Value vectors:</div>
+      "The" V = <code>[1, 1]</code>, "cat" V = <code>[0, 1]</code>, "sat" V = <code>[1, 2]</code>
+    </div>
+    <div class="step">
+      <div class="step-label">Weighted sum:</div>
+      $0.40 \times [1, 1] + 0.20 \times [0, 1] + 0.40 \times [1, 2]$<br>
+      $= [0.4, 0.4] + [0.0, 0.2] + [0.4, 0.8]$<br>
+      $= \mathbf{[0.8, 1.4]}$
+    </div>
+    <p>This is "cat"'s new representation — no longer just its original embedding, but a <strong>blend that's been informed by its context.</strong> "cat" has read the other words and updated itself.</p>
+  </div>
+
+  <h3>The full equation (now you can read it)</h3>
+
+  <p>Everything we just did by hand is captured in one formula:</p>
 
   <div class="math-box">
     <div class="mb-title">The attention equation</div>
     $$\text{Attention}(Q, K, V) = \text{softmax}\!\left(\frac{QK^\top}{\sqrt{d_k}}\right) V$$
-    <div class="sym-row"><span class="sym">$QK^\top$</span> Matrix of all dot products. Shape $(T, T)$. Entry $(i,j)$ = how much token $i$ attends to token $j$.</div>
-    <div class="sym-row"><span class="sym">$\sqrt{d_k}$</span> Scaling by $\sqrt{64} = 8$. Prevents dot products from growing so large they push softmax into saturation (near-zero gradients).</div>
-    <div class="sym-row"><span class="sym">softmax</span> Applied row-wise: each row sums to 1. Row $i$ is now a probability distribution over all positions $j$.</div>
-    <div class="sym-row"><span class="sym">$(\cdots) V$</span> Weighted sum of value vectors. Token $i$'s output = $\sum_j w_{ij} V_j$ — a blend of all tokens' values, weighted by how much $i$ attends to each.</div>
+    <div class="sym-row"><span class="sym">$QK^\top$</span> The score matrix — all dot products between Queries and Keys. We computed this by hand above.</div>
+    <div class="sym-row"><span class="sym">$\div \sqrt{d_k}$</span> Scaling to keep scores from getting too large. We divided by $\sqrt{2}$ above; in GPT-2 it's $\sqrt{64} = 8$.</div>
+    <div class="sym-row"><span class="sym">softmax</span> Turns each row of scores into weights that sum to 1 — the "how much to attend" percentages.</div>
+    <div class="sym-row"><span class="sym">$\times\, V$</span> Weighted sum of Value vectors — the actual output. Each token gets a new representation that blends in context.</div>
   </div>
 
-  <p>Concretely: if token $i$ is "bank" and the attention weights for "river" $(j=3)$ and "fish" $(j=7)$ are high, then the output for "bank" is dominated by those tokens' value vectors. The representation of "bank" is updated to reflect its riverbank context. The model has <em>read</em> the surrounding words.</p>
+  <div class="feynman">
+    <div class="f-title">The one-sentence summary</div>
+    <p>Each token asks "who is relevant to me?" (Q·K scores), turns those scores into percentages (softmax), and then takes a weighted average of everyone's content (V). The output is a new vector that's been enriched by context.</p>
+  </div>
 
   <!-- ── Attention demo ── -->
   <div class="attn-demo">
@@ -397,21 +601,107 @@
 
   <h3>Causal masking: no peeking ahead</h3>
 
-  <p>During training, we predict the next token at every position simultaneously (that's how we can train on so much data efficiently). But token at position $i$ must not see tokens at positions $> i$ — that would be cheating, looking at the answer. So before the softmax, we set future positions to $-\infty$:</p>
+  <p>There's a rule: during training, a token can only look at words that came <em>before</em> it. Otherwise it would be cheating — like reading the answer before writing your response.</p>
 
-  $$\text{score}(i,j) = -\infty \quad \text{if } j > i$$
+  <div class="worked">
+    <div class="w-title">Worked example: causal masking</div>
+    <p>In "The cat sat", before softmax, we set scores for future positions to $-\infty$:</p>
+    <table>
+      <tr><th></th><th>"The"</th><th>"cat"</th><th>"sat"</th></tr>
+      <tr><th>"The"</th><td>0</td><td>$-\infty$</td><td>$-\infty$</td></tr>
+      <tr><th>"cat"</th><td>1</td><td>0</td><td>$-\infty$</td></tr>
+      <tr><th>"sat"</th><td>1</td><td>1</td><td>2</td></tr>
+    </table>
+    <p>"The" can only see itself. "cat" can see "The" and itself. "sat" can see everyone.</p>
+    <p>After softmax, $e^{-\infty} = 0$, so masked positions get exactly zero attention. "The" puts 100% weight on itself — it has no context at all. That's the rule: you can only read backward.</p>
+  </div>
 
-  <p>After softmax, $e^{-\infty} = 0$, so those positions get zero weight. This is called the <strong class="term">causal mask</strong>, and it's the reason transformers are called "causal" or "decoder-only." It ensures predictions are always made from past tokens only.</p>
+  <h3>Multi-head attention: 12 different perspectives</h3>
 
-  <h3>Multi-head attention</h3>
+  <p>One attention head learns one type of relationship. But words relate to each other in many ways at once. "The cat sat" — "cat" relates to "The" grammatically (it's the noun after the article) and to "sat" semantically (cats sit). A single head might only catch one of these.</p>
 
-  <p>One attention head can learn one type of relationship — maybe syntactic subject-verb agreement. But "Paris" relates to "capital" semantically, to "is" grammatically, and to "France" geographically — all at once.</p>
+  <div class="feynman">
+    <div class="f-title">The key idea: split, look separately, combine</div>
+    <p>Imagine you're reading a sentence and you have two friends helping you. You say: "Friend 1, focus on <em>grammar</em> — who's the subject, who's the verb. Friend 2, focus on <em>meaning</em> — which words are related in concept." Each friend looks at the same sentence but notices different things. Then you combine their notes into one summary.</p>
+    <p>That's multi-head attention. GPT-2 has 12 "friends" (heads), each with their own Q, K, V weights, each looking for a different pattern. But here's the trick that makes the math work: instead of giving each head all 768 dimensions, you <strong>split the 768 into 12 chunks of 64</strong>. Each head works with 64 dimensions — smaller, cheaper, and forced to specialize.</p>
+  </div>
 
-  <p>GPT-2 runs 12 attention heads in parallel, each with its own $W_Q^h, W_K^h, W_V^h$ and $d_k = 64$. Each head attends to the sequence differently. Their outputs (each $(T, 64)$) are concatenated to get $(T, 768)$ and projected back to the model dimension:</p>
+  <p>Let's see exactly how this works with numbers. We'll use 2 heads instead of 12 (same idea, easier to follow).</p>
+
+  <div class="worked">
+    <div class="w-title">Worked example: 2 attention heads on "The cat sat"</div>
+
+    <p>Our tokens have 4-dimensional embeddings (instead of 768). With 2 heads, each head gets $4 \div 2 = 2$ dimensions to work with.</p>
+
+    <table>
+      <tr><th>Token</th><th>Full embedding (4-d)</th></tr>
+      <tr><td>"The"</td><td><code>[1, 0, 0, 1]</code></td></tr>
+      <tr><td>"cat"</td><td><code>[0, 1, 1, 0]</code></td></tr>
+      <tr><td>"sat"</td><td><code>[1, 1, 0, 1]</code></td></tr>
+    </table>
+
+    <div class="step">
+      <div class="step-label">Step A: Each head gets its own Q, K, V weight matrices</div>
+      <strong>Head 1</strong> has $W_Q^1, W_K^1, W_V^1$ — each is $(4, 2)$, projecting from 4-d down to 2-d.<br>
+      <strong>Head 2</strong> has $W_Q^2, W_K^2, W_V^2$ — also $(4, 2)$, but <em>different learned values</em>.<br><br>
+      Think of it as: each head gets its own pair of glasses. Same sentence, different things light up.
+    </div>
+
+    <div class="step">
+      <div class="step-label">Step B: Head 1 runs attention (focuses on grammar)</div>
+      Head 1's weights produce these Q, K, V for each token:
+      <table>
+        <tr><th>Token</th><th>Q<sub>1</sub></th><th>K<sub>1</sub></th><th>V<sub>1</sub></th></tr>
+        <tr><td>"The"</td><td><code>[1, 0]</code></td><td><code>[0, 1]</code></td><td><code>[1, 0]</code></td></tr>
+        <tr><td>"cat"</td><td><code>[0, 1]</code></td><td><code>[1, 1]</code></td><td><code>[0, 1]</code></td></tr>
+        <tr><td>"sat"</td><td><code>[1, 1]</code></td><td><code>[0, 1]</code></td><td><code>[1, 1]</code></td></tr>
+      </table>
+
+      Scores for "cat" (Q=[0,1]): · "The" K=[0,1] → 1, · "cat" K=[1,1] → 1, · "sat" K=[0,1] → 1<br>
+      After softmax: <code>[0.33, 0.33, 0.33]</code> — uniform attention. Head 1 doesn't find strong preferences for "cat".<br>
+      Output for "cat": $0.33 \times [1,0] + 0.33 \times [0,1] + 0.33 \times [1,1] = \mathbf{[0.67, 0.67]}$
+    </div>
+
+    <div class="step">
+      <div class="step-label">Step C: Head 2 runs attention (focuses on meaning)</div>
+      Head 2's <em>different</em> weights produce different Q, K, V:
+      <table>
+        <tr><th>Token</th><th>Q<sub>2</sub></th><th>K<sub>2</sub></th><th>V<sub>2</sub></th></tr>
+        <tr><td>"The"</td><td><code>[0, 1]</code></td><td><code>[1, 0]</code></td><td><code>[0, 0]</code></td></tr>
+        <tr><td>"cat"</td><td><code>[1, 0]</code></td><td><code>[0, 1]</code></td><td><code>[1, 1]</code></td></tr>
+        <tr><td>"sat"</td><td><code>[1, 1]</code></td><td><code>[1, 1]</code></td><td><code>[0, 1]</code></td></tr>
+      </table>
+
+      Scores for "cat" (Q=[1,0]): · "The" K=[1,0] → <strong>1</strong>, · "cat" K=[0,1] → 0, · "sat" K=[1,1] → <strong>1</strong><br>
+      After softmax: <code>[0.42, 0.16, 0.42]</code> — head 2 focuses on "The" and "sat," ignores self!<br>
+      Output for "cat": $0.42 \times [0,0] + 0.16 \times [1,1] + 0.42 \times [0,1] = \mathbf{[0.16, 0.58]}$
+    </div>
+
+    <div class="step">
+      <div class="step-label">Step D: Concatenate the heads</div>
+      Head 1 gave "cat" → <code>[0.67, 0.67]</code> (2 numbers)<br>
+      Head 2 gave "cat" → <code>[0.16, 0.58]</code> (2 numbers)<br><br>
+      <strong>Glue them together:</strong> <code>[0.67, 0.67, 0.16, 0.58]</code> — back to 4 numbers!<br><br>
+      This is why $64 \times 12 = 768$ in real GPT-2. Each head outputs 64 numbers, you concatenate all 12, and you get 768 back. The total capacity is the same — you've just split the work into 12 specialists.
+    </div>
+
+    <div class="step">
+      <div class="step-label">Step E: Project with $W_O$</div>
+      One final matrix multiplication: $W_O$ is $(4, 4)$. It mixes the heads' outputs together:<br><br>
+      <code>[0.67, 0.67, 0.16, 0.58]</code> × $W_O$ → <code>[0.8, 1.1, 0.4, 0.9]</code><br><br>
+      This is the final attention output for "cat" — a single 4-d vector that combines what both heads learned. Head 1 contributed its grammatical reading, head 2 contributed its semantic reading, and $W_O$ blended them.
+    </div>
+  </div>
+
+  <div class="feynman">
+    <div class="f-title">Why not just use one big head?</div>
+    <p>You could. One head with 768 dimensions would have the same number of parameters. But it would try to do everything at once — grammar, meaning, position — with a single set of attention scores. It's like asking one person to simultaneously evaluate a restaurant's food, service, and ambiance with a single score. Much better to have three reviewers, each scoring one aspect, then combine.</p>
+    <p>Multi-head = multiple specialists > one generalist.</p>
+  </div>
 
   $$\text{MultiHead}(X) = \text{concat}(\text{head}_1, \ldots, \text{head}_{12}) \, W_O$$
 
-  <p>where $W_O$ is a $(768, 768)$ projection matrix. The full attention sub-layer is 12 different "lenses" looking at the sequence, combined into one output.</p>
+  <p>Each head runs the full Q→K→V→scores→softmax→weighted-sum pipeline independently. Their results are concatenated and projected by $W_O$. The whole thing has shape $(T, 768)$ in, $(T, 768)$ out.</p>
 
 
   <!-- ═══════════════════════════════════
@@ -419,17 +709,49 @@
   ════════════════════════════════════════ -->
   <h2>5. After attention: the MLP</h2>
 
-  <p>Attention has done something remarkable: it updated each token's representation by reading from every other relevant token. The representation of "bank" now reflects "river" and "fish." But attention is still a linear operation over the token vectors — it blends them, but the blending is a linear function of the inputs.</p>
+  <p>Attention did something beautiful: "bank" read the words "river" and "fish" and updated itself to lean toward "riverbank." But all attention does is <em>blend</em> existing vectors — it's a weighted average, which is a linear operation. Averages can't capture complex, nonlinear patterns.</p>
 
-  <p>What if the right "understanding" of a word is a complex, non-linear function of its context? That's what the <strong class="term">MLP</strong> (multi-layer perceptron) handles. After attention, every token position independently runs through a two-layer neural network:</p>
+  <div class="feynman">
+    <div class="f-title">Why do we need more than blending?</div>
+    <p>Imagine you know that "river" is nearby and "bank" is nearby. To conclude "this is about geography, not finance," you need to do something more than just average the two vectors — you need to <em>reason</em> about the combination. That reasoning requires nonlinearity. A weighted average of "river" and "bank" is still just a point between them. You need a function that can say "river + bank → aha, this is a <em>riverbank</em>, activate a whole new cluster of meaning."</p>
+    <p>That's the MLP's job. It's a tiny two-layer neural network that processes each token <em>independently</em> after attention has mixed in the context.</p>
+  </div>
+
+  <div class="worked">
+    <div class="w-title">Worked example: MLP on a single token</div>
+    <p>Let's say after attention, "cat"'s vector is <code>[0.8, 1.4]</code> (from our example). The MLP does three things:</p>
+
+    <div class="step">
+      <div class="step-label">1. Expand: multiply by $W_1$ to make the vector bigger</div>
+      In our toy: $W_1$ takes 2 numbers → 4 numbers. Say the result is <code>[0.8, 1.4, -0.2, 2.1]</code>.<br>
+      In real GPT-2: 768 → 3072 (four times bigger). More room to think.
+    </div>
+    <div class="step">
+      <div class="step-label">2. Apply nonlinearity (GELU): squash negative values, keep positive ones</div>
+      <code>[0.8, 1.4, -0.2, 2.1]</code> → roughly <code>[0.7, 1.4, -0.02, 2.1]</code><br>
+      The -0.2 got nearly zeroed out. This is where nonlinear "reasoning" happens.
+    </div>
+    <div class="step">
+      <div class="step-label">3. Compress: multiply by $W_2$ to shrink back to original size</div>
+      4 numbers → 2 numbers. Say the result is <code>[1.1, 0.9]</code>.<br>
+      In real GPT-2: 3072 → 768.
+    </div>
+    <p>The token went in as <code>[0.8, 1.4]</code> and came out as <code>[1.1, 0.9]</code> — transformed by a nonlinear function that captured something about the combination of context gathered by attention.</p>
+  </div>
 
   <div class="math-box">
     <div class="mb-title">The MLP sub-layer (per token, independently)</div>
     $$\text{MLP}(x) = W_2 \cdot \text{GELU}(W_1 x + b_1) + b_2$$
-    <div class="sym-row"><span class="sym">$W_1$</span> Expands $x$ from $768 \to 3072$ (four times the model size). Learned.</div>
-    <div class="sym-row"><span class="sym">$\text{GELU}$</span> A smooth nonlinearity (like ReLU but differentiable everywhere). Creates non-linear representations.</div>
-    <div class="sym-row"><span class="sym">$W_2$</span> Projects back from $3072 \to 768$. Learned.</div>
-    <p style="margin-top:0.8rem;">Think of it as: attention decides <em>what to gather</em> from context; MLP decides <em>what to make of</em> it — encoding higher-level semantic facts. The expansion to 3072 gives the model room to represent complex intermediate features before projecting back.</p>
+    <div class="sym-row"><span class="sym">$W_1$</span> Expands from $768 \to 3072$. Like giving the model a bigger scratchpad.</div>
+    <div class="sym-row"><span class="sym">$\text{GELU}$</span> The nonlinearity — squashes some values, keeps others. This is where "understanding" happens.</div>
+    <div class="sym-row"><span class="sym">$W_2$</span> Compresses back from $3072 \to 768$. Distills the result.</div>
+  </div>
+
+  <div class="feynman">
+    <div class="f-title">The division of labor</div>
+    <p><strong>Attention</strong> = gather information from context ("look around the room").<br>
+    <strong>MLP</strong> = process what you gathered ("think about what you heard").<br>
+    One gathers, the other reasons. Together they form one transformer block.</p>
   </div>
 
   <div class="surprise">
@@ -439,21 +761,180 @@
 
 
   <!-- ═══════════════════════════════════
+       § 5b — LAYERNORM
+  ════════════════════════════════════════ -->
+  <h2>5b. LayerNorm: keeping the numbers sane</h2>
+
+  <p>You've seen "LayerNorm" pop up in the transformer block diagram, and maybe wondered: what is that, and why do we need it? Let's answer both questions.</p>
+
+  <h3>The problem: numbers drift out of control</h3>
+
+  <div class="feynman">
+    <div class="f-title">Why numbers go haywire</div>
+    <p>Each transformer block does a bunch of matrix multiplications and additions. After a few blocks, some numbers in a token's vector might grow to 500 while others shrink to 0.001. This is a problem because:</p>
+    <p>1. <strong>Softmax breaks.</strong> If the inputs to softmax are [500, 501, 499], then $e^{500}$ is astronomically large. The softmax becomes nearly [0, 1, 0] — it puts all weight on one token and ignores everything else. The model can't learn nuanced attention patterns.</p>
+    <p>2. <strong>Gradients break.</strong> When numbers are huge, gradients become either huge (exploding) or tiny (vanishing). Training becomes unstable — the model oscillates wildly or stops learning.</p>
+    <p>The fix: before each attention and MLP step, normalize the numbers to a nice range. That's LayerNorm.</p>
+  </div>
+
+  <h3>How LayerNorm works: 3 simple steps</h3>
+
+  <p>LayerNorm operates on <em>each token's vector independently</em>. It asks: "What's the average of these numbers? How spread out are they?" Then it centers them at 0 and scales them to have a standard spread of 1.</p>
+
+  <div class="worked">
+    <div class="w-title">Worked example: LayerNorm on one token vector</div>
+    <p>Suppose after a few transformer blocks, "cat"'s vector has drifted to:</p>
+    <p style="text-align:center; font-size:1.1rem;"><code>[10, 2, 6, 14]</code></p>
+    <p>These numbers are all over the place. Let's normalize them.</p>
+
+    <div class="step">
+      <div class="step-label">Step 1: Compute the mean (average)</div>
+      $\mu = \frac{10 + 2 + 6 + 14}{4} = \frac{32}{4} = 8$
+    </div>
+
+    <div class="step">
+      <div class="step-label">Step 2: Subtract the mean (center at zero)</div>
+      $[10 - 8,\; 2 - 8,\; 6 - 8,\; 14 - 8] = [2, -6, -2, 6]$<br>
+      Now the values are balanced around 0.
+    </div>
+
+    <div class="step">
+      <div class="step-label">Step 3: Divide by the standard deviation (scale to unit spread)</div>
+      Variance = $\frac{2^2 + (-6)^2 + (-2)^2 + 6^2}{4} = \frac{4 + 36 + 4 + 36}{4} = \frac{80}{4} = 20$<br><br>
+      Standard deviation = $\sqrt{20} \approx 4.47$<br><br>
+      $\left[\frac{2}{4.47},\; \frac{-6}{4.47},\; \frac{-2}{4.47},\; \frac{6}{4.47}\right] = \mathbf{[0.45, -1.34, -0.45, 1.34]}$
+    </div>
+
+    <p>The vector went from <code>[10, 2, 6, 14]</code> (mean 8, spread all over) to <code>[0.45, -1.34, -0.45, 1.34]</code> (mean 0, standard deviation 1). The <em>relative pattern</em> is preserved — the 4th number is still the biggest, the 2nd is still the smallest — but the <em>scale</em> is now tidy and predictable.</p>
+  </div>
+
+  <div class="math-box">
+    <div class="mb-title">LayerNorm formula</div>
+    $$\text{LayerNorm}(x) = \gamma \odot \frac{x - \mu}{\sigma + \epsilon} + \beta$$
+    <div class="sym-row"><span class="sym">$\mu, \sigma$</span> Mean and standard deviation of the vector's elements. Computed fresh for each token, every time.</div>
+    <div class="sym-row"><span class="sym">$\epsilon$</span> A tiny number (like 0.00001) added to $\sigma$ so we never divide by zero.</div>
+    <div class="sym-row"><span class="sym">$\gamma, \beta$</span> Learned scale and shift parameters. After normalizing, the model can learn to re-scale if it wants to. These are trained just like any other weight.</div>
+  </div>
+
+  <div class="feynman">
+    <div class="f-title">An analogy for LayerNorm</div>
+    <p>Imagine each token's vector is a set of test scores from different subjects: Math = 95, Art = 30, Science = 70. The raw numbers are hard to compare — is 30 in Art bad? Maybe Art is graded on a tighter scale.</p>
+    <p>LayerNorm is like converting everything to "how many standard deviations from average." Now Math = +1.2, Art = -1.1, Science = +0.1. The relative ordering is preserved, but the numbers are on a common scale. The neural network can work with these clean numbers much more easily.</p>
+  </div>
+
+  <h3>Where LayerNorm appears in the block</h3>
+
+  <p>In GPT-2, LayerNorm happens <em>before</em> each sub-layer (attention and MLP). The sequence is:</p>
+
+  <div class="worked">
+    <div class="w-title">The full pipeline for one transformer block</div>
+    <div class="step">
+      <div class="step-label">1. LayerNorm the input</div>
+      Normalize "cat"'s vector: <code>[10, 2, 6, 14]</code> → <code>[0.45, -1.34, -0.45, 1.34]</code>
+    </div>
+    <div class="step">
+      <div class="step-label">2. Run attention on the normalized vector</div>
+      Attention produces an update: <code>[0.3, 0.8, -0.1, 0.5]</code>
+    </div>
+    <div class="step">
+      <div class="step-label">3. Add residual (add update to the <em>original</em> input, not the normalized one)</div>
+      <code>[10, 2, 6, 14]</code> + <code>[0.3, 0.8, -0.1, 0.5]</code> = <code>[10.3, 2.8, 5.9, 14.5]</code>
+    </div>
+    <div class="step">
+      <div class="step-label">4. LayerNorm again</div>
+      Normalize <code>[10.3, 2.8, 5.9, 14.5]</code> → nice tidy numbers
+    </div>
+    <div class="step">
+      <div class="step-label">5. Run MLP on the normalized vector</div>
+      MLP produces an update: <code>[0.1, -0.3, 0.2, 0.4]</code>
+    </div>
+    <div class="step">
+      <div class="step-label">6. Add residual again</div>
+      <code>[10.3, 2.8, 5.9, 14.5]</code> + <code>[0.1, -0.3, 0.2, 0.4]</code> = <code>[10.4, 2.5, 6.1, 14.9]</code>
+    </div>
+    <p>This is the output of one transformer block. It goes into the next block as input, where the whole process repeats.</p>
+    <p>Notice: LayerNorm normalizes <em>before</em> each operation, so attention and MLP always receive well-behaved inputs. But the residual connection adds to the <em>un-normalized</em> input, preserving the full information.</p>
+  </div>
+
+
+  <!-- ═══════════════════════════════════
        § 6 — RESIDUAL CONNECTIONS
   ════════════════════════════════════════ -->
   <h2>6. The information highway: residual connections</h2>
 
-  <p>Here's a problem that arises when you stack 12 of these blocks (attention + MLP + attention + MLP + …): the signal from the original embedding gets transformed so many times that gradients struggle to flow all the way back to the first layer. The network becomes hard to train. Early layers stop learning.</p>
+  <p>Now that we've seen all the individual pieces (attention, MLP, LayerNorm), we're going to stack 12 of them. But this creates a serious problem. Let's see it with numbers.</p>
 
-  <p>The fix, discovered for ResNet image models in 2015 and adopted everywhere since, is the <strong class="term">residual connection</strong> (also called a skip connection). Instead of replacing $x$ with the transformation, you <em>add</em> the transformation to $x$:</p>
+  <h3>The problem: signals die in deep networks</h3>
+
+  <div class="worked">
+    <div class="w-title">Worked example: why 12 blocks without residuals would fail</div>
+    <p>Imagine each block's transformation slightly shrinks the gradient by a factor of 0.8 (which is realistic for a layer that multiplies by a weight matrix).</p>
+
+    <div class="step">
+      <div class="step-label">Gradient flowing backward through 12 blocks:</div>
+      Start with gradient = 1.0 at the output<br>
+      After block 12: $1.0 \times 0.8 = 0.80$<br>
+      After block 11: $0.80 \times 0.8 = 0.64$<br>
+      After block 10: $0.64 \times 0.8 = 0.51$<br>
+      ...<br>
+      After block 1: $0.8^{12} = \mathbf{0.069}$
+    </div>
+
+    <p>The gradient that reaches block 1 is only <strong>6.9%</strong> of the original signal. Block 1 barely learns at all. Block 12 gets the full gradient and learns quickly, but block 1 is nearly frozen.</p>
+
+    <div class="step">
+      <div class="step-label">Now imagine a deeper model (96 blocks, like GPT-3):</div>
+      $0.8^{96} = 0.000000021$ — the gradient is effectively <strong>zero</strong>. The first layers are completely dead.
+    </div>
+  </div>
+
+  <p>This is the <strong>vanishing gradient problem</strong>. Before residual connections were invented (2015, by the ResNet team), it was nearly impossible to train networks deeper than ~20 layers. The fix is so simple it's almost surprising it works.</p>
+
+  <div class="feynman">
+    <div class="f-title">The fix: add, don't replace</div>
+    <p>Instead of passing $x$ through a transformation and <em>replacing</em> it with the result, you <strong>add</strong> the result to the original:</p>
+    <p>Without residual: $x \to f(x)$. The original $x$ is gone.</p>
+    <p>With residual: $x \to x + f(x)$. The original $x$ always survives.</p>
+    <p>Why does this fix gradients? Because the gradient of $x + f(x)$ with respect to $x$ is $1 + \frac{\partial f}{\partial x}$. Even if $\frac{\partial f}{\partial x}$ is tiny, that <strong>+1</strong> is always there — a direct highway that carries the gradient from the last block to the first, untouched.</p>
+  </div>
+
+  <div class="worked">
+    <div class="w-title">Worked example: residual connection saves the signal</div>
+    <div class="step">
+      <div class="step-label">Before the attention block:</div>
+      "cat"'s vector = <code>[0.8, 0.3]</code>
+    </div>
+    <div class="step">
+      <div class="step-label">Attention produces:</div>
+      <code>[0.0, 1.1]</code> (the update from reading other tokens)
+    </div>
+    <div class="step">
+      <div class="step-label">Without residual connection:</div>
+      New vector = <code>[0.0, 1.1]</code> — the first component (0.8) is <strong>gone forever</strong>. That information can never be recovered by later blocks.
+    </div>
+    <div class="step">
+      <div class="step-label">With residual connection:</div>
+      New vector = <code>[0.8, 0.3]</code> + <code>[0.0, 1.1]</code> = <code>[0.8, 1.4]</code> — original information <strong>preserved</strong>, new context <strong>layered on top</strong>.
+    </div>
+  </div>
+
+  <div class="worked">
+    <div class="w-title">Worked example: gradient highway through 12 blocks</div>
+    <div class="step">
+      <div class="step-label">With residuals, the gradient at block 1:</div>
+      The gradient has a path that goes directly from block 12 to block 1 through the residual connections — adding 1 at every step. The gradient arriving at block 1 includes the term $1^{12} = 1$. The gradient is <strong>fully preserved</strong>.<br><br>
+      Even the additional terms ($\frac{\partial f}{\partial x}$ from each block) get added on top. So the gradient at block 1 is actually <em>richer</em> than without residuals — it's $1 + (\text{contributions from all blocks})$.
+    </div>
+    <p>This is why residual connections are <em>essential</em>, not optional. Without them, deep transformers simply cannot be trained. Remove them and the model doesn't just "train slower" — the early layers stop learning entirely.</p>
+  </div>
 
   <div class="math-box">
     <div class="mb-title">One transformer block, precisely</div>
     $$x \;\leftarrow\; x + \text{Attention}(\text{LayerNorm}(x))$$
     $$x \;\leftarrow\; x + \text{MLP}(\text{LayerNorm}(x))$$
-    <div class="sym-row"><span class="sym">$x + \cdots$</span> The "residual": add the transformation to the input. If the transformation outputs zero, $x$ passes through unchanged — a safe default.</div>
-    <div class="sym-row"><span class="sym">LayerNorm</span> Normalizes $x$ to zero mean and unit variance before attention/MLP. Keeps activations in a stable range so gradients don't explode or vanish.</div>
-    <p style="margin-top:0.8rem;">Why does this help training? The gradient of the residual path is: $\frac{\partial (x + f(x))}{\partial x} = 1 + \frac{\partial f}{\partial x}$. The $1$ term is a direct gradient highway that bypasses the transformation entirely. Gradients flow cleanly from the last block back to the first, even through 12 or 96 layers.</p>
+    <div class="sym-row"><span class="sym">$x + \cdots$</span> The "residual": add the update to the input. If the transformation outputs zero, $x$ passes through unchanged — a safe default.</div>
+    <div class="sym-row"><span class="sym">LayerNorm</span> Normalizes $x$ before each sub-layer (as we just learned in 5b). Keeps numbers stable so attention and MLP get clean inputs.</div>
+    <p style="margin-top:0.8rem;"><strong>The gradient highway:</strong> $\frac{\partial (x + f(x))}{\partial x} = 1 + \frac{\partial f}{\partial x}$. The +1 carries gradients from the very last block to the very first, no matter how deep the network.</p>
   </div>
 
   <!-- Block diagram -->
@@ -482,39 +963,39 @@
   ════════════════════════════════════════ -->
   <h2>7. The full picture: gpt() from input to logits</h2>
 
-  <p>Now we can trace the complete forward pass of <code>gpt()</code> — microgpt.py lines 73–143:</p>
+  <p>Let's put it all together. We've seen each piece — now here's how they connect. We'll trace "The cat sat" all the way through:</p>
 
   <div class="fpass">
     <div class="fpass-step">
       <div class="fpass-n">1</div>
       <div class="fpass-body">
         <div class="fpass-label">Token + positional embeddings</div>
-        Token IDs → <code>wte</code> lookup → token vectors, shape $(T, 768)$.<br>
-        Positions $0, 1, \ldots, T-1$ → <code>wpe</code> lookup → position vectors, shape $(T, 768)$.<br>
-        Add element-wise: $X = \text{wte}[\text{ids}] + \text{wpe}[\text{positions}]$.
+        "The cat sat" → token IDs [1, 2, 3] → look up each in the embedding table → 3 vectors.<br>
+        Add position vectors: position 0, 1, 2 → each token now encodes <em>what</em> it is + <em>where</em> it sits.<br>
+        Shape: $(3, 768)$. In our toy example: $(3, 2)$.
       </div>
     </div>
     <div class="fpass-step">
       <div class="fpass-n">2</div>
       <div class="fpass-body">
         <div class="fpass-label">Stack of 12 transformer blocks</div>
-        Each block: <code>x = x + Attention(LN(x))</code>, then <code>x = x + MLP(LN(x))</code>.<br>
-        After 12 blocks: $X$ still has shape $(T, 768)$, but now every token's vector is richly informed by the full context.
+        Each block does: attention (gather context from other tokens) + residual, then MLP (reason about gathered context) + residual.<br>
+        After 12 blocks: still shape $(3, 768)$, but now "cat" knows about "The" and "sat." Every token has read the whole sequence.
       </div>
     </div>
     <div class="fpass-step">
       <div class="fpass-n">3</div>
       <div class="fpass-body">
         <div class="fpass-label">Final LayerNorm</div>
-        One last normalization pass over the output of the last block.
+        One last normalization to keep numbers stable. Shape unchanged.
       </div>
     </div>
     <div class="fpass-step">
       <div class="fpass-n">4</div>
       <div class="fpass-body">
         <div class="fpass-label">Linear head → logits</div>
-        Multiply by <code>lm_head</code>, shape $(768, 50257)$ — one number per vocab item.<br>
-        Output: shape $(T, 50257)$. Row $i$ = logits for position $i$. Softmax → probability distribution over 50,257 tokens.
+        Multiply by a $(768, 50257)$ matrix → one score per vocabulary word, at each position.<br>
+        Output: $(3, 50257)$. The last row is "given 'The cat sat,' what comes next?" Softmax → probability distribution over 50,257 tokens.
       </div>
     </div>
   </div>
@@ -537,9 +1018,12 @@
 
   <p>Notice: the shape is $(T, 768)$ from step 1 all the way through step 3. The transformer blocks update the values inside the vectors — they don't change the shape. Only the final linear head changes it to $(T, 50257)$.</p>
 
-  <div class="box analogy">
-    <div class="box-title">The analogy</div>
-    <p>Embeddings give each token a <em>sticky note</em> with initial information. Each transformer block lets every token read and update every other token's sticky note. After 12 rounds of reading and updating, each sticky note has been enriched by the full context. The linear head then turns the final sticky note at position $T-1$ into a probability distribution over what comes next.</p>
+  <div class="feynman">
+    <div class="f-title">The big picture in plain English</div>
+    <p>Every word starts as a point in a 768-dimensional space (its embedding). It doesn't know what's around it.</p>
+    <p>Then it goes through 12 rounds of: (1) look around at other words and gather relevant info (attention), (2) think about what you gathered (MLP). Each round adds to what the word already knows (residual connection) rather than replacing it.</p>
+    <p>After 12 rounds, the word "cat" doesn't just mean "cat" anymore — it means "cat-that-sat-after-The." Its vector has been shaped by its entire context.</p>
+    <p>The final linear head takes the last token's enriched vector and asks: "based on everything this sequence has told you, what word comes next?" The answer: a probability for every word in the vocabulary.</p>
   </div>
 
 
@@ -663,7 +1147,7 @@
   ════════════════════════════════════════ -->
   <div class="lesson-nav">
     <a href="0003-how-models-learn.html">← Lesson 3: How Models Learn</a>
-    <a href="#" style="color:var(--muted); pointer-events:none;">Lesson 4: Probability you need →</a>
+    <a href="0004-probability-you-actually-need.html">Lesson 4: Probability you need →</a>
   </div>
 
 </div><!-- /wrap -->

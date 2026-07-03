@@ -1,0 +1,578 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lesson 5b — CAPSTONE: Rebuild microGPT</title>
+  <link rel="stylesheet" href="../assets/lesson.css">
+  <script defer src="../assets/quiz.js"></script>
+
+  <!-- KaTeX -->
+  <link rel="stylesheet"
+        href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css"
+        crossorigin="anonymous">
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js" crossorigin="anonymous"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"
+          crossorigin="anonymous"
+          onload="renderMathInElement(document.body,{delimiters:[
+            {left:'$$',right:'$$',display:true},
+            {left:'$',right:'$',display:false}
+          ],throwOnError:false});"></script>
+
+  <style>
+    /* ── Recall cards ── */
+    .recall-card {
+      background: #f6fbf7; border: 1px solid #b7d9c2;
+      border-left: 4px solid var(--good); border-radius: 8px;
+      padding: 1rem 1.2rem; margin: 1.1rem 0;
+    }
+    .recall-card .rc-q { font-weight: 600; margin: 0 0 0.7rem; }
+    .recall-card .rc-reveal {
+      font-family: ui-sans-serif, sans-serif; font-size: 0.82rem;
+      background: var(--good); color: #fff; border: none; border-radius: 6px;
+      padding: 0.35rem 0.85rem; cursor: pointer;
+    }
+    .recall-card .rc-answer {
+      margin-top: 0.8rem; border-top: 1px solid #b7d9c2;
+      padding-top: 0.8rem; font-size: 0.95rem;
+    }
+
+    /* ── Math box ── */
+    .math-box {
+      background: #fff; border: 1px solid var(--rule);
+      border-left: 4px solid #1d6fb8; border-radius: 8px;
+      padding: 1rem 1.4rem; margin: 1.4rem 0; font-size: 0.96rem;
+    }
+    .math-box .mb-title {
+      font-family: ui-sans-serif, sans-serif; font-size: 0.72rem;
+      text-transform: uppercase; letter-spacing: 0.1em; font-weight: 700;
+      color: #1d6fb8; margin: 0 0 0.7rem;
+    }
+    .sym-row { display: flex; align-items: baseline; gap: 0.6rem; margin: 0.45rem 0; }
+    .sym { font-weight: 700; color: #1d6fb8; min-width: 100px; font-size: 0.93rem; }
+
+    /* ── Feynman callout ── */
+    .feynman {
+      background: #faf5eb; border: 1px solid #e0d5b8;
+      border-left: 4px solid #b8860b; border-radius: 8px;
+      padding: 1rem 1.2rem; margin: 1.4rem 0;
+    }
+    .feynman .f-title {
+      font-family: ui-sans-serif, sans-serif; font-size: 0.72rem;
+      text-transform: uppercase; letter-spacing: 0.1em; font-weight: 700;
+      color: #8a6e00; margin: 0 0 0.5rem;
+    }
+
+    /* ── Mastery check ── */
+    .mastery {
+      background: #1a1a1a; color: #f4f1e8;
+      border-radius: 10px; padding: 1.3rem 1.5rem; margin: 2.2rem 0;
+    }
+    .mastery h3 { color: #f4c36a; margin: 0 0 0.7rem; font-size: 1rem; }
+    .mastery .rung {
+      margin: 0.8rem 0; padding: 0.65rem 0.9rem;
+      border-radius: 6px; background: rgba(255,255,255,0.07); font-size: 0.93rem;
+    }
+    .mastery .rung-label {
+      font-family: ui-sans-serif, sans-serif; font-size: 0.7rem;
+      text-transform: uppercase; letter-spacing: 0.1em; opacity: 0.7;
+      display: block; margin-bottom: 0.3rem;
+    }
+    .mastery .gate-note { margin-top: 0.9rem; font-size: 0.82rem; opacity: 0.7; font-style: italic; }
+
+    /* ── Surprise callout ── */
+    .surprise {
+      background: #fffbf0; border: 1px solid #e8d87a;
+      border-left: 4px solid #c8a800; border-radius: 8px;
+      padding: 1rem 1.2rem; margin: 1.4rem 0;
+    }
+    .surprise .s-title {
+      font-family: ui-sans-serif, sans-serif; font-size: 0.72rem;
+      text-transform: uppercase; letter-spacing: 0.1em; font-weight: 700;
+      color: #8a6e00; margin: 0 0 0.5rem;
+    }
+
+    /* ── Roadmap ── */
+    .roadmap {
+      background: #fff; border: 1px solid var(--rule); border-radius: 8px;
+      padding: 1.2rem; margin: 1.4rem 0;
+    }
+    .roadmap h4 {
+      font-family: ui-sans-serif, sans-serif; font-size: 0.8rem;
+      text-transform: uppercase; letter-spacing: 0.09em;
+      color: var(--muted); margin: 0 0 0.8rem;
+    }
+    .roadmap .rm-block {
+      display: flex; gap: 0.8rem; margin: 0.7rem 0;
+      padding: 0.6rem 0.8rem; border-radius: 6px;
+      background: var(--code-bg); font-size: 0.92rem;
+    }
+    .roadmap .rm-num {
+      font-family: ui-sans-serif, sans-serif; font-weight: 700;
+      color: #1d6fb8; min-width: 30px; font-size: 0.85rem;
+    }
+    .roadmap .rm-lines {
+      font-family: ui-monospace, monospace; font-size: 0.78rem;
+      color: var(--muted); white-space: nowrap;
+    }
+    .roadmap .rm-lesson {
+      font-family: ui-sans-serif, sans-serif; font-size: 0.75rem;
+      color: var(--good); font-weight: 600;
+    }
+
+    /* ── Progress tracker ── */
+    .progress-tracker {
+      background: #1a1a1a; color: #f4f1e8;
+      border-radius: 10px; padding: 1.3rem 1.5rem; margin: 1.6rem 0;
+    }
+    .progress-tracker h4 {
+      font-family: ui-sans-serif, sans-serif; font-size: 0.8rem;
+      text-transform: uppercase; letter-spacing: 0.09em;
+      color: #f4c36a; margin: 0 0 0.8rem;
+    }
+    .pt-item {
+      display: flex; align-items: center; gap: 0.6rem;
+      margin: 0.4rem 0; font-size: 0.9rem;
+    }
+    .pt-check {
+      width: 20px; height: 20px; border: 2px solid #555;
+      border-radius: 4px; cursor: pointer; display: flex;
+      align-items: center; justify-content: center;
+      font-size: 0.75rem; color: #1c6b3c; background: transparent;
+      transition: all 0.15s;
+    }
+    .pt-check.done { border-color: #1c6b3c; background: rgba(28,107,60,0.2); }
+
+    /* ── Code ── */
+    pre.code-block {
+      background: #1a1a1a; color: #f4f1e8;
+      border-radius: 8px; padding: 1rem 1.2rem; overflow-x: auto;
+      font-size: 0.81rem; line-height: 1.65; margin: 1.2rem 0;
+    }
+    pre.code-block .c { color: #7ec699; }
+    pre.code-block .k { color: #f4c36a; }
+    pre.code-block .v { color: #79b8e8; }
+    pre.code-block .n { color: #e06c75; }
+
+    /* ── Mapping table ── */
+    .mapping-table {
+      border-collapse: collapse; width: 100%; margin: 1rem 0;
+      font-size: 0.9rem;
+    }
+    .mapping-table th {
+      background: #1d6fb8; color: #fff; padding: 0.55rem 0.7rem;
+      text-align: left; font-weight: 600;
+      font-family: ui-sans-serif, sans-serif; font-size: 0.82rem;
+    }
+    .mapping-table td {
+      border: 1px solid var(--rule); padding: 0.5rem 0.7rem;
+      background: #fff; vertical-align: top;
+    }
+    .mapping-table tr:nth-child(even) td { background: #f8f7f3; }
+  </style>
+</head>
+<body>
+<div class="wrap">
+
+  <p class="kicker">RLHF for Beginners · Lesson 5b of 23</p>
+  <h1>CAPSTONE: Rebuild microGPT</h1>
+  <p class="subtitle">Close the file, open a blank editor, and write all 199 lines from understanding — not memory. This is the milestone that proves you own Phase 0.</p>
+  <div class="meta-row">
+    <span>Phase 0 — Foundations (final)</span>
+    <span>Prerequisites: All of Lessons 1–5</span>
+    <span>~90–120 min</span>
+  </div>
+
+
+  <!-- ═══════════════════════════════════
+       WARM-UP RECALL
+  ════════════════════════════════════════ -->
+  <h2>Warm-up: pull it all back</h2>
+  <p>This is the last recall before the rebuild. Every question draws on a different lesson.</p>
+
+  <div class="recall-card">
+    <p class="rc-q">SR1 (Lesson 2) — What is next-token prediction? How does a language model generate text?</p>
+    <button class="rc-reveal" onclick="revealAnswer(this)">Reveal</button>
+    <div class="rc-answer" style="display:none">
+      A language model takes in a sequence of tokens, runs them through the network, and outputs a probability distribution over the next token via softmax. To generate text, you sample one token from that distribution, append it to the input, and repeat until a stop condition.
+    </div>
+  </div>
+
+  <div class="recall-card">
+    <p class="rc-q">SR2 (Lesson 3) — What is the training loop? What does the loss $-\log P(y_\text{correct})$ measure?</p>
+    <button class="rc-reveal" onclick="revealAnswer(this)">Reveal</button>
+    <div class="rc-answer" style="display:none">
+      Forward pass → compute loss → backward pass (backpropagation) → update parameters. The loss $-\log P(y_\text{correct})$ measures how surprised the model is by the correct answer — high loss means the model assigned low probability to the right token. The gradient pushes the model to assign more probability to the correct token.
+    </div>
+  </div>
+
+  <div class="recall-card">
+    <p class="rc-q">SR3 (Lesson 3b) — Name the components of one transformer block in order. What does each do?</p>
+    <button class="rc-reveal" onclick="revealAnswer(this)">Reveal</button>
+    <div class="rc-answer" style="display:none">
+      (1) <strong>LayerNorm/RMSNorm</strong> — normalize the input. (2) <strong>Multi-head attention</strong> — Q/K/V projections, dot-product scores, softmax weights, weighted sum of Values, output projection. (3) <strong>Residual add</strong> — add the input back. (4) <strong>LayerNorm/RMSNorm</strong> again. (5) <strong>MLP</strong> — expand (fc1), nonlinearity (ReLU/GELU), compress (fc2). (6) <strong>Residual add</strong> — add the input back again.
+    </div>
+  </div>
+
+  <div class="recall-card">
+    <p class="rc-q">SR4 (Lesson 5) — Name the six core RL terms. Then state the RL objective in one sentence.</p>
+    <button class="rc-reveal" onclick="revealAnswer(this)">Reveal</button>
+    <div class="rc-answer" style="display:none">
+      <strong>Agent</strong> (decision-maker), <strong>state</strong> (what it observes), <strong>action</strong> (what it does), <strong>reward</strong> (feedback), <strong>policy</strong> (strategy — $\pi(a|s)$), <strong>return</strong> (total reward). RL objective: find the policy that maximizes expected return.
+    </div>
+  </div>
+
+
+  <!-- ═══════════════════════════════════
+       § 1 — WHAT THIS IS
+  ════════════════════════════════════════ -->
+  <h2>1. What this capstone is — and isn't</h2>
+
+  <div class="box warn">
+    <div class="box-title">The rules</div>
+    <ul style="margin:0;">
+      <li><strong>Close <code>microgpt.py</code>.</strong> Don't look at it during the rebuild.</li>
+      <li><strong>Write from understanding.</strong> You know <em>what</em> each piece does and <em>why</em> it's there. The exact variable names and code style don't matter — the concepts do.</li>
+      <li><strong>Getting stuck is the signal.</strong> If you can't write a section, that's the concept you haven't fully internalized. Go back to the lesson, re-read, then try again.</li>
+      <li><strong>It doesn't need to run.</strong> If it does, great. If it doesn't because of a typo or off-by-one, that's fine. The test is whether you can write the <em>architecture</em> from understanding.</li>
+    </ul>
+  </div>
+
+  <p>This is not a memory test. You aren't memorizing 199 lines. You're proving that you understand:</p>
+  <ol>
+    <li>What a tokenizer does and why you need one</li>
+    <li>How autograd works (Value class, forward/backward)</li>
+    <li>What parameters a GPT needs and how they're organized</li>
+    <li>The forward pass: embeddings → attention → MLP → logits</li>
+    <li>The training loop: forward → loss → backward → optimizer step</li>
+    <li>Inference: sampling from the model's distribution</li>
+  </ol>
+
+  <p>If you understand all six, the code writes itself. If you can't write a section, you've found your gap.</p>
+
+
+  <!-- ═══════════════════════════════════
+       § 2 — THE MAP
+  ════════════════════════════════════════ -->
+  <h2>2. The map: microGPT in seven blocks</h2>
+
+  <p>Here's how the 199 lines break down into conceptual blocks. Each block maps to a lesson you've already completed.</p>
+
+  <div class="roadmap">
+    <h4>Rebuild roadmap</h4>
+
+    <div class="rm-block">
+      <span class="rm-num">1</span>
+      <div>
+        <strong>Dataset & Tokenizer</strong> <span class="rm-lines">(lines 1–26)</span><br>
+        Load text data. Build a character-level vocabulary. Map characters to integer token IDs and back. Add a special BOS (beginning of sequence) token.<br>
+        <span class="rm-lesson">Lesson 2: tokens, vocabulary, token IDs</span>
+      </div>
+    </div>
+
+    <div class="rm-block">
+      <span class="rm-num">2</span>
+      <div>
+        <strong>Autograd (Value class)</strong> <span class="rm-lines">(lines 29–71)</span><br>
+        A scalar value that tracks its computation graph. Overloads +, *, /, **, log, exp, relu. The <code>backward()</code> method walks the graph in reverse topological order, applying the chain rule.<br>
+        <span class="rm-lesson">Lesson 3: parameters, gradients, chain rule, backpropagation</span>
+      </div>
+    </div>
+
+    <div class="rm-block">
+      <span class="rm-num">3</span>
+      <div>
+        <strong>Parameter initialization</strong> <span class="rm-lines">(lines 73–89)</span><br>
+        Create all the weight matrices: token embeddings (wte), position embeddings (wpe), and for each layer: Q/K/V/O attention weights + MLP fc1/fc2 weights. Plus lm_head to project back to vocab size. Flatten all parameters into one list.<br>
+        <span class="rm-lesson">Lesson 3b: model architecture, embedding tables, attention weights, MLP weights</span>
+      </div>
+    </div>
+
+    <div class="rm-block">
+      <span class="rm-num">4</span>
+      <div>
+        <strong>Helper functions</strong> <span class="rm-lines">(lines 93–105)</span><br>
+        <code>linear(x, w)</code>: matrix-vector multiply. <code>softmax(logits)</code>: exp, normalize. <code>rmsnorm(x)</code>: divide by root-mean-square.<br>
+        <span class="rm-lesson">Lesson 2: softmax. Lesson 3b: normalization</span>
+      </div>
+    </div>
+
+    <div class="rm-block">
+      <span class="rm-num">5</span>
+      <div>
+        <strong>The GPT forward pass</strong> <span class="rm-lines">(lines 107–143)</span><br>
+        Embed token + position → RMSNorm → for each layer: attention (Q·K softmax, weighted V sum, output projection, residual) → MLP (expand, ReLU, compress, residual) → final linear to logits.<br>
+        <span class="rm-lesson">Lesson 3b: the full transformer forward pass</span>
+      </div>
+    </div>
+
+    <div class="rm-block">
+      <span class="rm-num">6</span>
+      <div>
+        <strong>Training loop</strong> <span class="rm-lines">(lines 145–183)</span><br>
+        For each step: pick a document, tokenize it, run each token through gpt() one at a time, compute loss ($-\log P(\text{correct next token})$), call backward(), update parameters with Adam optimizer.<br>
+        <span class="rm-lesson">Lesson 3: training loop, cross-entropy loss, gradient descent. Lesson 4: log-probability</span>
+      </div>
+    </div>
+
+    <div class="rm-block">
+      <span class="rm-num">7</span>
+      <div>
+        <strong>Inference (generation)</strong> <span class="rm-lines">(lines 185–199)</span><br>
+        Start with BOS token. Run gpt() → softmax (with temperature) → sample one token → append → repeat until BOS or max length.<br>
+        <span class="rm-lesson">Lesson 2: autoregressive generation. Lesson 4: sampling from a distribution. Lesson 5: policy as distribution</span>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- ═══════════════════════════════════
+       § 3 — CONCEPT-TO-CODE MAPPINGS
+  ════════════════════════════════════════ -->
+  <h2>3. Concept-to-code: what you know vs. what you'll write</h2>
+
+  <p>Every concept from the lessons maps to specific code. Here's the translation table:</p>
+
+  <table class="mapping-table">
+    <tr><th>Concept (from lessons)</th><th>In microGPT code</th></tr>
+    <tr>
+      <td>Token = integer ID for a piece of text</td>
+      <td><code>uchars.index(ch)</code> maps character → ID</td>
+    </tr>
+    <tr>
+      <td>Embedding = lookup table, token ID → vector</td>
+      <td><code>state_dict['wte'][token_id]</code></td>
+    </tr>
+    <tr>
+      <td>Positional embedding = position → vector</td>
+      <td><code>state_dict['wpe'][pos_id]</code></td>
+    </tr>
+    <tr>
+      <td>Softmax = $e^{z_i} / \sum e^{z_j}$</td>
+      <td><code>softmax(logits)</code> — subtract max for stability</td>
+    </tr>
+    <tr>
+      <td>Attention = Q·K scores → softmax → weighted V</td>
+      <td>Lines inside the <code>for h in range(n_head)</code> loop</td>
+    </tr>
+    <tr>
+      <td>Residual connection = $x + f(x)$</td>
+      <td><code>x = [a + b for a, b in zip(x, x_residual)]</code></td>
+    </tr>
+    <tr>
+      <td>MLP = expand → nonlinearity → compress</td>
+      <td><code>linear(x, fc1)</code> → <code>relu</code> → <code>linear(x, fc2)</code></td>
+    </tr>
+    <tr>
+      <td>Cross-entropy loss = $-\log P(y_\text{correct})$</td>
+      <td><code>-probs[target_id].log()</code></td>
+    </tr>
+    <tr>
+      <td>Backpropagation = chain rule in reverse</td>
+      <td><code>loss.backward()</code> via topological sort</td>
+    </tr>
+    <tr>
+      <td>Gradient descent = $\theta \leftarrow \theta - \eta \nabla L$</td>
+      <td>Adam optimizer: momentum + adaptive learning rate</td>
+    </tr>
+    <tr>
+      <td>Sampling = $y \sim \pi(\cdot | x)$</td>
+      <td><code>random.choices(range(vocab_size), weights=probs)</code></td>
+    </tr>
+    <tr>
+      <td>Temperature = scale logits before softmax</td>
+      <td><code>softmax([l / temperature for l in logits])</code></td>
+    </tr>
+  </table>
+
+
+  <!-- ═══════════════════════════════════
+       § 4 — HOW TO DO THE REBUILD
+  ════════════════════════════════════════ -->
+  <h2>4. How to do the rebuild</h2>
+
+  <div class="feynman">
+    <div class="f-title">The Feynman method, applied</div>
+    <p>"What I cannot create, I do not understand." This capstone is the Feynman test. If you can write each block, you understand it. If you get stuck, you've found exactly what needs more study — and that's valuable.</p>
+  </div>
+
+  <h3>Approach: one block at a time</h3>
+
+  <ol>
+    <li><strong>Open a blank file</strong> called <code>my_microgpt.py</code>.</li>
+    <li><strong>Write Block 1</strong> (dataset + tokenizer). Think: "I need to load text and convert characters to numbers."</li>
+    <li><strong>Write Block 2</strong> (autograd). Think: "I need a Value class that tracks operations and can compute gradients."</li>
+    <li><strong>Continue through all 7 blocks.</strong></li>
+    <li><strong>When stuck:</strong> Don't peek at the original. Instead, ask yourself: "What is this block <em>supposed to do</em>? What concept from the lessons is it implementing?" If you still can't do it, re-read the lesson for that block, then try again.</li>
+    <li><strong>When done:</strong> Compare your version to <code>microgpt.py</code>. The structure should match. Exact syntax doesn't matter.</li>
+  </ol>
+
+  <div class="surprise">
+    <div class="s-title">What "success" looks like</div>
+    <p>Success is NOT writing code identical to Karpathy's. Success is writing code that implements the same algorithm because you understand what each piece does. Your variable names will differ. Your loop structure might differ. The key question is: does your code express the same computation? Embeddings → attention → MLP → loss → backprop → optimize → sample?</p>
+  </div>
+
+  <h3>Hints you can use (if stuck on a specific block)</h3>
+
+  <p>Click to reveal a hint for each block. Try without hints first.</p>
+
+  <div class="recall-card">
+    <p class="rc-q">Hint: Block 2 — Autograd (Value class)</p>
+    <button class="rc-reveal" onclick="revealAnswer(this)">Reveal hint</button>
+    <div class="rc-answer" style="display:none">
+      Each Value stores: its numerical data, its gradient (starts at 0), its children in the computation graph, and the local derivatives (how this node's value changes w.r.t. each child). The <code>backward()</code> method: topologically sort the graph, set the root's gradient to 1, then walk in reverse order — for each node, multiply the node's gradient by each local derivative and add it to the child's gradient. Key derivatives: $\frac{d}{dx}(x+y) = (1, 1)$, $\frac{d}{dx}(x \cdot y) = (y, x)$, $\frac{d}{dx}(x^n) = n \cdot x^{n-1}$, $\frac{d}{dx}\log(x) = 1/x$, $\frac{d}{dx}e^x = e^x$, $\frac{d}{dx}\text{relu}(x) = \mathbb{1}[x > 0]$.
+    </div>
+  </div>
+
+  <div class="recall-card">
+    <p class="rc-q">Hint: Block 5 — The GPT forward pass</p>
+    <button class="rc-reveal" onclick="revealAnswer(this)">Reveal hint</button>
+    <div class="rc-answer" style="display:none">
+      The function takes one token at a time (not a batch). It processes: (1) Look up token embedding + position embedding, add them. (2) For each layer: RMSNorm → compute Q, K, V via linear projections → for each attention head, slice Q/K/V into head-sized chunks, compute attention scores (Q·K / sqrt(d)), softmax, weighted sum of V → concatenate heads → output projection → residual add → RMSNorm → MLP (fc1 → relu → fc2) → residual add. (3) Final linear projection (lm_head) to get logits over the vocabulary. The function also maintains a KV cache (keys and values from previous positions) so attention can look at all previous tokens.
+    </div>
+  </div>
+
+  <div class="recall-card">
+    <p class="rc-q">Hint: Block 6 — Training loop</p>
+    <button class="rc-reveal" onclick="revealAnswer(this)">Reveal hint</button>
+    <div class="rc-answer" style="display:none">
+      For each training step: (1) Grab a document, tokenize it (surround with BOS). (2) For each position in the sequence: feed the current token + position into gpt(), get logits, softmax to probabilities, compute loss as $-\log P(\text{next token})$. (3) Average all position losses. (4) Call backward() on the average loss. (5) Update every parameter using Adam: first moment $m$, second moment $v$, bias correction, then $\theta \leftarrow \theta - \text{lr} \cdot \hat{m} / (\sqrt{\hat{v}} + \epsilon)$. (6) Zero all gradients for the next step.
+    </div>
+  </div>
+
+
+  <!-- ═══════════════════════════════════
+       PROGRESS TRACKER
+  ════════════════════════════════════════ -->
+  <div class="progress-tracker">
+    <h4>Rebuild progress tracker</h4>
+    <p style="font-size:0.82rem; opacity:0.7;">Click each checkbox as you complete a block. This is just for you — your state is saved in localStorage.</p>
+
+    <div class="pt-item"><div class="pt-check" onclick="toggleCheck(this)" data-block="1"></div> Block 1: Dataset & Tokenizer</div>
+    <div class="pt-item"><div class="pt-check" onclick="toggleCheck(this)" data-block="2"></div> Block 2: Autograd (Value class)</div>
+    <div class="pt-item"><div class="pt-check" onclick="toggleCheck(this)" data-block="3"></div> Block 3: Parameter initialization</div>
+    <div class="pt-item"><div class="pt-check" onclick="toggleCheck(this)" data-block="4"></div> Block 4: Helper functions (linear, softmax, rmsnorm)</div>
+    <div class="pt-item"><div class="pt-check" onclick="toggleCheck(this)" data-block="5"></div> Block 5: GPT forward pass</div>
+    <div class="pt-item"><div class="pt-check" onclick="toggleCheck(this)" data-block="6"></div> Block 6: Training loop</div>
+    <div class="pt-item"><div class="pt-check" onclick="toggleCheck(this)" data-block="7"></div> Block 7: Inference (generation)</div>
+    <div class="pt-item" style="margin-top:0.8rem; border-top:1px solid #333; padding-top:0.6rem;">
+      <div class="pt-check" onclick="toggleCheck(this)" data-block="compare"></div> Compared with original <code>microgpt.py</code>
+    </div>
+  </div>
+
+
+  <!-- ═══════════════════════════════════
+       MASTERY CHECK
+  ════════════════════════════════════════ -->
+  <h2>Mastery check</h2>
+  <p>The capstone mastery check is different from content lessons. It's about the rebuild itself.</p>
+
+  <div class="mastery">
+    <h3>🔒 Phase 0 Capstone Mastery Check</h3>
+
+    <div class="rung">
+      <span class="rung-label">Rung 1 — Structure (necessary, not sufficient)</span>
+      Without looking at the original, list the seven blocks of microGPT in order and describe what each does in one sentence.
+    </div>
+
+    <div class="rung">
+      <span class="rung-label">Rung 2 — Rebuild (must pass)</span>
+      Write all seven blocks in a file called <code>my_microgpt.py</code>. You may skip exact hyperparameter values (embedding dim, number of layers, learning rate). The structure and algorithm must be correct:
+      <ol style="margin:0.5rem 0 0; padding-left:1.2rem; font-size:0.93rem;">
+        <li>Does your code tokenize text into integer IDs?</li>
+        <li>Does your Value class support forward operations and backward gradient propagation?</li>
+        <li>Does your forward pass implement: embeddings → normalization → attention → residual → MLP → residual → logits?</li>
+        <li>Does your training loop compute cross-entropy loss and update parameters via gradients?</li>
+        <li>Does your inference loop sample tokens from the softmax distribution?</li>
+      </ol>
+    </div>
+
+    <div class="rung">
+      <span class="rung-label">Rung 3 — Explain the pipeline (must pass)</span>
+      After rebuilding, answer: trace a single training step end-to-end. A document "cat" enters the system. Walk through what happens — from raw characters to the parameter update — naming each concept from the lessons. Then explain: when we get to RLHF (Phase 1), which part of this pipeline changes and which stays the same?
+    </div>
+
+    <p class="gate-note">Pass = Rung 2 (working rebuild) AND Rung 3 (can trace the pipeline). Post your code and answers in chat. This unlocks Phase 1.</p>
+  </div>
+
+
+  <!-- ═══════════════════════════════════
+       WHAT'S NEXT
+  ════════════════════════════════════════ -->
+  <h2>What's next: Phase 1</h2>
+
+  <p>If you pass this capstone, you own the foundations. You understand:</p>
+  <ul>
+    <li>What a language model is and how it generates text (Lessons 1–2)</li>
+    <li>How it learns from data via loss and gradients (Lesson 3)</li>
+    <li>What's inside the transformer (Lesson 3b)</li>
+    <li>The probability tools that underpin everything (Lesson 4)</li>
+    <li>The RL framework and how it applies to language models (Lesson 5)</li>
+  </ul>
+
+  <p>Phase 1 opens the RLHF book itself:</p>
+  <ul>
+    <li><strong>Lesson 6:</strong> The three-step RLHF pipeline in depth</li>
+    <li><strong>Lesson 7:</strong> The RLHF training objective — reward minus KL — the equation you previewed in Lesson 4, now fully derived</li>
+  </ul>
+
+  <p>You have everything you need to read those chapters now. Let's go.</p>
+
+
+  <!-- ═══════════════════════════════════
+       ASK TEACHER
+  ════════════════════════════════════════ -->
+  <div class="ask-teacher">
+    <strong>Stuck on a block? Ask.</strong> Don't spend more than 10 minutes stuck on any one section. Post what you've got and where you're confused — I'll identify the exact concept gap and re-teach it. The capstone is a learning tool, not a pass/fail gate.
+  </div>
+
+
+  <!-- ═══════════════════════════════════
+       NAV
+  ════════════════════════════════════════ -->
+  <div class="lesson-nav">
+    <a href="0005-what-is-reinforcement-learning.html">&larr; Lesson 5: What is RL?</a>
+    <a href="0006-the-three-step-pipeline.html">Phase 1: Lesson 6 &rarr;</a>
+  </div>
+
+</div><!-- /wrap -->
+
+<script>
+  // ── Reveal answers ──────────────────────────────────────
+  function revealAnswer(btn) {
+    var ans = btn.nextElementSibling;
+    if (ans.style.display === 'none') {
+      ans.style.display = 'block';
+      btn.textContent = 'Hide';
+    } else {
+      ans.style.display = 'none';
+      btn.textContent = 'Reveal';
+    }
+  }
+
+  // ── Progress tracker ───────────────────────────────────
+  function toggleCheck(el) {
+    el.classList.toggle('done');
+    var block = el.getAttribute('data-block');
+    if (el.classList.contains('done')) {
+      el.textContent = '✓';
+      localStorage.setItem('capstone-block-' + block, 'done');
+    } else {
+      el.textContent = '';
+      localStorage.removeItem('capstone-block-' + block);
+    }
+  }
+
+  // Restore state on load
+  document.addEventListener('DOMContentLoaded', function() {
+    document.querySelectorAll('.pt-check').forEach(function(el) {
+      var block = el.getAttribute('data-block');
+      if (localStorage.getItem('capstone-block-' + block) === 'done') {
+        el.classList.add('done');
+        el.textContent = '✓';
+      }
+    });
+  });
+</script>
+</body>
+</html>

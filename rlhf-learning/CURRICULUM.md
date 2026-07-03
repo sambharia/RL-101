@@ -13,44 +13,11 @@ Legend: [ ] todo · [~] in progress · [x] done
         → covers microgpt.py lines 185–199: the inference/generation loop
 - [x] 0003 How models learn: parameters, loss, gradient descent (the "downhill" idea)
         → covers microgpt.py lines 29–71 (autograd Value class) + lines 150–183 (training loop)
-- [~] 0003b Model architecture: embeddings, attention, MLP (what's inside the transformer)
+- [x] 0003b Model architecture: embeddings, attention, MLP (what's inside the transformer)
         → covers microgpt.py lines 73–143: the gpt() forward pass
-- [ ] 0004 Probability you actually need (distributions, expectation, sampling, log-probs)
+- [~] 0004 Probability you actually need (distributions, expectation, sampling, log-probs)
 - [ ] 0005 What is reinforcement learning? (agent, state, action, reward, policy, return)
-- [ ] 0005b CAPSTONE — Read & write microGPT from scratch
-        Goal: close microgpt.py, open a blank file, and write all 199 lines yourself.
-        This is the milestone that proves you own Phase 0.
-
-## Phase 1 — The RLHF big picture (Book Ch 1–3)
-- [ ] 0006 The three-step pipeline in depth + the post-training landscape
-- [ ] 0007 The RLHF training objective: reward minus a leash (KL) — intuition
-
-## Phase 2 — Core pipeline (Book Ch 4–6)
-- [ ] 0008 Instruction / supervised fine-tuning (SFT): teaching the Q&A format
-- [ ] 0009 Reward models: turning preferences into a number (Bradley–Terry)
-- [ ] 0010 Policy gradients I: the REINFORCE intuition (push up good, down bad)
-- [ ] 0011 Policy gradients II: PPO and GRPO (why we clip, why we add a baseline)
-
-## Phase 3 — Direct & practical algorithms (Book Ch 7–9)
-- [ ] 0012 DPO & direct alignment: skipping the reward model
-- [ ] 0013 Rejection sampling: the simplest "RLHF" that works
-- [ ] 0014 Reasoning & inference-time scaling, RLVR (verifiable rewards)
-
-## Phase 4 — Data & preferences (Book Ch 10–13)
-- [ ] 0015 The nature of preferences: why human feedback at all
-- [ ] 0016 Collecting preference data (and its noise)
-- [ ] 0017 Synthetic data & AI feedback (RLAIF), distillation
-- [ ] 0018 Tool use & function calling
-
-## Phase 5 — Practical considerations (Book Ch 14–17)
-- [ ] 0019 Over-optimization: why the reward proxy betrays you (Goodhart)
-- [ ] 0020 Regularization: keeping the optimizer honest
-- [ ] 0021 Evaluation: how we know if any of this worked
-- [ ] 0022 Model character & products: RLHF in the real world
-
-## Capstone
-- [ ] 0023 Write & polish the "RLHF for Beginners" blog series from your teach-backs
-
+-
 ---
 
 ## How testing works (so you can trust your own progress)

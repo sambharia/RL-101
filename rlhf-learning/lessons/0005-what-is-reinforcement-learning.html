@@ -1,0 +1,892 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lesson 5 — What Is Reinforcement Learning?</title>
+  <link rel="stylesheet" href="../assets/lesson.css">
+  <script defer src="../assets/quiz.js"></script>
+
+  <!-- KaTeX -->
+  <link rel="stylesheet"
+        href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css"
+        crossorigin="anonymous">
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js" crossorigin="anonymous"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"
+          crossorigin="anonymous"
+          onload="renderMathInElement(document.body,{delimiters:[
+            {left:'$$',right:'$$',display:true},
+            {left:'$',right:'$',display:false}
+          ],throwOnError:false});"></script>
+
+  <style>
+    /* ── Recall cards ── */
+    .recall-card {
+      background: #f6fbf7; border: 1px solid #b7d9c2;
+      border-left: 4px solid var(--good); border-radius: 8px;
+      padding: 1rem 1.2rem; margin: 1.1rem 0;
+    }
+    .recall-card .rc-q { font-weight: 600; margin: 0 0 0.7rem; }
+    .recall-card .rc-reveal {
+      font-family: ui-sans-serif, sans-serif; font-size: 0.82rem;
+      background: var(--good); color: #fff; border: none; border-radius: 6px;
+      padding: 0.35rem 0.85rem; cursor: pointer;
+    }
+    .recall-card .rc-answer {
+      margin-top: 0.8rem; border-top: 1px solid #b7d9c2;
+      padding-top: 0.8rem; font-size: 0.95rem;
+    }
+
+    /* ── Math box ── */
+    .math-box {
+      background: #fff; border: 1px solid var(--rule);
+      border-left: 4px solid #1d6fb8; border-radius: 8px;
+      padding: 1rem 1.4rem; margin: 1.4rem 0; font-size: 0.96rem;
+    }
+    .math-box .mb-title {
+      font-family: ui-sans-serif, sans-serif; font-size: 0.72rem;
+      text-transform: uppercase; letter-spacing: 0.1em; font-weight: 700;
+      color: #1d6fb8; margin: 0 0 0.7rem;
+    }
+    .sym-row { display: flex; align-items: baseline; gap: 0.6rem; margin: 0.45rem 0; }
+    .sym { font-weight: 700; color: #1d6fb8; min-width: 100px; font-size: 0.93rem; }
+
+    /* ── Surprise callout ── */
+    .surprise {
+      background: #fffbf0; border: 1px solid #e8d87a;
+      border-left: 4px solid #c8a800; border-radius: 8px;
+      padding: 1rem 1.2rem; margin: 1.4rem 0;
+    }
+    .surprise .s-title {
+      font-family: ui-sans-serif, sans-serif; font-size: 0.72rem;
+      text-transform: uppercase; letter-spacing: 0.1em; font-weight: 700;
+      color: #8a6e00; margin: 0 0 0.5rem;
+    }
+
+    /* ── Mastery check ── */
+    .mastery {
+      background: #1a1a1a; color: #f4f1e8;
+      border-radius: 10px; padding: 1.3rem 1.5rem; margin: 2.2rem 0;
+    }
+    .mastery h3 { color: #f4c36a; margin: 0 0 0.7rem; font-size: 1rem; }
+    .mastery .rung {
+      margin: 0.8rem 0; padding: 0.65rem 0.9rem;
+      border-radius: 6px; background: rgba(255,255,255,0.07); font-size: 0.93rem;
+    }
+    .mastery .rung-label {
+      font-family: ui-sans-serif, sans-serif; font-size: 0.7rem;
+      text-transform: uppercase; letter-spacing: 0.1em; opacity: 0.7;
+      display: block; margin-bottom: 0.3rem;
+    }
+    .mastery .gate-note { margin-top: 0.9rem; font-size: 0.82rem; opacity: 0.7; font-style: italic; }
+
+    /* ── Worked example ── */
+    .worked {
+      background: #f0f7ff; border: 1px solid #b0d0f0;
+      border-left: 4px solid #2980b9; border-radius: 8px;
+      padding: 1rem 1.3rem; margin: 1.4rem 0; font-size: 0.95rem;
+    }
+    .worked .w-title {
+      font-family: ui-sans-serif, sans-serif; font-size: 0.72rem;
+      text-transform: uppercase; letter-spacing: 0.1em; font-weight: 700;
+      color: #2980b9; margin: 0 0 0.7rem;
+    }
+    .worked table {
+      border-collapse: collapse; font-family: ui-monospace, monospace;
+      font-size: 0.85rem; margin: 0.6rem 0;
+    }
+    .worked table th, .worked table td {
+      border: 1px solid #b0d0f0; padding: 0.35rem 0.65rem; text-align: center;
+    }
+    .worked table th { background: #d6e9fa; font-weight: 700; }
+    .worked .step { margin: 0.6rem 0; }
+    .worked .step-label {
+      font-weight: 700; color: #2980b9; margin-bottom: 0.2rem;
+    }
+
+    /* ── Feynman callout ── */
+    .feynman {
+      background: #faf5eb; border: 1px solid #e0d5b8;
+      border-left: 4px solid #b8860b; border-radius: 8px;
+      padding: 1rem 1.2rem; margin: 1.4rem 0;
+    }
+    .feynman .f-title {
+      font-family: ui-sans-serif, sans-serif; font-size: 0.72rem;
+      text-transform: uppercase; letter-spacing: 0.1em; font-weight: 700;
+      color: #8a6e00; margin: 0 0 0.5rem;
+    }
+
+    /* ── RLHF preview box ── */
+    .rlhf-preview {
+      background: #1a1a1a; color: #f4f1e8;
+      border-radius: 10px; padding: 1.3rem 1.5rem; margin: 1.6rem 0;
+      font-size: 0.95rem;
+    }
+    .rlhf-preview .rp-title {
+      font-family: ui-sans-serif, sans-serif; font-size: 0.72rem;
+      text-transform: uppercase; letter-spacing: 0.1em; font-weight: 700;
+      color: #f4c36a; margin: 0 0 0.7rem;
+    }
+    .rlhf-preview .rp-eqn {
+      text-align: center; margin: 1rem 0; font-size: 1.05rem;
+    }
+    .rlhf-preview .rp-anno {
+      font-size: 0.85rem; opacity: 0.8; margin: 0.3rem 0;
+    }
+
+    /* ── Mapping table ── */
+    .mapping-table {
+      border-collapse: collapse; width: 100%; margin: 1rem 0;
+      font-size: 0.9rem;
+    }
+    .mapping-table th {
+      background: #1d6fb8; color: #fff; padding: 0.55rem 0.7rem;
+      text-align: left; font-weight: 600;
+      font-family: ui-sans-serif, sans-serif; font-size: 0.82rem;
+    }
+    .mapping-table td {
+      border: 1px solid var(--rule); padding: 0.5rem 0.7rem;
+      background: #fff; vertical-align: top;
+    }
+    .mapping-table tr:nth-child(even) td { background: #f8f7f3; }
+
+    /* ── Interactive RL sim ── */
+    .rl-sim {
+      background: #fff; border: 1px solid var(--rule); border-radius: 8px;
+      padding: 1.2rem; margin: 1.4rem 0;
+    }
+    .rl-sim h4 {
+      font-family: ui-sans-serif, sans-serif; font-size: 0.8rem;
+      text-transform: uppercase; letter-spacing: 0.09em;
+      color: var(--muted); margin: 0 0 0.6rem;
+    }
+    .rl-sim .sim-row {
+      display: flex; align-items: center; gap: 0.8rem; margin: 0.5rem 0;
+      font-family: ui-monospace, monospace; font-size: 0.88rem;
+    }
+    .rl-sim .sim-btn {
+      font-family: ui-sans-serif, sans-serif; font-size: 0.82rem;
+      background: #1d6fb8; color: #fff; border: none; border-radius: 6px;
+      padding: 0.4rem 1rem; cursor: pointer; margin-right: 0.5rem;
+    }
+    .rl-sim .sim-btn:hover { background: #155a9a; }
+    .rl-sim .sim-btn.reset { background: var(--muted); }
+    .rl-sim .sim-log {
+      font-family: ui-monospace, monospace; font-size: 0.82rem;
+      margin-top: 0.7rem; padding: 0.5rem; background: var(--code-bg);
+      border-radius: 6px; min-height: 2rem; max-height: 180px;
+      overflow-y: auto;
+    }
+    .rl-sim .sim-stats {
+      margin-top: 0.7rem; font-size: 0.9rem;
+    }
+    .rl-sim .sim-stats strong { color: #1d6fb8; }
+
+    /* ── Code ── */
+    pre.code-block {
+      background: #1a1a1a; color: #f4f1e8;
+      border-radius: 8px; padding: 1rem 1.2rem; overflow-x: auto;
+      font-size: 0.81rem; line-height: 1.65; margin: 1.2rem 0;
+    }
+    pre.code-block .c { color: #7ec699; }
+    pre.code-block .k { color: #f4c36a; }
+    pre.code-block .v { color: #79b8e8; }
+    pre.code-block .n { color: #e06c75; }
+  </style>
+</head>
+<body>
+<div class="wrap">
+
+  <p class="kicker">RLHF for Beginners · Lesson 5 of 23</p>
+  <h1>What Is Reinforcement Learning?</h1>
+  <p class="subtitle">Six words — agent, state, action, reward, policy, return — that give you the vocabulary to read every RL paper and understand how RLHF trains language models.</p>
+  <div class="meta-row">
+    <span>Phase 0 — Foundations</span>
+    <span>Prerequisites: <a href="0004-probability-you-actually-need.html">Lesson 4</a> (probability, expectation, sampling)</span>
+    <span>~35 min</span>
+  </div>
+
+
+  <!-- ═══════════════════════════════════
+       WARM-UP RECALL
+  ════════════════════════════════════════ -->
+  <h2>Warm-up: pull it back from memory</h2>
+  <p>Before new material, retrieve what you already know. Write your answer first, then reveal.</p>
+
+  <div class="recall-card">
+    <p class="rc-q">SR1 (Lesson 4) — What is the formula for expectation, and what does each symbol mean? Give a one-sentence plain-English translation.</p>
+    <button class="rc-reveal" onclick="revealAnswer(this)">Reveal</button>
+    <div class="rc-answer" style="display:none">
+      $\mathbb{E}_{y \sim \pi}[f(y)] = \sum_y \pi(y) \cdot f(y)$. "For each possible outcome, multiply how likely it is by how valuable it is, and add them all up." It's a weighted average where the weights are probabilities.
+    </div>
+  </div>
+
+  <div class="recall-card">
+    <p class="rc-q">SR2 (Lesson 4) — Why does RLHF training use sampling instead of computing the exact expectation? What is the fundamental barrier?</p>
+    <button class="rc-reveal" onclick="revealAnswer(this)">Reveal</button>
+    <div class="rc-answer" style="display:none">
+      The space of all possible responses is astronomically large ($\sim 50{,}257^{500}$). Summing over every possible response to compute the exact expectation is computationally impossible. Instead, you <em>sample</em> a few responses, score them, and average — a Monte Carlo estimate that converges to the true expectation as the number of samples grows.
+    </div>
+  </div>
+
+  <div class="recall-card">
+    <p class="rc-q">SR3 (Lesson 4) — What are the three key properties of logarithms that make log-probabilities useful in ML?</p>
+    <button class="rc-reveal" onclick="revealAnswer(this)">Reveal</button>
+    <div class="rc-answer" style="display:none">
+      (1) Products become sums: $\log(ab) = \log a + \log b$ — prevents underflow when multiplying many probabilities. (2) Monotonic: if $P(A) > P(B)$ then $\log P(A) > \log P(B)$ — rankings are preserved. (3) Gradient scales inversely: $\frac{d}{dP}\log P = 1/P$ — large gradient for low-probability events.
+    </div>
+  </div>
+
+
+  <!-- ═══════════════════════════════════
+       § 1 — WHY RL?
+  ════════════════════════════════════════ -->
+  <h2>1. Why reinforcement learning?</h2>
+
+  <p>So far, you've learned how a language model works: it takes text in, predicts the next token, and learns by minimizing a loss function. That's <strong>supervised learning</strong> — you have the right answer, and you push the model toward it.</p>
+
+  <p>But here's the problem RLHF solves:</p>
+
+  <div class="box warn">
+    <div class="box-title">The limitation of supervised learning</div>
+    <p>Supervised learning needs a <em>correct answer</em> for every example. For "What is 2+2?", the answer is "4" — easy. But for "Write me a poem about autumn" or "Explain quantum computing to a child," there is no single right answer. There are better and worse answers, but no ground truth to copy.</p>
+    <p>You can't minimize $-\log P(y_\text{correct})$ when there's no single $y_\text{correct}$.</p>
+  </div>
+
+  <p>Reinforcement learning takes a different approach: instead of copying a right answer, the model <strong>tries things and gets feedback</strong>. The feedback is a number — a <em>reward</em> — that says "this was good" or "this was bad." Over many tries, the model learns to produce outputs that earn high rewards.</p>
+
+  <p>This is exactly what RLHF does. A reward model (trained on human preferences) gives each response a score, and the language model learns to generate responses that score well.</p>
+
+
+  <!-- ═══════════════════════════════════
+       § 2 — THE RL FRAMEWORK
+  ════════════════════════════════════════ -->
+  <h2>2. The RL framework: agent and environment</h2>
+
+  <p>Reinforcement learning has a simple core structure. Two entities interact in a loop:</p>
+
+  <div class="flow">Agent  ──action──▸  Environment
+  ◂──state, reward──  </div>
+
+  <div class="math-box">
+    <div class="mb-title">The two players</div>
+    <div class="sym-row"><span class="sym">Agent</span> The decision-maker. It observes the situation, picks an action, and receives feedback. In RLHF, the agent is the <strong>language model</strong>.</div>
+    <div class="sym-row"><span class="sym">Environment</span> Everything else. It receives the agent's action, updates, and sends back a new state and a reward. In RLHF, the environment is the <strong>reward model + the prompt dataset</strong>.</div>
+  </div>
+
+  <p>The loop goes: the environment presents a <em>state</em> → the agent picks an <em>action</em> → the environment returns a <em>reward</em> and a new state → repeat. That's all of RL. Everything else is details about how to do this loop well.</p>
+
+  <div class="feynman">
+    <div class="f-title">A concrete example before the formal definitions</div>
+    <p>Think of a chess-playing AI. The <strong>state</strong> is the board position. The <strong>action</strong> is a move (e.g., "knight to f3"). The <strong>reward</strong> comes at the end: +1 for winning, −1 for losing, 0 for a draw. The <strong>agent</strong> is the AI choosing moves. The <strong>environment</strong> is the game rules, the opponent, and the board. The agent doesn't know the rules of chess in advance — it learns them by playing and receiving rewards.</p>
+  </div>
+
+
+  <!-- ═══════════════════════════════════
+       § 3 — STATE, ACTION, REWARD
+  ════════════════════════════════════════ -->
+  <h2>3. State, action, reward: the core triple</h2>
+
+  <p>These three concepts define what the agent sees, what it can do, and how it knows if it did well.</p>
+
+  <div class="math-box">
+    <div class="mb-title">Formal definitions</div>
+    <div class="sym-row"><span class="sym">State $s$</span> What the agent observes about the world right now. It's the information the agent uses to decide what to do. In chess: the board position. In RLHF: the prompt + the tokens generated so far.</div>
+    <div class="sym-row"><span class="sym">Action $a$</span> What the agent does. The agent picks one action from a set of available actions. In chess: a legal move. In RLHF: choosing the next token from the vocabulary.</div>
+    <div class="sym-row"><span class="sym">Reward $r$</span> A number the environment gives back after the agent acts. Higher is better. In chess: +1 for win, −1 for loss. In RLHF: the reward model's score for the complete response.</div>
+  </div>
+
+  <div class="worked">
+    <div class="w-title">Worked example: mapping state, action, reward across domains</div>
+    <table class="mapping-table">
+      <tr><th>Domain</th><th>State $s$</th><th>Action $a$</th><th>Reward $r$</th></tr>
+      <tr>
+        <td><strong>Chess</strong></td>
+        <td>Board position</td>
+        <td>A legal move</td>
+        <td>+1 win, −1 loss, 0 draw</td>
+      </tr>
+      <tr>
+        <td><strong>Atari game</strong></td>
+        <td>Pixel frame</td>
+        <td>Joystick direction + button</td>
+        <td>Change in score</td>
+      </tr>
+      <tr>
+        <td><strong>Robot arm</strong></td>
+        <td>Joint angles + object position</td>
+        <td>Motor torques</td>
+        <td>Distance from object to target</td>
+      </tr>
+      <tr>
+        <td><strong>RLHF (language model)</strong></td>
+        <td>Prompt + tokens so far</td>
+        <td>Next token from vocabulary</td>
+        <td>Reward model score (at end)</td>
+      </tr>
+    </table>
+    <p>Notice: the RLHF row looks different from the others. The state <em>grows</em> with each action (each token extends the context), and the reward only comes at the very end (after the full response). These differences matter — we'll come back to them.</p>
+  </div>
+
+  <h3>The timeline: states, actions, rewards in sequence</h3>
+
+  <p>RL unfolds over <strong>time steps</strong>. At each step $t$:</p>
+
+  <div class="math-box">
+    <div class="mb-title">One time step</div>
+    $$s_t \xrightarrow{\text{agent picks}} a_t \xrightarrow{\text{environment returns}} r_t,\; s_{t+1}$$
+    <div class="sym-row"><span class="sym">$s_t$</span> The state at time $t$.</div>
+    <div class="sym-row"><span class="sym">$a_t$</span> The action the agent chooses at time $t$.</div>
+    <div class="sym-row"><span class="sym">$r_t$</span> The reward received after taking action $a_t$ in state $s_t$.</div>
+    <div class="sym-row"><span class="sym">$s_{t+1}$</span> The new state the environment transitions to.</div>
+  </div>
+
+  <div class="worked">
+    <div class="w-title">Worked example: an RLHF episode as a timeline</div>
+    <p>Prompt: "Name a color." The model generates "B", "l", "u", "e", "." (5 tokens).</p>
+    <table>
+      <tr><th>$t$</th><th>State $s_t$</th><th>Action $a_t$</th><th>Reward $r_t$</th></tr>
+      <tr><td>0</td><td>"Name a color."</td><td>"B"</td><td>0</td></tr>
+      <tr><td>1</td><td>"Name a color. B"</td><td>"l"</td><td>0</td></tr>
+      <tr><td>2</td><td>"Name a color. Bl"</td><td>"u"</td><td>0</td></tr>
+      <tr><td>3</td><td>"Name a color. Blu"</td><td>"e"</td><td>0</td></tr>
+      <tr><td>4</td><td>"Name a color. Blue"</td><td>"."</td><td>7.3</td></tr>
+    </table>
+    <p>The reward is 0 at every step except the last, where the reward model scores the complete response "Blue." at 7.3. This is called a <strong>sparse reward</strong> — feedback only at the end. Most of the learning signal comes from that single number.</p>
+  </div>
+
+
+  <!-- ═══════════════════════════════════
+       § 4 — POLICY
+  ════════════════════════════════════════ -->
+  <h2>4. Policy: the agent's strategy</h2>
+
+  <p>You already know this one. In Lesson 4, you learned that $\pi(y \mid x)$ is a probability distribution — the model's strategy for choosing what to output given an input. In RL, this has a name:</p>
+
+  <div class="math-box">
+    <div class="mb-title">Policy</div>
+    <p>A <strong>policy</strong> $\pi$ is a function that maps states to a probability distribution over actions:</p>
+    $$\pi(a \mid s) = \text{probability of choosing action } a \text{ in state } s$$
+    <p>The policy is the agent's <em>complete strategy</em>. Given any situation, it tells you the probability of taking each possible action.</p>
+  </div>
+
+  <div class="feynman">
+    <div class="f-title">You already understand policies</div>
+    <p>A language model's forward pass takes in tokens (state $s$) → runs through the transformer → applies softmax → produces a probability distribution over the next token (action $a$). That softmax output <em>is</em> the policy $\pi(a \mid s)$. The model's parameters $\theta$ determine this distribution. Different parameters → different distribution → different policy.</p>
+    <p>When we write $\pi_\theta$, we're saying: "the policy defined by parameters $\theta$." Training changes $\theta$, which changes $\pi$, which changes what the model is likely to say.</p>
+  </div>
+
+  <h3>Deterministic vs. stochastic policies</h3>
+
+  <p>Two kinds of policies:</p>
+
+  <div class="worked">
+    <div class="w-title">Comparing policy types</div>
+    <table class="mapping-table">
+      <tr><th>Type</th><th>What it does</th><th>Example</th></tr>
+      <tr>
+        <td><strong>Deterministic</strong></td>
+        <td>Always picks the same action in the same state. $a = \mu(s)$.</td>
+        <td>Greedy decoding: always pick the highest-probability token.</td>
+      </tr>
+      <tr>
+        <td><strong>Stochastic</strong></td>
+        <td>Outputs a probability distribution; action is <em>sampled</em>. $a \sim \pi(\cdot \mid s)$.</td>
+        <td>Normal text generation: sample from the softmax distribution.</td>
+      </tr>
+    </table>
+    <p>RLHF uses <strong>stochastic</strong> policies. The model samples responses, some turn out well (high reward), some don't (low reward), and training shifts the distribution to make high-reward responses more likely. If the policy were deterministic, there would be nothing to explore — the model would always produce the same response and never discover better ones.</p>
+  </div>
+
+  <div class="surprise">
+    <div class="s-title">Why exploration matters</div>
+    <p>A stochastic policy naturally <strong>explores</strong>. Even if "Paris" is the most likely answer, the model sometimes generates "the capital of France is Paris, located on the Seine" — a more detailed response that might score higher. If the model only ever picked the single most probable token (greedy), it would never discover these better responses. Randomness isn't a bug — it's how the agent finds out what works.</p>
+  </div>
+
+
+  <!-- ═══════════════════════════════════
+       § 5 — EPISODES AND RETURN
+  ════════════════════════════════════════ -->
+  <h2>5. Return: the total payoff</h2>
+
+  <p>An <strong>episode</strong> is one complete run from start to finish — one chess game, one Atari level, one prompt-and-response. In RLHF, one episode = one prompt → complete response.</p>
+
+  <p>The agent collects rewards at each step. But we don't just care about any single reward — we want to know: <strong>how much total reward did the agent earn across the whole episode?</strong></p>
+
+  <div class="math-box">
+    <div class="mb-title">Return: the total reward</div>
+    <p>The <strong>return</strong> $G_t$ is the total reward from time step $t$ onward:</p>
+    $$G_t = r_t + r_{t+1} + r_{t+2} + \cdots + r_T$$
+    <p>where $T$ is the last time step of the episode. The return from the very start ($G_0$) is the sum of all rewards in the episode.</p>
+  </div>
+
+  <div class="worked">
+    <div class="w-title">Worked example: return in our RLHF episode</div>
+    <p>From the "Blue." example above, rewards were: $[0, 0, 0, 0, 7.3]$.</p>
+    <div class="step">
+      <div class="step-label">Return from the start:</div>
+      $G_0 = 0 + 0 + 0 + 0 + 7.3 = \mathbf{7.3}$
+    </div>
+    <p>Since reward is sparse (only at the end), the return equals the final reward. Every token in the sequence gets "credit" for contributing to the response that earned 7.3.</p>
+  </div>
+
+  <h3>Discounted return (the general case)</h3>
+
+  <p>In many RL problems (not RLHF), the agent makes decisions over a long horizon — hundreds or thousands of steps. A reward now should be worth more than the same reward far in the future (just like money). RL handles this with <strong>discounting</strong>:</p>
+
+  <div class="math-box">
+    <div class="mb-title">Discounted return</div>
+    $$G_t = r_t + \gamma \, r_{t+1} + \gamma^2 \, r_{t+2} + \cdots = \sum_{k=0}^{T-t} \gamma^k \, r_{t+k}$$
+    <div class="sym-row"><span class="sym">$\gamma$ (gamma)</span> The <strong>discount factor</strong>, between 0 and 1. A number like 0.99 means "future rewards are almost as valuable as present ones." A number like 0.5 means "a reward two steps away is worth only 25% of a reward right now."</div>
+    <p style="margin-top:0.8rem;">When $\gamma = 1$: no discounting — all rewards count equally (this is the RLHF case).</p>
+    <p>When $\gamma = 0$: only the immediate reward matters — extreme short-sightedness.</p>
+  </div>
+
+  <div class="worked">
+    <div class="w-title">Worked example: discounting in a game</div>
+    <p>A game agent collects rewards $[1, 2, 3]$ over 3 steps. Discount factor $\gamma = 0.9$.</p>
+    <div class="step">
+      <div class="step-label">Discounted return from $t=0$:</div>
+      $G_0 = 1 + 0.9 \times 2 + 0.9^2 \times 3 = 1 + 1.8 + 2.43 = \mathbf{5.23}$
+    </div>
+    <div class="step">
+      <div class="step-label">Undiscounted return ($\gamma = 1$):</div>
+      $G_0 = 1 + 2 + 3 = \mathbf{6.0}$
+    </div>
+    <p>Discounting reduced the return from 6.0 to 5.23 because future rewards are worth less. In RLHF, we typically use $\gamma = 1$ (no discounting) because episodes are short and we care equally about every part of the response.</p>
+  </div>
+
+  <div class="feynman">
+    <div class="f-title">Why RLHF doesn't discount</div>
+    <p>Discounting was invented for agents that live forever (or act over very long horizons) — a robot that runs indefinitely, an investment strategy that spans years. Without discounting, the return of an infinite-horizon agent would be infinite, which breaks the math. Language model responses are short — tens to hundreds of tokens — and they end. So we use $\gamma = 1$ and the return is simply the sum of rewards (which in practice is just the single end-of-response reward).</p>
+  </div>
+
+
+  <!-- ═══════════════════════════════════
+       § 6 — THE RL OBJECTIVE
+  ════════════════════════════════════════ -->
+  <h2>6. The RL objective: maximize expected return</h2>
+
+  <p>Now the punchline. All of RL boils down to one sentence:</p>
+
+  <div class="box">
+    <div class="box-title">The goal of reinforcement learning</div>
+    <p><strong>Find a policy $\pi$ that maximizes the expected return.</strong></p>
+  </div>
+
+  <p>You know every word here. <em>Policy</em> — a distribution over actions. <em>Expected</em> — weighted average over all possible episodes. <em>Return</em> — total reward in an episode.</p>
+
+  <div class="math-box">
+    <div class="mb-title">The RL objective</div>
+    $$\max_{\pi}\; \mathbb{E}_{\tau \sim \pi}\!\left[\,G_0\,\right] = \max_{\pi}\; \mathbb{E}_{\tau \sim \pi}\!\left[\sum_{t=0}^{T} \gamma^t \, r_t\right]$$
+    <div class="sym-row"><span class="sym">$\tau \sim \pi$</span> A <strong>trajectory</strong> $\tau = (s_0, a_0, r_0, s_1, a_1, r_1, \ldots)$ — the whole sequence of states, actions, and rewards in one episode — sampled by following policy $\pi$.</div>
+    <div class="sym-row"><span class="sym">$\max_\pi$</span> Find the policy that maximizes this expected return.</div>
+    <p style="margin-top:0.8rem;">Read it as: "Over many episodes, the policy that gives the best <em>average</em> total reward is the one we want."</p>
+  </div>
+
+  <div class="feynman">
+    <div class="f-title">Connecting to what you know</div>
+    <p>In Lesson 4, you saw the RLHF objective: $\max_\pi \mathbb{E}_{y \sim \pi}[R(y)] - \beta \text{KL}[\pi \| \pi_\text{ref}]$. The first term — $\max_\pi \mathbb{E}[R(y)]$ — is exactly the RL objective: maximize expected reward. The RLHF version just adds a KL penalty to keep the model from straying too far from its starting point. That's the only difference.</p>
+  </div>
+
+  <p>And because we can't compute the expectation exactly (the space of all possible responses is too large), we <strong>sample</strong> episodes and use Monte Carlo estimation — exactly as you learned in Lesson 4:</p>
+
+  <div class="math-box">
+    <div class="mb-title">The RL objective in practice</div>
+    $$\mathbb{E}_{\tau \sim \pi}\!\left[G_0\right] \;\approx\; \frac{1}{N}\sum_{i=1}^{N} G_0^{(i)}$$
+    <p>Generate $N$ episodes by following policy $\pi$, compute the return of each, and average them. This is the same Monte Carlo trick from Lesson 4, applied to full episodes instead of single responses.</p>
+  </div>
+
+
+  <!-- ═══════════════════════════════════
+       § 7 — LMs AS RL AGENTS
+  ════════════════════════════════════════ -->
+  <h2>7. Language models as RL agents</h2>
+
+  <p>Here's the mapping that ties everything together:</p>
+
+  <table class="mapping-table">
+    <tr><th>RL concept</th><th>Symbol</th><th>In RLHF</th><th>You learned this in</th></tr>
+    <tr>
+      <td><strong>Agent</strong></td>
+      <td>—</td>
+      <td>The language model</td>
+      <td>Lesson 2</td>
+    </tr>
+    <tr>
+      <td><strong>Environment</strong></td>
+      <td>—</td>
+      <td>Reward model + prompt dataset</td>
+      <td>(new)</td>
+    </tr>
+    <tr>
+      <td><strong>State</strong></td>
+      <td>$s_t$</td>
+      <td>Prompt + tokens generated so far</td>
+      <td>Lesson 2 (context window)</td>
+    </tr>
+    <tr>
+      <td><strong>Action</strong></td>
+      <td>$a_t$</td>
+      <td>Choosing the next token</td>
+      <td>Lesson 2 (generation loop)</td>
+    </tr>
+    <tr>
+      <td><strong>Policy</strong></td>
+      <td>$\pi(a \mid s)$</td>
+      <td>Softmax distribution over vocabulary</td>
+      <td>Lesson 2 + 4</td>
+    </tr>
+    <tr>
+      <td><strong>Reward</strong></td>
+      <td>$r_t$</td>
+      <td>Reward model score (at end of response)</td>
+      <td>(new)</td>
+    </tr>
+    <tr>
+      <td><strong>Episode</strong></td>
+      <td>$\tau$</td>
+      <td>One prompt → complete response</td>
+      <td>(new)</td>
+    </tr>
+    <tr>
+      <td><strong>Return</strong></td>
+      <td>$G_0$</td>
+      <td>= final reward (sparse, $\gamma=1$)</td>
+      <td>(new)</td>
+    </tr>
+    <tr>
+      <td><strong>Objective</strong></td>
+      <td>$\max_\pi \mathbb{E}[G_0]$</td>
+      <td>$\max_\pi \mathbb{E}[R(y)] - \beta \text{KL}$</td>
+      <td>Lesson 4 (preview)</td>
+    </tr>
+  </table>
+
+  <div class="surprise">
+    <div class="s-title">What makes RLHF unusual as an RL problem</div>
+    <p>Most RL problems (games, robotics) have <strong>dense</strong> rewards — feedback every step. RLHF has <strong>sparse</strong> reward — one number at the very end. Most RL agents act for thousands of steps; an RLHF episode is tens to hundreds of tokens. Most RL agents explore a physical environment; the RLHF agent explores a space of text. These differences make RLHF easier than general RL in some ways (short episodes, no physical dynamics) and harder in others (the action space is the entire vocabulary at every step, and the reward is delayed).</p>
+  </div>
+
+
+  <!-- ═══════════════════════════════════
+       INTERACTIVE: RL LOOP SIMULATOR
+  ════════════════════════════════════════ -->
+  <div class="rl-sim">
+    <h4>Interactive: one episode of the RL loop</h4>
+    <p style="font-size:0.88rem; color:var(--muted);">Simulate a language model responding to "Name a fruit." Each click generates one token (action) from the model's policy. The reward model scores the complete response at the end.</p>
+    <button class="sim-btn" onclick="rlStep()">Next token</button>
+    <button class="sim-btn" onclick="rlAutoplay()">Autoplay</button>
+    <button class="sim-btn reset" onclick="rlReset()">New episode</button>
+    <div class="sim-log" id="rl-log">Episode ready. State: "Name a fruit."</div>
+    <div class="sim-stats">
+      Step: <strong id="rl-step">0</strong> &nbsp;|&nbsp;
+      Tokens generated: <strong id="rl-tokens">—</strong> &nbsp;|&nbsp;
+      Return $G_0$: <strong id="rl-return">—</strong>
+    </div>
+  </div>
+
+
+  <!-- ═══════════════════════════════════
+       § 8 — GOING DEEPER: THE MATHEMATICS
+  ════════════════════════════════════════ -->
+  <h2>Going deeper: the mathematics</h2>
+
+  <p>The intuition layer is done. Here's the formal machinery underneath.</p>
+
+  <h3>Markov Decision Process (MDP)</h3>
+
+  <p>The formal framework for RL is a <strong>Markov Decision Process</strong>, defined by a tuple:</p>
+
+  <div class="math-box">
+    <div class="mb-title">MDP: the formal RL setting</div>
+    $$\text{MDP} = (\mathcal{S},\; \mathcal{A},\; P,\; R,\; \gamma)$$
+    <div class="sym-row"><span class="sym">$\mathcal{S}$</span> <strong>State space</strong> — the set of all possible states.</div>
+    <div class="sym-row"><span class="sym">$\mathcal{A}$</span> <strong>Action space</strong> — the set of all possible actions.</div>
+    <div class="sym-row"><span class="sym">$P(s' \mid s, a)$</span> <strong>Transition function</strong> — the probability of moving to state $s'$ after taking action $a$ in state $s$.</div>
+    <div class="sym-row"><span class="sym">$R(s, a)$</span> <strong>Reward function</strong> — the reward for taking action $a$ in state $s$.</div>
+    <div class="sym-row"><span class="sym">$\gamma$</span> <strong>Discount factor</strong> — between 0 and 1.</div>
+  </div>
+
+  <div class="feynman">
+    <div class="f-title">The Markov property</div>
+    <p>The "Markov" in MDP means: the future depends only on the <em>current state</em>, not on how you got there. Formally: $P(s_{t+1} \mid s_t, a_t) = P(s_{t+1} \mid s_0, a_0, \ldots, s_t, a_t)$. The current state contains all the information you need.</p>
+    <p>For language models, this holds by construction: the state is the full sequence of tokens so far, which already encodes the entire history. Nothing is "hidden" — it's all in the context window.</p>
+  </div>
+
+  <h3>The trajectory probability</h3>
+
+  <p>A trajectory $\tau = (s_0, a_0, r_0, s_1, a_1, r_1, \ldots, s_T)$ has a probability that depends on both the policy and the environment dynamics:</p>
+
+  <div class="math-box">
+    <div class="mb-title">Probability of a trajectory</div>
+    $$P(\tau \mid \pi) = \rho(s_0) \prod_{t=0}^{T-1} \pi(a_t \mid s_t) \cdot P(s_{t+1} \mid s_t, a_t)$$
+    <div class="sym-row"><span class="sym">$\rho(s_0)$</span> The initial state distribution (in RLHF: which prompt is sampled).</div>
+    <div class="sym-row"><span class="sym">$\pi(a_t \mid s_t)$</span> The policy's probability of choosing action $a_t$ — what the model controls.</div>
+    <div class="sym-row"><span class="sym">$P(s_{t+1} \mid s_t, a_t)$</span> The transition probability — what the environment controls.</div>
+    <p style="margin-top:0.8rem;">For language models, the transition is <em>deterministic</em>: $s_{t+1}$ = append token $a_t$ to $s_t$. So $P(s_{t+1} \mid s_t, a_t) = 1$, and the trajectory probability simplifies to just the product of the policy probabilities — which is the probability of the generated sequence, exactly what you compute in the forward pass.</p>
+  </div>
+
+  <h3>The RL objective, formally</h3>
+
+  <div class="math-box">
+    <div class="mb-title">Formal RL objective</div>
+    $$J(\pi) = \mathbb{E}_{\tau \sim P(\cdot|\pi)}\!\left[\sum_{t=0}^{T} \gamma^t r_t\right] = \int P(\tau \mid \pi) \left(\sum_{t=0}^{T} \gamma^t r_t\right) d\tau$$
+    <p>In the discrete case (like token generation), the integral becomes a sum over all possible trajectories. The goal is to find $\pi^* = \arg\max_\pi J(\pi)$ — the <strong>optimal policy</strong>.</p>
+    <p>As discussed, we approximate this via Monte Carlo sampling:</p>
+    $$J(\pi) \approx \frac{1}{N} \sum_{i=1}^{N} \sum_{t=0}^{T_i} \gamma^t r_t^{(i)}$$
+    <p>where each trajectory $\tau^{(i)}$ is generated by rolling out policy $\pi$.</p>
+  </div>
+
+  <h3>Simplification for RLHF</h3>
+
+  <p>In the RLHF setting, three simplifications collapse the general MDP into something much simpler:</p>
+
+  <div class="worked">
+    <div class="w-title">RLHF as a simplified MDP</div>
+    <div class="step">
+      <div class="step-label">1. Deterministic transitions:</div>
+      $P(s_{t+1} \mid s_t, a_t) = 1$ (appending a token is deterministic).
+    </div>
+    <div class="step">
+      <div class="step-label">2. Sparse reward:</div>
+      $r_t = 0$ for all $t < T$, and $r_T = R(x, y)$ where $y$ is the full response.
+    </div>
+    <div class="step">
+      <div class="step-label">3. No discounting:</div>
+      $\gamma = 1$ (episodes are short).
+    </div>
+    <div class="step">
+      <div class="step-label">Result:</div>
+      The RL objective becomes simply $J(\pi) = \mathbb{E}_{x \sim \mathcal{D},\, y \sim \pi(\cdot|x)}[R(x, y)]$ — maximize expected reward of sampled responses. This is exactly the first term of the RLHF objective from Lesson 4.
+    </div>
+  </div>
+
+
+  <!-- ═══════════════════════════════════
+       SELF-CHECK MCQ
+  ════════════════════════════════════════ -->
+  <h2>Self-check</h2>
+  <p>Low-stakes warm-up — just for you, not the gate.</p>
+
+  <div class="quiz" data-answer="3">
+    <p class="q">Q1 — In RLHF, what is the "action" at each time step?</p>
+    <ul class="opts">
+      <li><button class="opt">The entire response to the prompt</button></li>
+      <li><button class="opt">The gradient update to the model's parameters</button></li>
+      <li><button class="opt">Choosing the next token from the vocabulary</button></li>
+      <li><button class="opt">The reward model's score</button></li>
+    </ul>
+    <p class="feedback right" data-when="right">Correct. At each time step, the language model (agent) chooses one token (action) from the vocabulary. The full response is a <em>sequence</em> of actions, not a single action. The reward model's score is the reward, not the action. The gradient update is the learning step, not the agent's action in the environment.</p>
+    <p class="feedback nope" data-when="nope">The action in RLHF is choosing one token from the vocabulary. The model generates a response one token at a time — each token choice is one action. The full response is a <em>sequence</em> of actions (an episode), not a single action.</p>
+  </div>
+
+  <div class="quiz" data-answer="2">
+    <p class="q">Q2 — Why does RLHF use $\gamma = 1$ (no discounting)?</p>
+    <ul class="opts">
+      <li><button class="opt">Because the model only cares about the first few tokens of its response</button></li>
+      <li><button class="opt">Because episodes are short (tens to hundreds of tokens), so the return stays finite without discounting</button></li>
+      <li><button class="opt">Because discounting would make the reward model's scores negative</button></li>
+      <li><button class="opt">Because the Markov property requires $\gamma = 1$</button></li>
+    </ul>
+    <p class="feedback right" data-when="right">Correct. Discounting was invented for infinite-horizon or very long-horizon problems where undiscounted returns would blow up to infinity. RLHF episodes are short and finite, so $G_0$ is just the sum of (mostly zero) rewards plus the final score — a well-behaved finite number without any need for discounting.</p>
+    <p class="feedback nope" data-when="nope">Discounting exists to keep returns finite in infinite-horizon problems. In RLHF, episodes are short (the model generates a finite response, then stops), so the return is already finite. No discounting needed. $\gamma$ and the Markov property are independent concepts.</p>
+  </div>
+
+  <div class="quiz" data-answer="4">
+    <p class="q">Q3 (hard) — A policy generates two possible responses to a prompt: "Yes." (reward 3, probability 0.6) and "Absolutely, here's why…" (reward 9, probability 0.4). What is the expected return, and what should RL training do to the policy?</p>
+    <ul class="opts">
+      <li><button class="opt">$\mathbb{E}[G_0] = 6.0$. Training should make the policy deterministic, always picking "Yes."</button></li>
+      <li><button class="opt">$\mathbb{E}[G_0] = 6.0$. Training should keep the probabilities equal at 0.5 each.</button></li>
+      <li><button class="opt">$\mathbb{E}[G_0] = 5.4$. Training should increase $P(\text{"Absolutely…"})$ because it has higher reward.</button></li>
+      <li><button class="opt">$\mathbb{E}[G_0] = 5.4$. Training should shift probability toward the higher-reward response, increasing $\mathbb{E}[G_0]$.</button></li>
+    </ul>
+    <p class="feedback right" data-when="right">Correct. $\mathbb{E}[G_0] = 0.6 \times 3 + 0.4 \times 9 = 1.8 + 3.6 = 5.4$. RL training pushes probability toward higher-reward actions. If $P(\text{"Absolutely…"})$ increases to, say, 0.8, the expected return rises to $0.2 \times 3 + 0.8 \times 9 = 7.8$. The KL penalty in RLHF prevents this from becoming fully deterministic.</p>
+    <p class="feedback nope" data-when="nope">Compute carefully: $\mathbb{E}[G_0] = 0.6 \times 3 + 0.4 \times 9 = 1.8 + 3.6 = 5.4$ (not 6.0). RL training increases the probability of high-reward actions and decreases the probability of low-reward actions, which increases the expected return.</p>
+  </div>
+
+
+  <!-- ═══════════════════════════════════
+       MASTERY CHECK
+  ════════════════════════════════════════ -->
+  <h2>Mastery check</h2>
+  <p>This is the gate. Post your answers in chat — I'll grade them against the bar below.</p>
+
+  <div class="mastery">
+    <h3>🔒 Lesson 5 Mastery Check</h3>
+
+    <div class="rung">
+      <span class="rung-label">Rung 1 — Recall (necessary, not sufficient)</span>
+      Define each of the six core RL terms — agent, state, action, reward, policy, return — in one sentence each. Then give the RL objective in both symbols and one sentence of plain English.
+    </div>
+
+    <div class="rung">
+      <span class="rung-label">Rung 2 — Apply (must pass)</span>
+      A chatbot (language model) receives the prompt "What is the tallest mountain?" and generates a 3-token response. Map this scenario onto the RL framework:
+      <ol style="margin:0.5rem 0 0; padding-left:1.2rem; font-size:0.93rem;">
+        <li>What is the state at $t=0$? What is the state at $t=2$?</li>
+        <li>What is the action space at each step?</li>
+        <li>If the reward model gives the complete response a score of 8.5, write out the reward sequence $[r_0, r_1, r_2]$ and compute the return $G_0$ (using $\gamma = 1$).</li>
+        <li>If the model's policy gives this response probability 0.25 and the reference policy gives it probability 0.10, compute the log-ratio. What does this tell you about how RLHF training changed the model?</li>
+      </ol>
+    </div>
+
+    <div class="rung">
+      <span class="rung-label">Rung 3 — Explain/Transfer (must pass)</span>
+      Explain why a <em>stochastic</em> policy is essential for RL training to work. What would go wrong if the language model always picked the single highest-probability token at every step (greedy decoding) during RLHF training? Answer in terms of exploration and the RL objective.
+    </div>
+
+    <p class="gate-note">Pass = Rung 2 AND Rung 3 both correct. Post answers in chat and I'll tell you exactly where you stand.</p>
+  </div>
+
+
+  <!-- ═══════════════════════════════════
+       SPACED RECALL FOR NEXT LESSON
+  ════════════════════════════════════════ -->
+  <h2>For next time: questions to answer from memory</h2>
+  <p>Before Lesson 5b (Capstone) opens, answer these without looking back.</p>
+
+  <div class="recall-card">
+    <p class="rc-q">SR1 — Name the six core RL terms and give the one-sentence definition of each. Then state the RL objective in symbols.</p>
+    <button class="rc-reveal" onclick="revealAnswer(this)">Reveal (only after you've tried)</button>
+    <div class="rc-answer" style="display:none">
+      <strong>Agent:</strong> the decision-maker (the language model). <strong>State:</strong> what the agent observes (prompt + tokens so far). <strong>Action:</strong> what the agent does (choose the next token). <strong>Reward:</strong> feedback from the environment (reward model score). <strong>Policy:</strong> $\pi(a|s)$ — probability distribution over actions given a state. <strong>Return:</strong> $G_0 = \sum \gamma^t r_t$ — total discounted reward. <strong>Objective:</strong> $\max_\pi \mathbb{E}_{\tau \sim \pi}[G_0]$.
+    </div>
+  </div>
+
+  <div class="recall-card">
+    <p class="rc-q">SR2 — What are the three simplifications that collapse a general MDP into the RLHF setting?</p>
+    <button class="rc-reveal" onclick="revealAnswer(this)">Reveal (only after you've tried)</button>
+    <div class="rc-answer" style="display:none">
+      (1) <strong>Deterministic transitions:</strong> appending a token to the context is deterministic ($P(s'|s,a)=1$). (2) <strong>Sparse reward:</strong> $r_t = 0$ for all steps except the last, where $r_T = R(x,y)$. (3) <strong>No discounting:</strong> $\gamma = 1$ because episodes are short. Result: $J(\pi) = \mathbb{E}_{x,y}[R(x,y)]$.
+    </div>
+  </div>
+
+  <div class="recall-card">
+    <p class="rc-q">SR3 — Why must the policy be stochastic during RL training? What would happen with a deterministic (greedy) policy?</p>
+    <button class="rc-reveal" onclick="revealAnswer(this)">Reveal (only after you've tried)</button>
+    <div class="rc-answer" style="display:none">
+      A stochastic policy <em>explores</em> — it sometimes generates different responses to the same prompt, which lets the agent discover high-reward responses it hasn't tried before. A deterministic policy always produces the same response, so it can't discover better alternatives. RL training requires variation in behavior to learn from — no variation, no learning signal for improvement.
+    </div>
+  </div>
+
+
+  <!-- ═══════════════════════════════════
+       PRIMARY SOURCE
+  ════════════════════════════════════════ -->
+  <div class="box" style="border-left-color:#1c6b3c;">
+    <div class="box-title" style="color:#1c6b3c;">Primary source recommendation</div>
+    <p><strong><a href="https://spinningup.openai.com/en/latest/spinningup/rl_intro.html" target="_blank">OpenAI Spinning Up — Introduction to RL</a></strong>. The clearest free introduction to the RL framework, with the same notation used here. Read Part 1 ("What Can RL Do?" through "Kinds of RL Algorithms") — it covers agent, environment, state, action, reward, return, and policy with great visualizations. Everything past "Kinds of RL Algorithms" goes beyond what we need right now.</p>
+  </div>
+
+
+  <!-- ═══════════════════════════════════
+       ASK TEACHER
+  ════════════════════════════════════════ -->
+  <div class="ask-teacher">
+    <strong>Stuck? Confused? Ask.</strong> Post any question in chat — your teacher can re-explain any section, give you a worked example, or go deeper on the math. The mastery check is a conversation, not an exam.
+  </div>
+
+
+  <!-- ═══════════════════════════════════
+       NAV
+  ════════════════════════════════════════ -->
+  <div class="lesson-nav">
+    <a href="0004-probability-you-actually-need.html">&larr; Lesson 4: Probability You Actually Need</a>
+    <a href="0005b-capstone-microgpt.html">Lesson 5b: Capstone &rarr;</a>
+  </div>
+
+</div><!-- /wrap -->
+
+<script>
+  // ── Reveal answers ──────────────────────────────────────
+  function revealAnswer(btn) {
+    var ans = btn.nextElementSibling;
+    if (ans.style.display === 'none') {
+      ans.style.display = 'block';
+      btn.textContent = 'Hide';
+    } else {
+      ans.style.display = 'none';
+      btn.textContent = 'Reveal';
+    }
+  }
+
+  // ── RL loop simulator ──────────────────────────────────
+  var rlState = null;
+
+  var RESPONSES = [
+    { tokens: ['App', 'le', '.'],       reward: 7.2, label: 'Apple.'       },
+    { tokens: ['Ban', 'ana', '.'],      reward: 6.8, label: 'Banana.'      },
+    { tokens: ['Mang', 'o', '.'],       reward: 7.5, label: 'Mango.'       },
+    { tokens: ['Straw', 'berry', '.'],  reward: 8.1, label: 'Strawberry.'  },
+    { tokens: ['I', ' don', "'t", ' know', '.'], reward: 1.2, label: "I don't know." },
+    { tokens: ['Blue', '.'],            reward: 0.5, label: 'Blue.'        },
+  ];
+
+  function rlInit() {
+    var resp = RESPONSES[Math.floor(Math.random() * RESPONSES.length)];
+    rlState = {
+      step: 0,
+      response: resp,
+      generated: [],
+      done: false
+    };
+  }
+
+  function rlReset() {
+    rlInit();
+    document.getElementById('rl-log').textContent = 'Episode ready. State: "Name a fruit."';
+    document.getElementById('rl-step').textContent = '0';
+    document.getElementById('rl-tokens').textContent = '—';
+    document.getElementById('rl-return').textContent = '—';
+  }
+
+  function rlStep() {
+    if (!rlState) rlInit();
+    if (rlState.done) return;
+
+    var t = rlState.step;
+    var resp = rlState.response;
+    var token = resp.tokens[t];
+    rlState.generated.push(token);
+
+    var isLast = (t === resp.tokens.length - 1);
+    var reward = isLast ? resp.reward : 0;
+
+    var logEl = document.getElementById('rl-log');
+    var stateTxt = 'Name a fruit. ' + rlState.generated.join('');
+    var line = 't=' + t + '  action: "' + token + '"  reward: ' + reward;
+    if (isLast) {
+      line += '  ← reward model scored "' + resp.label + '"';
+    }
+    logEl.textContent += '\n' + line;
+    logEl.scrollTop = logEl.scrollHeight;
+
+    rlState.step++;
+    document.getElementById('rl-step').textContent = rlState.step;
+    document.getElementById('rl-tokens').textContent = rlState.generated.join('');
+
+    if (isLast) {
+      rlState.done = true;
+      document.getElementById('rl-return').textContent = resp.reward + ' (episode complete)';
+      logEl.textContent += '\n\nG₀ = ' + resp.reward + '  (return = sum of all rewards)';
+    }
+  }
+
+  function rlAutoplay() {
+    if (!rlState) rlInit();
+    if (rlState.done) return;
+
+    var interval = setInterval(function() {
+      rlStep();
+      if (rlState.done) clearInterval(interval);
+    }, 500);
+  }
+
+  // Initialize
+  document.addEventListener('DOMContentLoaded', function() {
+    rlInit();
+  });
+</script>
+</body>
+</html>

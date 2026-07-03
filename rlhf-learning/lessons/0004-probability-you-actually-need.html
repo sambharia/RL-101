@@ -1,0 +1,911 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lesson 4 — Probability You Actually Need</title>
+  <link rel="stylesheet" href="../assets/lesson.css">
+  <script defer src="../assets/quiz.js"></script>
+
+  <!-- KaTeX -->
+  <link rel="stylesheet"
+        href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css"
+        crossorigin="anonymous">
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js" crossorigin="anonymous"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"
+          crossorigin="anonymous"
+          onload="renderMathInElement(document.body,{delimiters:[
+            {left:'$$',right:'$$',display:true},
+            {left:'$',right:'$',display:false}
+          ],throwOnError:false});"></script>
+
+  <style>
+    /* ── Recall cards ── */
+    .recall-card {
+      background: #f6fbf7; border: 1px solid #b7d9c2;
+      border-left: 4px solid var(--good); border-radius: 8px;
+      padding: 1rem 1.2rem; margin: 1.1rem 0;
+    }
+    .recall-card .rc-q { font-weight: 600; margin: 0 0 0.7rem; }
+    .recall-card .rc-reveal {
+      font-family: ui-sans-serif, sans-serif; font-size: 0.82rem;
+      background: var(--good); color: #fff; border: none; border-radius: 6px;
+      padding: 0.35rem 0.85rem; cursor: pointer;
+    }
+    .recall-card .rc-answer {
+      margin-top: 0.8rem; border-top: 1px solid #b7d9c2;
+      padding-top: 0.8rem; font-size: 0.95rem;
+    }
+
+    /* ── Math box ── */
+    .math-box {
+      background: #fff; border: 1px solid var(--rule);
+      border-left: 4px solid #1d6fb8; border-radius: 8px;
+      padding: 1rem 1.4rem; margin: 1.4rem 0; font-size: 0.96rem;
+    }
+    .math-box .mb-title {
+      font-family: ui-sans-serif, sans-serif; font-size: 0.72rem;
+      text-transform: uppercase; letter-spacing: 0.1em; font-weight: 700;
+      color: #1d6fb8; margin: 0 0 0.7rem;
+    }
+    .sym-row { display: flex; align-items: baseline; gap: 0.6rem; margin: 0.45rem 0; }
+    .sym { font-weight: 700; color: #1d6fb8; min-width: 100px; font-size: 0.93rem; }
+
+    /* ── Surprise callout ── */
+    .surprise {
+      background: #fffbf0; border: 1px solid #e8d87a;
+      border-left: 4px solid #c8a800; border-radius: 8px;
+      padding: 1rem 1.2rem; margin: 1.4rem 0;
+    }
+    .surprise .s-title {
+      font-family: ui-sans-serif, sans-serif; font-size: 0.72rem;
+      text-transform: uppercase; letter-spacing: 0.1em; font-weight: 700;
+      color: #8a6e00; margin: 0 0 0.5rem;
+    }
+
+    /* ── Mastery check ── */
+    .mastery {
+      background: #1a1a1a; color: #f4f1e8;
+      border-radius: 10px; padding: 1.3rem 1.5rem; margin: 2.2rem 0;
+    }
+    .mastery h3 { color: #f4c36a; margin: 0 0 0.7rem; font-size: 1rem; }
+    .mastery .rung {
+      margin: 0.8rem 0; padding: 0.65rem 0.9rem;
+      border-radius: 6px; background: rgba(255,255,255,0.07); font-size: 0.93rem;
+    }
+    .mastery .rung-label {
+      font-family: ui-sans-serif, sans-serif; font-size: 0.7rem;
+      text-transform: uppercase; letter-spacing: 0.1em; opacity: 0.7;
+      display: block; margin-bottom: 0.3rem;
+    }
+    .mastery .gate-note { margin-top: 0.9rem; font-size: 0.82rem; opacity: 0.7; font-style: italic; }
+
+    /* ── Worked example ── */
+    .worked {
+      background: #f0f7ff; border: 1px solid #b0d0f0;
+      border-left: 4px solid #2980b9; border-radius: 8px;
+      padding: 1rem 1.3rem; margin: 1.4rem 0; font-size: 0.95rem;
+    }
+    .worked .w-title {
+      font-family: ui-sans-serif, sans-serif; font-size: 0.72rem;
+      text-transform: uppercase; letter-spacing: 0.1em; font-weight: 700;
+      color: #2980b9; margin: 0 0 0.7rem;
+    }
+    .worked table {
+      border-collapse: collapse; font-family: ui-monospace, monospace;
+      font-size: 0.85rem; margin: 0.6rem 0;
+    }
+    .worked table th, .worked table td {
+      border: 1px solid #b0d0f0; padding: 0.35rem 0.65rem; text-align: center;
+    }
+    .worked table th { background: #d6e9fa; font-weight: 700; }
+    .worked .step { margin: 0.6rem 0; }
+    .worked .step-label {
+      font-weight: 700; color: #2980b9; margin-bottom: 0.2rem;
+    }
+    .worked code { background: #dce9f7; padding: 0.1rem 0.3rem; border-radius: 3px; }
+
+    /* ── Feynman callout ── */
+    .feynman {
+      background: #faf5eb; border: 1px solid #e0d5b8;
+      border-left: 4px solid #b8860b; border-radius: 8px;
+      padding: 1rem 1.2rem; margin: 1.4rem 0;
+    }
+    .feynman .f-title {
+      font-family: ui-sans-serif, sans-serif; font-size: 0.72rem;
+      text-transform: uppercase; letter-spacing: 0.1em; font-weight: 700;
+      color: #8a6e00; margin: 0 0 0.5rem;
+    }
+
+    /* ── RLHF preview box ── */
+    .rlhf-preview {
+      background: #1a1a1a; color: #f4f1e8;
+      border-radius: 10px; padding: 1.3rem 1.5rem; margin: 1.6rem 0;
+      font-size: 0.95rem;
+    }
+    .rlhf-preview .rp-title {
+      font-family: ui-sans-serif, sans-serif; font-size: 0.72rem;
+      text-transform: uppercase; letter-spacing: 0.1em; font-weight: 700;
+      color: #f4c36a; margin: 0 0 0.7rem;
+    }
+    .rlhf-preview .rp-eqn {
+      text-align: center; margin: 1rem 0; font-size: 1.05rem;
+    }
+    .rlhf-preview .rp-anno {
+      font-size: 0.85rem; opacity: 0.8; margin: 0.3rem 0;
+    }
+
+    /* ── Expectation interactive ── */
+    .ev-demo {
+      background: #fff; border: 1px solid var(--rule); border-radius: 8px;
+      padding: 1.2rem; margin: 1.4rem 0;
+    }
+    .ev-demo h4 {
+      font-family: ui-sans-serif, sans-serif; font-size: 0.8rem;
+      text-transform: uppercase; letter-spacing: 0.09em;
+      color: var(--muted); margin: 0 0 0.6rem;
+    }
+    .ev-row {
+      display: flex; align-items: center; gap: 0.8rem; margin: 0.5rem 0;
+      font-family: ui-monospace, monospace; font-size: 0.88rem;
+    }
+    .ev-row label { min-width: 80px; font-weight: 600; }
+    .ev-row input[type="range"] { flex: 1; max-width: 200px; }
+    .ev-row .ev-val { min-width: 45px; text-align: right; color: #1d6fb8; font-weight: 700; }
+    .ev-result {
+      margin-top: 0.8rem; padding-top: 0.8rem; border-top: 1px solid var(--rule);
+      font-size: 0.95rem;
+    }
+    .ev-result strong { color: #1d6fb8; }
+    .ev-warning {
+      font-size: 0.82rem; color: var(--bad); font-style: italic;
+      margin-top: 0.3rem; min-height: 1.2em;
+    }
+
+    /* ── Sampling sim ── */
+    .sample-demo {
+      background: #fff; border: 1px solid var(--rule); border-radius: 8px;
+      padding: 1.2rem; margin: 1.4rem 0;
+    }
+    .sample-demo h4 {
+      font-family: ui-sans-serif, sans-serif; font-size: 0.8rem;
+      text-transform: uppercase; letter-spacing: 0.09em;
+      color: var(--muted); margin: 0 0 0.6rem;
+    }
+    .sample-btn {
+      font-family: ui-sans-serif, sans-serif; font-size: 0.82rem;
+      background: #1d6fb8; color: #fff; border: none; border-radius: 6px;
+      padding: 0.4rem 1rem; cursor: pointer; margin-right: 0.5rem;
+    }
+    .sample-btn:hover { background: #155a9a; }
+    .sample-btn.reset { background: var(--muted); }
+    .sample-history {
+      font-family: ui-monospace, monospace; font-size: 0.82rem;
+      margin-top: 0.7rem; padding: 0.5rem; background: var(--code-bg);
+      border-radius: 6px; min-height: 2rem; max-height: 120px;
+      overflow-y: auto; word-wrap: break-word;
+    }
+    .sample-stats {
+      margin-top: 0.7rem; font-size: 0.9rem;
+    }
+    .sample-stats .converge { color: var(--good); font-weight: 600; }
+
+    /* ── Log scale visual ── */
+    .log-table {
+      border-collapse: collapse; width: 100%; margin: 1rem 0;
+      font-family: ui-monospace, monospace; font-size: 0.85rem;
+    }
+    .log-table th {
+      background: #1d6fb8; color: #fff; padding: 0.5rem 0.7rem;
+      text-align: center; font-weight: 600;
+    }
+    .log-table td {
+      border: 1px solid var(--rule); padding: 0.45rem 0.7rem;
+      text-align: center; background: #fff;
+    }
+    .log-table .highlight { background: #e9f0fa; font-weight: 700; }
+
+    /* ── Code ── */
+    pre.code-block {
+      background: #1a1a1a; color: #f4f1e8;
+      border-radius: 8px; padding: 1rem 1.2rem; overflow-x: auto;
+      font-size: 0.81rem; line-height: 1.65; margin: 1.2rem 0;
+    }
+    pre.code-block .c { color: #7ec699; }
+    pre.code-block .k { color: #f4c36a; }
+    pre.code-block .v { color: #79b8e8; }
+    pre.code-block .n { color: #e06c75; }
+
+    @media (max-width: 480px) {
+      .ev-row { flex-wrap: wrap; }
+    }
+  </style>
+</head>
+<body>
+<div class="wrap">
+
+  <p class="kicker">RLHF for Beginners · Lesson 4 of 23</p>
+  <h1>Probability You Actually Need</h1>
+  <p class="subtitle">Four tools — distributions, expectation, sampling, log-probs — that appear on every page of the RLHF book. After this lesson, you can read the equations.</p>
+  <div class="meta-row">
+    <span>Phase 0 — Foundations</span>
+    <span>Prerequisites: <a href="0002-what-a-language-model-really-is.html">Lesson 2</a> · <a href="0003-how-models-learn.html">Lesson 3</a> · <a href="0003b-inside-the-transformer.html">Lesson 3b</a></span>
+    <span>~35 min</span>
+  </div>
+
+
+  <!-- ═══════════════════════════════════
+       WARM-UP RECALL
+  ════════════════════════════════════════ -->
+  <h2>Warm-up: pull it back from memory</h2>
+  <p>Before new material, retrieve what you already know. Write your answer first, then reveal.</p>
+
+  <div class="recall-card">
+    <p class="rc-q">SR1 (Lesson 3b) — Describe the attention mechanism in one sentence: what goes in, what comes out, what does it compute?</p>
+    <button class="rc-reveal" onclick="revealAnswer(this)">Reveal</button>
+    <div class="rc-answer" style="display:none">
+      Each token projects its embedding into Query, Key, and Value vectors; dot products between every Query and Key produce attention weights (softmaxed to sum to 1); the output for each token is a weighted sum of all Value vectors — so each token's representation gets updated by the context it attends to most strongly.
+    </div>
+  </div>
+
+  <div class="recall-card">
+    <p class="rc-q">SR2 (Lesson 3b) — What specific problem does the residual connection solve, and what is the mechanism?</p>
+    <button class="rc-reveal" onclick="revealAnswer(this)">Reveal</button>
+    <div class="rc-answer" style="display:none">
+      Gradient vanishing in deep networks — gradients shrink exponentially as they flow back through many layers, so early layers stop learning. The residual adds 1 to the gradient: $\frac{\partial}{\partial x}(x + f(x)) = 1 + \frac{\partial f}{\partial x}$. The +1 creates a direct highway for gradients, independent of the layer's transformation.
+    </div>
+  </div>
+
+  <div class="recall-card">
+    <p class="rc-q">SR3 (Lesson 3) — What does the loss $-\log P(y_{\text{correct}})$ equal when the model gives the correct token probability 0.05? Which direction does the gradient push?</p>
+    <button class="rc-reveal" onclick="revealAnswer(this)">Reveal</button>
+    <div class="rc-answer" style="display:none">
+      $-\log(0.05) \approx 3.0$. The gradient for the correct token's weight is <em>negative</em> (increasing the weight decreases the loss), so the update rule $\theta \leftarrow \theta - \eta \nabla L$ <em>increases</em> the weight — pushing the model to assign more probability to the correct token.
+    </div>
+  </div>
+
+
+  <!-- ═══════════════════════════════════
+       § 1 — WHERE ARE WE GOING
+  ════════════════════════════════════════ -->
+  <h2>1. Where we're headed</h2>
+
+  <p>In a few lessons, you'll meet this equation — the heart of RLHF:</p>
+
+  <div class="rlhf-preview">
+    <div class="rp-title">Preview: the RLHF objective (Lesson 7)</div>
+    <div class="rp-eqn">
+      $$\max_{\pi}\; \mathbb{E}_{x \sim \mathcal{D},\, y \sim \pi(\cdot\,|\,x)}\!\Big[\,R(x,y)\,\Big] \;-\; \beta\,\text{KL}\!\big[\,\pi \;\|\; \pi_{\text{ref}}\,\big]$$
+    </div>
+    <p class="rp-anno">$\pi$ = a probability distribution (the policy). $\mathbb{E}$ = expectation. $y \sim \pi$ = sampling. $\text{KL}$ = built from log-probabilities.</p>
+    <p class="rp-anno">Every symbol here is probability. Today we make you fluent in the four tools you need to read it.</p>
+  </div>
+
+  <p>You've already met pieces of this. Softmax gave you a probability distribution in <a href="0002-what-a-language-model-really-is.html">Lesson 2</a>. The loss $-\log P$ used log-probability in <a href="0003-how-models-learn.html">Lesson 3</a>. Text generation sampled from a distribution. Today we formalize all of these and add the one big missing piece: <strong>expectation</strong>.</p>
+
+
+  <!-- ═══════════════════════════════════
+       § 2 — PROBABILITY DISTRIBUTIONS
+  ════════════════════════════════════════ -->
+  <h2>2. Probability distributions: assigning chances</h2>
+
+  <p>You already know this intuitively — let's make it precise.</p>
+
+  <div class="feynman">
+    <div class="f-title">What you already know</div>
+    <p>In Lesson 2, softmax turned logits into numbers that sum to 1. The model said: "Given 'The cat sat on the', the probability of 'mat' is 0.35, 'floor' is 0.25, 'chair' is 0.15, …" That list of (outcome, probability) pairs is a <strong>probability distribution</strong>.</p>
+  </div>
+
+  <p>A probability distribution is just a complete answer to the question: <em>"What could happen, and how likely is each thing?"</em></p>
+
+  <div class="math-box">
+    <div class="mb-title">The two rules — that's all there is</div>
+    <p>A valid probability distribution $P$ over outcomes $\{x_1, x_2, \ldots, x_n\}$ must satisfy:</p>
+    $$\text{Rule 1: } P(x_i) \geq 0 \quad \text{for every } i \qquad\qquad \text{Rule 2: } \sum_{i=1}^{n} P(x_i) = 1$$
+    <div class="sym-row"><span class="sym">Rule 1</span> No negative probabilities. A thing can't have a $-10\%$ chance of happening.</div>
+    <div class="sym-row"><span class="sym">Rule 2</span> <em>Something</em> has to happen. The probabilities of all possible outcomes sum to exactly 1.</div>
+    <p style="margin-top:0.8rem">If a list of numbers follows both rules, it's a valid distribution. If it violates either, it's not.</p>
+  </div>
+
+  <div class="worked">
+    <div class="w-title">Worked example: which of these are valid distributions?</div>
+    <table>
+      <tr><th>Distribution</th><th>Values</th><th>Valid?</th></tr>
+      <tr><td>A</td><td>[0.4, 0.3, 0.3]</td><td>Yes — all ≥ 0, sum = 1.0</td></tr>
+      <tr><td>B</td><td>[0.5, 0.6, -0.1]</td><td>No — has a negative value</td></tr>
+      <tr><td>C</td><td>[0.2, 0.3, 0.4]</td><td>No — sum = 0.9, not 1.0</td></tr>
+      <tr><td>D</td><td>[1.0, 0.0, 0.0]</td><td>Yes — one outcome is certain, the rest impossible</td></tr>
+    </table>
+    <p>Distribution D is interesting: it says "outcome 1 happens with 100% certainty." Zeros are fine. Negative numbers aren't. And the sum must hit exactly 1.</p>
+  </div>
+
+  <div class="feynman">
+    <div class="f-title">Why softmax guarantees a valid distribution</div>
+    <p>In Lesson 2, you saw softmax: $P(x_i) = \frac{e^{z_i}}{\sum_j e^{z_j}}$. Now you can see <em>why</em> it works: $e^{z_i}$ is always positive (Rule 1 satisfied), and dividing by the sum of all $e^{z_j}$ forces the result to sum to 1 (Rule 2 satisfied). Softmax is a machine that turns any list of numbers into a valid probability distribution.</p>
+  </div>
+
+  <h3>Notation: $P(x)$ and $\pi(y \mid x)$</h3>
+
+  <p>Two notations you'll see constantly:</p>
+
+  <div class="math-box">
+    <div class="mb-title">Reading probability notation</div>
+    <div class="sym-row"><span class="sym">$P(\text{mat})$</span> "The probability of 'mat'." One number between 0 and 1.</div>
+    <div class="sym-row"><span class="sym">$\pi(y \mid x)$</span> "The probability of output $y$ <em>given</em> input $x$." The vertical bar $|$ means "given" or "conditioned on." This is what a language model computes: $P(\text{next token} \mid \text{all previous tokens})$.</div>
+    <div class="sym-row"><span class="sym">$\pi(\cdot \mid x)$</span> "The whole distribution over all possible $y$, given $x$." The dot means "all possible values." This is the entire softmax output — a list of 50,257 probabilities.</div>
+    <p style="margin-top: 0.8rem;">The letter $\pi$ (pi) is used instead of $P$ when we want to emphasize that this distribution is a <strong>policy</strong> — an agent's strategy for choosing actions. A language model's next-token distribution <em>is</em> a policy: given the context $x$, it chooses an action $y$ (the next token).</p>
+  </div>
+
+  <div class="worked">
+    <div class="w-title">Worked example: reading the notation</div>
+    <p>A model sees the context "The cat sat on the" and produces:</p>
+    <table>
+      <tr><th>Token $y$</th><th>$\pi(y \mid \text{"The cat sat on the"})$</th></tr>
+      <tr><td>mat</td><td>0.35</td></tr>
+      <tr><td>floor</td><td>0.25</td></tr>
+      <tr><td>chair</td><td>0.15</td></tr>
+      <tr><td>roof</td><td>0.10</td></tr>
+      <tr><td>… (50,253 others)</td><td>0.15 total</td></tr>
+    </table>
+    <p>$\pi(\text{mat} \mid \text{"The cat sat on the"}) = 0.35$. The whole distribution $\pi(\cdot \mid \text{"The cat sat on the"})$ is the full column of 50,257 numbers.</p>
+  </div>
+
+
+  <!-- ═══════════════════════════════════
+       § 3 — EXPECTATION
+  ════════════════════════════════════════ -->
+  <h2>3. Expectation: the weighted average</h2>
+
+  <p>Now for the concept that matters most for RLHF. It answers a simple question:</p>
+
+  <div class="box warn">
+    <div class="box-title">The question expectation answers</div>
+    <p>If I repeat a random process many times, what will the <strong>average outcome</strong> be?</p>
+    <p>Or more precisely: given a probability distribution, what value do I get "on average"?</p>
+  </div>
+
+  <h3>The problem: judging a policy</h3>
+
+  <p>Suppose you have two language models, and you want to know which one gives better responses. Each model <em>could</em> produce different responses to the same prompt — some great, some mediocre, some bad. You can't just look at one response. You need to ask: <strong>"On average, how good are this model's responses?"</strong></p>
+
+  <p>That "on average" is expectation.</p>
+
+  <div class="worked">
+    <div class="w-title">Worked example: expected reward of a policy</div>
+    <p>Imagine a model can produce 3 possible responses to "What is 2+2?", with these probabilities and reward scores:</p>
+    <table>
+      <tr><th>Response $y$</th><th>Probability $\pi(y)$</th><th>Reward $R(y)$</th></tr>
+      <tr><td>"4"</td><td>0.7</td><td>10</td></tr>
+      <tr><td>"four"</td><td>0.2</td><td>8</td></tr>
+      <tr><td>"5"</td><td>0.1</td><td>0</td></tr>
+    </table>
+    <div class="step">
+      <div class="step-label">What's the expected reward?</div>
+      Each outcome contributes: (how likely it is) × (how good it is).<br><br>
+      $\mathbb{E}[R] = 0.7 \times 10 + 0.2 \times 8 + 0.1 \times 0$<br>
+      $= 7.0 + 1.6 + 0.0$<br>
+      $= \mathbf{8.6}$
+    </div>
+    <p>"4" contributes 7.0 to the average (high probability × high reward). "5" contributes 0.0 (low probability × zero reward). The expected reward of this policy is 8.6.</p>
+  </div>
+
+  <div class="feynman">
+    <div class="f-title">The key insight</div>
+    <p>Expectation is a <em>weighted</em> average where the weights are probabilities. An outcome that's likely matters more than one that's rare. An outcome that's impossible (probability 0) contributes nothing, no matter how good or bad it is.</p>
+    <p>This is exactly why RLHF maximizes <em>expected</em> reward: you don't just want the model to <em>occasionally</em> produce a great answer. You want the answers it <em>typically</em> produces to be good.</p>
+  </div>
+
+  <div class="math-box">
+    <div class="mb-title">The expectation formula</div>
+    $$\mathbb{E}_{y \sim \pi}[f(y)] = \sum_{y} \pi(y) \cdot f(y)$$
+    <div class="sym-row"><span class="sym">$\mathbb{E}$</span> "Expected value of" — the weighted average.</div>
+    <div class="sym-row"><span class="sym">$y \sim \pi$</span> "$y$ drawn from distribution $\pi$" — the subscript tells you <em>which</em> distribution the probabilities come from.</div>
+    <div class="sym-row"><span class="sym">$f(y)$</span> Some function of the outcome — in RLHF, this is the reward $R(y)$.</div>
+    <div class="sym-row"><span class="sym">$\sum_y$</span> Sum over all possible outcomes.</div>
+    <p style="margin-top:0.8rem">Read it as: "For each possible outcome $y$, multiply how likely it is $\pi(y)$ by how valuable it is $f(y)$, and add them all up."</p>
+  </div>
+
+  <div class="worked">
+    <div class="w-title">Worked example: comparing two policies</div>
+    <p>Two models answer "What is the capital of France?"</p>
+
+    <p><strong>Model A:</strong></p>
+    <table>
+      <tr><th>Response</th><th>$\pi_A(y)$</th><th>$R(y)$</th><th>$\pi_A(y) \cdot R(y)$</th></tr>
+      <tr><td>"Paris"</td><td>0.8</td><td>10</td><td>8.0</td></tr>
+      <tr><td>"Lyon"</td><td>0.15</td><td>2</td><td>0.3</td></tr>
+      <tr><td>"London"</td><td>0.05</td><td>0</td><td>0.0</td></tr>
+    </table>
+    <p>$\mathbb{E}_A[R] = 8.0 + 0.3 + 0.0 = \mathbf{8.3}$</p>
+
+    <p><strong>Model B:</strong></p>
+    <table>
+      <tr><th>Response</th><th>$\pi_B(y)$</th><th>$R(y)$</th><th>$\pi_B(y) \cdot R(y)$</th></tr>
+      <tr><td>"Paris"</td><td>0.5</td><td>10</td><td>5.0</td></tr>
+      <tr><td>"Lyon"</td><td>0.3</td><td>2</td><td>0.6</td></tr>
+      <tr><td>"London"</td><td>0.2</td><td>0</td><td>0.0</td></tr>
+    </table>
+    <p>$\mathbb{E}_B[R] = 5.0 + 0.6 + 0.0 = \mathbf{5.6}$</p>
+
+    <p>Model A has higher expected reward (8.3 vs 5.6). Both models <em>can</em> produce the right answer, but A does it more <em>reliably</em>. RLHF's goal is to push the policy from B-like to A-like — increase the probability of high-reward responses.</p>
+  </div>
+
+  <!-- ── Expectation interactive ── -->
+  <div class="ev-demo">
+    <h4>Interactive: expected reward calculator</h4>
+    <p style="font-size:0.88rem; color:var(--muted);">Adjust the probabilities of three responses and see the expected reward change. Probabilities must sum to 1.</p>
+
+    <div class="ev-row">
+      <label>"Paris" (R=10)</label>
+      <input type="range" min="0" max="100" value="70" id="ev-s1" oninput="updateEV()">
+      <span class="ev-val" id="ev-v1">0.70</span>
+    </div>
+    <div class="ev-row">
+      <label>"Lyon" (R=2)</label>
+      <input type="range" min="0" max="100" value="20" id="ev-s2" oninput="updateEV()">
+      <span class="ev-val" id="ev-v2">0.20</span>
+    </div>
+    <div class="ev-row">
+      <label>"London" (R=0)</label>
+      <span class="ev-val" id="ev-v3" style="min-width:170px;">0.10 (auto)</span>
+    </div>
+
+    <div class="ev-result">
+      E[R] = <strong id="ev-result">7.4</strong>
+    </div>
+    <div class="ev-warning" id="ev-warn"></div>
+  </div>
+
+  <div class="surprise">
+    <div class="s-title">Why "expected" doesn't mean "what you expect"</div>
+    <p>The expected value of a fair die roll is 3.5. You will <em>never</em> roll a 3.5. The expected value isn't a prediction of any single outcome — it's the average if you roll many times. In RLHF, the expected reward isn't what one particular response will score. It's how good the model's responses are <em>on average</em>, weighted by how likely the model is to produce each one.</p>
+  </div>
+
+
+  <!-- ═══════════════════════════════════
+       § 4 — SAMPLING
+  ════════════════════════════════════════ -->
+  <h2>4. Sampling: drawing from a distribution</h2>
+
+  <p>You've seen sampling before — in <a href="0002-what-a-language-model-really-is.html">Lesson 2</a>, the generation loop picked the next token by "rolling a weighted die." Let's formalize this and understand why sampling is the only practical option for RLHF.</p>
+
+  <h3>The problem: expectations are impossible to compute exactly</h3>
+
+  <div class="feynman">
+    <div class="f-title">Why we can't just sum</div>
+    <p>The expectation formula says: sum over <em>all possible outcomes</em>. For our toy examples with 3 responses, that's easy. But in RLHF, a "response" is a sequence of maybe 500 tokens, each chosen from 50,257 options. The number of possible responses is roughly $50{,}257^{500}$ — a number with about 2,350 digits. You cannot sum over that. The universe doesn't have enough time.</p>
+    <p>So instead of computing the exact expected reward, you <strong>approximate</strong> it. How? Generate a few actual responses, score them, and average the scores. That's sampling.</p>
+  </div>
+
+  <div class="math-box">
+    <div class="mb-title">What sampling means</div>
+    <p>$y \sim \pi(\cdot \mid x)$ is read: "draw $y$ from the distribution $\pi$, given input $x$."</p>
+    <p>Mechanically: generate a random number, use the distribution's probabilities to decide which outcome that random number corresponds to.</p>
+    $$\text{If } \pi = [0.7, 0.2, 0.1], \text{ then } \begin{cases} y = \text{"4"} & \text{70% of the time} \\ y = \text{"four"} & \text{20% of the time} \\ y = \text{"5"} & \text{10% of the time} \end{cases}$$
+  </div>
+
+  <div class="worked">
+    <div class="w-title">Worked example: estimating expectation by sampling</div>
+    <p>True expected reward: $\mathbb{E}[R] = 0.7 \times 10 + 0.2 \times 8 + 0.1 \times 0 = 8.6$</p>
+    <p>Now suppose we draw 5 samples from $\pi = [0.7, 0.2, 0.1]$:</p>
+    <table>
+      <tr><th>Sample #</th><th>Drawn $y$</th><th>$R(y)$</th></tr>
+      <tr><td>1</td><td>"4"</td><td>10</td></tr>
+      <tr><td>2</td><td>"four"</td><td>8</td></tr>
+      <tr><td>3</td><td>"4"</td><td>10</td></tr>
+      <tr><td>4</td><td>"4"</td><td>10</td></tr>
+      <tr><td>5</td><td>"5"</td><td>0</td></tr>
+    </table>
+    <div class="step">
+      <div class="step-label">Sample average:</div>
+      $\hat{\mathbb{E}}[R] = \frac{10 + 8 + 10 + 10 + 0}{5} = \frac{38}{5} = \mathbf{7.6}$
+    </div>
+    <p>Not exactly 8.6 — but close. With 5 samples, we're off by about 1. With 100 samples, we'd be much closer. With 1,000, nearly exact. The more samples, the better the estimate. This is the <strong>law of large numbers</strong> in action.</p>
+  </div>
+
+  <div class="math-box">
+    <div class="mb-title">Monte Carlo estimation</div>
+    <p>Draw $N$ samples $y_1, y_2, \ldots, y_N$ from $\pi$. The sample average approximates the true expectation:</p>
+    $$\mathbb{E}_{y \sim \pi}[f(y)] \;\approx\; \frac{1}{N} \sum_{i=1}^{N} f(y_i)$$
+    <p>This approximation improves as $N$ grows. It has a name: <strong>Monte Carlo estimation</strong>. It's how nearly all RL algorithms work in practice — including the ones that train ChatGPT.</p>
+  </div>
+
+  <!-- ── Sampling simulator ── -->
+  <div class="sample-demo">
+    <h4>Interactive: watch sample average converge to true expectation</h4>
+    <p style="font-size:0.88rem; color:var(--muted);">Distribution: "4" (R=10) with P=0.7, "four" (R=8) with P=0.2, "5" (R=0) with P=0.1. True E[R] = 8.6.</p>
+    <button class="sample-btn" onclick="drawSample()">Draw 1 sample</button>
+    <button class="sample-btn" onclick="drawManySamples(10)">Draw 10</button>
+    <button class="sample-btn" onclick="drawManySamples(100)">Draw 100</button>
+    <button class="sample-btn reset" onclick="resetSamples()">Reset</button>
+    <div class="sample-history" id="sample-hist">(no samples yet)</div>
+    <div class="sample-stats">
+      Samples: <strong id="s-count">0</strong> &nbsp;|&nbsp;
+      Sample average: <strong id="s-avg">—</strong> &nbsp;|&nbsp;
+      True E[R]: <strong>8.6</strong> &nbsp;|&nbsp;
+      <span class="converge" id="s-err"></span>
+    </div>
+  </div>
+
+  <div class="feynman">
+    <div class="f-title">Sampling in text generation — you've done this</div>
+    <p>In <a href="0002-what-a-language-model-really-is.html">Lesson 2</a>, the generation loop was: run gpt() → softmax → sample one token from the distribution → append → repeat. Each "sample one token" step is exactly $y \sim \pi(\cdot \mid x)$. Text generation <em>is</em> sampling from a policy. Now you know the formal name for what you already understood.</p>
+  </div>
+
+  <div class="surprise">
+    <div class="s-title">Why RLHF can't avoid sampling</div>
+    <p>The RLHF training loop goes: sample a prompt → sample a response from the current model → score it with the reward model → update the policy. Every training step requires <em>sampling</em> an actual response. You can't compute the expected reward over all possible responses, because there are astronomically many. So you sample a few, compute their rewards, and use the average as your estimate. This is why RL training is inherently noisy — and why you need many training steps to converge.</p>
+  </div>
+
+
+  <!-- ═══════════════════════════════════
+       § 5 — LOG-PROBABILITIES
+  ════════════════════════════════════════ -->
+  <h2>5. Log-probabilities: why $\log P$ is everywhere</h2>
+
+  <p>You've already used $-\log P$ as the loss function in <a href="0003-how-models-learn.html">Lesson 3</a>. But log-probabilities appear <em>everywhere</em> in RLHF — in the objective, in KL divergence, in policy gradients. Let's understand why.</p>
+
+  <h3>The problem with raw probabilities</h3>
+
+  <div class="feynman">
+    <div class="f-title">When numbers get too small</div>
+    <p>A language model produces one token at a time. The probability of a 500-token response is the product of 500 individual token probabilities:</p>
+    <p style="text-align:center;">$P(\text{response}) = P(y_1) \times P(y_2) \times \cdots \times P(y_{500})$</p>
+    <p>If each token has probability around 0.1, the response probability is $0.1^{500} = 10^{-500}$. That's a number with 500 zeros after the decimal point. No computer can store it — it underflows to exactly 0. All your math breaks.</p>
+    <p>The fix: use <em>logarithms</em>. Instead of multiplying tiny probabilities, you add their logs.</p>
+  </div>
+
+  <h3>Three properties that make logs essential</h3>
+
+  <p>Here's why ML uses $\log P$ instead of $P$:</p>
+
+  <div class="worked">
+    <div class="w-title">Property 1: products become sums</div>
+    <div class="step">
+      <div class="step-label">The log rule:</div>
+      $\log(a \times b) = \log a + \log b$
+    </div>
+    <div class="step">
+      <div class="step-label">Applied to a 500-token response:</div>
+      $\log P(\text{response}) = \log P(y_1) + \log P(y_2) + \cdots + \log P(y_{500})$
+    </div>
+    <p>Instead of multiplying 500 numbers (which underflows), we <em>add</em> 500 numbers (which is safe). If each $\log P(y_i) \approx -2.3$ (i.e., $P \approx 0.1$), then $\log P(\text{response}) \approx -1150$. A large negative number, but a perfectly fine one for a computer to work with.</p>
+  </div>
+
+  <div class="worked">
+    <div class="w-title">Property 2: log is a monotonic transformation</div>
+    <div class="step">
+      <div class="step-label">If $P(A) > P(B)$, then $\log P(A) > \log P(B)$.</div>
+      The ranking is preserved. The most probable outcome still has the highest log-probability.
+    </div>
+    <p>So maximizing $P$ is the same as maximizing $\log P$. We can work with log-probabilities everywhere and never lose any information about which outcome is most likely.</p>
+  </div>
+
+  <div class="worked">
+    <div class="w-title">Property 3: nice gradient behavior</div>
+    <div class="step">
+      <div class="step-label">The derivative of $\log P$ with respect to $P$:</div>
+      $\frac{d}{dP} \log P = \frac{1}{P}$
+    </div>
+    <p>When $P$ is small (say 0.01), the gradient $1/P = 100$ — a big push. When $P$ is already large (say 0.99), the gradient $1/P \approx 1$ — a small push. This is exactly what we want: if the model barely assigns any probability to the correct token, the gradient is <em>huge</em> ("fix this!"). If the model already gets it right, the gradient is <em>small</em> ("you're fine, move on").</p>
+  </div>
+
+  <h3>The log scale: building intuition</h3>
+
+  <table class="log-table">
+    <thead>
+      <tr><th>$P$</th><th>$\log P$ (natural log)</th><th>$-\log P$ (cross-entropy loss)</th><th>Intuition</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>1.0</td><td>0.0</td><td>0.0</td><td>Certain — zero surprise, zero loss</td></tr>
+      <tr><td>0.5</td><td>−0.69</td><td>0.69</td><td>A coin flip — moderate surprise</td></tr>
+      <tr><td>0.1</td><td>−2.30</td><td>2.30</td><td>Unlikely — substantial surprise</td></tr>
+      <tr class="highlight"><td>0.05</td><td>−3.00</td><td>3.00</td><td>This was the loss in Lesson 3!</td></tr>
+      <tr><td>0.01</td><td>−4.61</td><td>4.61</td><td>Very unlikely — high surprise</td></tr>
+      <tr><td>0.001</td><td>−6.91</td><td>6.91</td><td>Almost impossible — extreme surprise</td></tr>
+    </tbody>
+  </table>
+
+  <p>Notice: as $P$ drops by a factor of 10, $\log P$ drops by about 2.3. The log <em>compresses</em> the scale. A probability 1000× smaller is only a log-probability about 7 units smaller. This compression is why computers can work with log-probs when raw probabilities would underflow to zero.</p>
+
+  <div class="math-box">
+    <div class="mb-title">Log-probability notation you'll see</div>
+    <div class="sym-row"><span class="sym">$\log \pi(y \mid x)$</span> "The log of the probability that policy $\pi$ assigns to response $y$ given prompt $x$." Always negative (since $0 < \pi \leq 1$, and log of a number ≤ 1 is ≤ 0).</div>
+    <div class="sym-row"><span class="sym">$-\log \pi(y \mid x)$</span> The cross-entropy loss — always positive. You already know this: higher = worse. This is the loss from Lesson 3, now with policy notation.</div>
+    <div class="sym-row"><span class="sym">$\log \frac{\pi(y|x)}{\pi_{\text{ref}}(y|x)}$</span> The log <em>ratio</em> of two policies. Positive if $\pi$ gives $y$ higher probability than $\pi_{\text{ref}}$. This ratio is the building block of KL divergence (coming in a later lesson).</div>
+  </div>
+
+  <div class="worked">
+    <div class="w-title">Worked example: log-ratio of two policies</div>
+    <p>Policy $\pi$ gives "Paris" probability 0.8. Reference policy $\pi_\text{ref}$ gives "Paris" probability 0.5.</p>
+    <div class="step">
+      <div class="step-label">Log-ratio:</div>
+      $\log \frac{\pi(\text{Paris})}{\pi_\text{ref}(\text{Paris})} = \log \frac{0.8}{0.5} = \log 1.6 \approx 0.47$
+    </div>
+    <p>Positive — the new policy is <em>more</em> confident about "Paris" than the reference. In RLHF, a large positive log-ratio means the model has drifted far from its starting point for this output. The KL penalty term keeps this in check.</p>
+
+    <div class="step">
+      <div class="step-label">What if the new policy gives "Paris" only 0.3?</div>
+      $\log \frac{0.3}{0.5} = \log 0.6 \approx -0.51$
+    </div>
+    <p>Negative — the new policy is <em>less</em> confident about "Paris" than the reference. The model has shifted probability away from this token.</p>
+  </div>
+
+  <div class="surprise">
+    <div class="s-title">The connection: cross-entropy loss IS log-probability</div>
+    <p>In Lesson 3, you learned the loss $-\log P(y_\text{correct})$. Now you can see what this really is: the <em>negative log-probability</em> of the correct token under the model's distribution. Minimizing this loss is the same as maximizing the log-probability of the correct answer — which is the same as maximizing the probability. All three statements are mathematically equivalent. You've been working with log-probabilities since Lesson 3 without knowing it had a name.</p>
+  </div>
+
+
+  <!-- ═══════════════════════════════════
+       § 6 — PUTTING IT TOGETHER
+  ════════════════════════════════════════ -->
+  <h2>6. Reading the equation</h2>
+
+  <p>Now let's go back to the preview and read it with your new vocabulary:</p>
+
+  <div class="rlhf-preview">
+    <div class="rp-title">The RLHF objective — now you can read it</div>
+    <div class="rp-eqn">
+      $$\max_{\pi}\; \underbrace{\mathbb{E}_{x \sim \mathcal{D},\, y \sim \pi(\cdot\,|\,x)}}_{\text{sample a prompt, sample a response}} \!\Big[\;\underbrace{R(x,y)}_{\text{reward}}\;\Big] \;-\; \underbrace{\beta\,\text{KL}\!\big[\,\pi \;\|\; \pi_{\text{ref}}\,\big]}_{\text{don't drift too far (uses log-ratios)}}$$
+    </div>
+    <p class="rp-anno" style="margin-top:1rem;">Reading it left to right:</p>
+    <p class="rp-anno"><strong>$\max_\pi$</strong> — Find the policy (probability distribution over responses) that maximizes…</p>
+    <p class="rp-anno"><strong>$\mathbb{E}_{x \sim \mathcal{D}, y \sim \pi}$</strong> — …the expected value, where prompts $x$ are drawn from a dataset $\mathcal{D}$ and responses $y$ are <em>sampled</em> from the policy $\pi$, of…</p>
+    <p class="rp-anno"><strong>$R(x,y)$</strong> — …the reward (how good is this response to this prompt)…</p>
+    <p class="rp-anno"><strong>$- \beta \text{KL}[\pi \| \pi_\text{ref}]$</strong> — …minus a penalty that grows when the policy's log-probabilities drift too far from a reference policy's log-probabilities.</p>
+    <p class="rp-anno" style="margin-top:0.7rem;">Every symbol in this equation uses probability: $\pi$ is a distribution, $\mathbb{E}$ is expectation, $\sim$ is sampling, and KL is built from log-ratios. You now have all four tools.</p>
+  </div>
+
+  <div class="feynman">
+    <div class="f-title">The plain-English translation</div>
+    <p>"Find a language model that, <em>on average</em> across many prompts and sampled responses, gets high reward scores — but don't let it become too different from where it started."</p>
+    <p>Every word in this sentence maps to a symbol above. You can now read both versions.</p>
+  </div>
+
+
+  <!-- ═══════════════════════════════════
+       SELF-CHECK MCQ
+  ════════════════════════════════════════ -->
+  <h2>Self-check</h2>
+  <p>Low-stakes warm-up — just for you, not the gate.</p>
+
+  <div class="quiz" data-answer="3">
+    <p class="q">Q1 — A distribution $P$ assigns probabilities [0.4, 0.35, 0.25] to outcomes with values [2, 6, 10]. What is $\mathbb{E}[X]$?</p>
+    <ul class="opts">
+      <li><button class="opt">6.0 — the average of 2, 6, and 10</button></li>
+      <li><button class="opt">6.0 — the middle value weighted by 0.35</button></li>
+      <li><button class="opt">5.4 — sum of each probability times its value</button></li>
+      <li><button class="opt">3.6 — sum of the three probabilities times 6</button></li>
+    </ul>
+    <p class="feedback right" data-when="right">Correct. $0.4 \times 2 + 0.35 \times 6 + 0.25 \times 10 = 0.8 + 2.1 + 2.5 = 5.4$. Notice this is NOT the simple average of the values (which would be 6.0). The probabilities act as weights — outcome "2" is most likely, so it pulls the average below 6.</p>
+    <p class="feedback nope" data-when="nope">The simple average of {2, 6, 10} is 6.0, but expectation is a <em>weighted</em> average. Each value is weighted by its probability: $0.4 \times 2 + 0.35 \times 6 + 0.25 \times 10 = 5.4$.</p>
+  </div>
+
+  <div class="quiz" data-answer="2">
+    <p class="q">Q2 — Why do ML systems use $\log P$ instead of $P$ when computing sequence probabilities?</p>
+    <ul class="opts">
+      <li><button class="opt">Log makes probabilities larger than 1, which is easier to work with</button></li>
+      <li><button class="opt">Multiplying hundreds of small probabilities underflows to zero; adding their logs does not</button></li>
+      <li><button class="opt">Log transforms probabilities into integers, which computers handle more efficiently</button></li>
+      <li><button class="opt">Log reverses the probability scale so that likely events get higher numbers</button></li>
+    </ul>
+    <p class="feedback right" data-when="right">Correct. A 500-token sequence with per-token $P \approx 0.1$ gives $P(\text{seq}) = 0.1^{500} = 10^{-500}$, which is computationally zero. But $\log P(\text{seq}) = 500 \times (-2.3) = -1150$ — a perfectly representable number. Products become sums under log, and sums don't underflow.</p>
+    <p class="feedback nope" data-when="nope">The core reason: multiplying many small probabilities (each < 1) produces a number so tiny the computer rounds it to 0. Taking the log converts multiplication to addition — $\log(a \times b) = \log a + \log b$ — and a sum of manageable negative numbers never underflows.</p>
+  </div>
+
+  <div class="quiz" data-answer="4">
+    <p class="q">Q3 (hard) — You sample 10 responses from a policy. 8 receive reward 10, 2 receive reward 0. Your sample estimate of $\mathbb{E}[R]$ is 8.0. But the true $\mathbb{E}[R]$ is 8.6. What is the most precise explanation of this gap?</p>
+    <ul class="opts">
+      <li><button class="opt">The sampling method is biased and systematically underestimates the reward</button></li>
+      <li><button class="opt">Ten samples is too few to ever get a useful estimate of an expectation</button></li>
+      <li><button class="opt">The reward function is stochastic, so different runs give different true values</button></li>
+      <li><button class="opt">Sampling variance: finite samples produce a noisy estimate that converges to the truth as $N$ grows</button></li>
+    </ul>
+    <p class="feedback right" data-when="right">Correct. Monte Carlo estimation is <em>unbiased</em> — on average, the sample mean equals the true expectation. But any finite sample has variance (random noise). With 10 samples, the estimate could land above or below 8.6. With 10,000 samples, it would be almost exactly 8.6. The gap isn't bias — it's variance from a small sample size.</p>
+    <p class="feedback nope" data-when="nope">Monte Carlo estimation is unbiased — the expected value of the sample average IS the true expectation. The gap between 8.0 and 8.6 is <em>sampling variance</em> (random noise from a small $N$), not systematic error. As $N \to \infty$, the sample average converges to 8.6 with probability 1 (law of large numbers).</p>
+  </div>
+
+
+  <!-- ═══════════════════════════════════
+       MASTERY CHECK
+  ════════════════════════════════════════ -->
+  <h2>Mastery check</h2>
+  <p>This is the gate. Post your answers in chat — I'll grade them against the bar below.</p>
+
+  <div class="mastery">
+    <h3>🔒 Lesson 4 Mastery Check</h3>
+
+    <div class="rung">
+      <span class="rung-label">Rung 1 — Recall (necessary, not sufficient)</span>
+      State precisely: (a) the two rules a valid probability distribution must satisfy, (b) the formula for expected value $\mathbb{E}_{y \sim \pi}[f(y)]$, and (c) why ML uses $\log P$ instead of $P$ (name the specific numerical problem and the property of log that fixes it).
+    </div>
+
+    <div class="rung">
+      <span class="rung-label">Rung 2 — Apply (must pass)</span>
+      A language model $\pi$ answering "Name a planet in our solar system" produces this distribution:
+      <br><br>
+      <span style="font-family:monospace; font-size:0.9rem;">
+        "Earth" → 0.40 (reward 5) &nbsp;|&nbsp;
+        "Mars" → 0.30 (reward 8) &nbsp;|&nbsp;
+        "Pluto" → 0.20 (reward 3) &nbsp;|&nbsp;
+        "Moon" → 0.10 (reward 0)
+      </span>
+      <ol style="margin:0.5rem 0 0; padding-left:1.2rem; font-size:0.93rem;">
+        <li>Compute the expected reward $\mathbb{E}_\pi[R]$ exactly.</li>
+        <li>You sample 4 responses and get: "Mars", "Earth", "Earth", "Pluto". What is your Monte Carlo estimate of $\mathbb{E}[R]$? Is it higher or lower than the true value, and why doesn't this mean the estimator is broken?</li>
+        <li>What is $\log \frac{\pi(\text{Mars})}{\pi_\text{ref}(\text{Mars})}$ if the reference policy gives "Mars" probability 0.15? What does the sign tell you?</li>
+      </ol>
+    </div>
+
+    <div class="rung">
+      <span class="rung-label">Rung 3 — Explain/Transfer (must pass)</span>
+      In the RLHF objective $\max_\pi \mathbb{E}_{y \sim \pi}[R(y)] - \beta \text{KL}[\pi \| \pi_\text{ref}]$, explain why we can't just set every probability to 0 except for the highest-reward response (putting $\pi(\text{best}) = 1.0$). What would happen to the KL term, and why is that a problem? Answer in terms of the log-ratio.
+    </div>
+
+    <p class="gate-note">Pass = Rung 2 AND Rung 3 both correct. Post answers in chat and I'll tell you exactly where you stand.</p>
+  </div>
+
+
+  <!-- ═══════════════════════════════════
+       SPACED RECALL FOR NEXT LESSON
+  ════════════════════════════════════════ -->
+  <h2>For next time: questions to answer from memory</h2>
+  <p>Before Lesson 5 opens, answer these without looking back.</p>
+
+  <div class="recall-card">
+    <p class="rc-q">SR1 — What is the formula for expectation, and what does each symbol mean? Give a one-sentence plain-English translation.</p>
+    <button class="rc-reveal" onclick="revealAnswer(this)">Reveal (only after you've tried)</button>
+    <div class="rc-answer" style="display:none">
+      $\mathbb{E}_{y \sim \pi}[f(y)] = \sum_y \pi(y) \cdot f(y)$. "For each possible outcome, multiply how likely it is by how valuable it is, and add them all up." It's a weighted average where the weights are probabilities.
+    </div>
+  </div>
+
+  <div class="recall-card">
+    <p class="rc-q">SR2 — Why does RLHF training use sampling instead of computing the exact expectation? What is the fundamental barrier?</p>
+    <button class="rc-reveal" onclick="revealAnswer(this)">Reveal (only after you've tried)</button>
+    <div class="rc-answer" style="display:none">
+      The space of all possible responses is astronomically large ($\sim 50{,}257^{500}$). Summing over every possible response to compute the exact expectation is computationally impossible. Instead, you <em>sample</em> a few responses, score them, and average — a Monte Carlo estimate that converges to the true expectation as the number of samples grows.
+    </div>
+  </div>
+
+  <div class="recall-card">
+    <p class="rc-q">SR3 — What are the three key properties of logarithms that make log-probabilities useful in ML?</p>
+    <button class="rc-reveal" onclick="revealAnswer(this)">Reveal (only after you've tried)</button>
+    <div class="rc-answer" style="display:none">
+      (1) Products become sums: $\log(ab) = \log a + \log b$ — prevents underflow when multiplying many probabilities. (2) Monotonic: if $P(A) > P(B)$ then $\log P(A) > \log P(B)$ — rankings are preserved, so maximizing $\log P$ is the same as maximizing $P$. (3) Gradient scales inversely: $\frac{d}{dP}\log P = 1/P$ — large gradient for low-probability events (strong learning signal where it's needed most).
+    </div>
+  </div>
+
+
+  <!-- ═══════════════════════════════════
+       PRIMARY SOURCE
+  ════════════════════════════════════════ -->
+  <div class="box" style="border-left-color:#1c6b3c;">
+    <div class="box-title" style="color:#1c6b3c;">Primary source recommendation</div>
+    <p><strong><a href="https://seeing-theory.brown.edu/" target="_blank">Seeing Theory</a></strong> — Brown University. A beautiful interactive visualization of probability and statistics concepts: distributions, expectation, and sampling. Play with the "Basic Probability" and "Frequentist Inference" chapters to build visual intuition for how sample averages converge to expectations. Best experienced before or alongside this lesson.</p>
+  </div>
+
+
+  <!-- ═══════════════════════════════════
+       ASK TEACHER
+  ════════════════════════════════════════ -->
+  <div class="ask-teacher">
+    <strong>Stuck? Confused? Ask.</strong> Post any question in chat — your teacher can re-explain any section, give you a worked example, or go deeper on the math. The mastery check is a conversation, not an exam.
+  </div>
+
+
+  <!-- ═══════════════════════════════════
+       NAV
+  ════════════════════════════════════════ -->
+  <div class="lesson-nav">
+    <a href="0003b-inside-the-transformer.html">← Lesson 3b: Inside the Transformer</a>
+    <a href="0005-what-is-reinforcement-learning.html">Lesson 5: What is RL? →</a>
+  </div>
+
+</div><!-- /wrap -->
+
+<script>
+  // ── Reveal answers ──────────────────────────────────────
+  function revealAnswer(btn) {
+    var ans = btn.nextElementSibling;
+    if (ans.style.display === 'none') {
+      ans.style.display = 'block';
+      btn.textContent = 'Hide';
+    } else {
+      ans.style.display = 'none';
+      btn.textContent = 'Reveal';
+    }
+  }
+
+  // ── Expected value calculator ──────────────────────────
+  function updateEV() {
+    var s1 = parseInt(document.getElementById('ev-s1').value);
+    var s2 = parseInt(document.getElementById('ev-s2').value);
+    var s3 = 100 - s1 - s2;
+
+    var warn = document.getElementById('ev-warn');
+    if (s3 < 0) {
+      warn.textContent = 'Probabilities exceed 1.0 — not a valid distribution!';
+      s3 = 0;
+    } else {
+      warn.textContent = '';
+    }
+
+    var p1 = s1 / 100, p2 = s2 / 100, p3 = Math.max(0, s3 / 100);
+    document.getElementById('ev-v1').textContent = p1.toFixed(2);
+    document.getElementById('ev-v2').textContent = p2.toFixed(2);
+    document.getElementById('ev-v3').textContent = p3.toFixed(2) + ' (auto)';
+
+    var ev = p1 * 10 + p2 * 2 + p3 * 0;
+    document.getElementById('ev-result').textContent = ev.toFixed(1);
+  }
+
+  // ── Sampling simulator ─────────────────────────────────
+  var sampleData = { rewards: [], total: 0 };
+  var SAMPLE_DIST = [
+    { token: '"4"',    prob: 0.7, reward: 10 },
+    { token: '"four"', prob: 0.2, reward: 8  },
+    { token: '"5"',    prob: 0.1, reward: 0  }
+  ];
+
+  function sampleOne() {
+    var r = Math.random();
+    var cum = 0;
+    for (var i = 0; i < SAMPLE_DIST.length; i++) {
+      cum += SAMPLE_DIST[i].prob;
+      if (r < cum) return SAMPLE_DIST[i];
+    }
+    return SAMPLE_DIST[SAMPLE_DIST.length - 1];
+  }
+
+  function drawSample() {
+    var s = sampleOne();
+    sampleData.rewards.push(s.reward);
+    sampleData.total += s.reward;
+    updateSampleUI(s.token + '→' + s.reward);
+  }
+
+  function drawManySamples(n) {
+    var tokens = [];
+    for (var i = 0; i < n; i++) {
+      var s = sampleOne();
+      sampleData.rewards.push(s.reward);
+      sampleData.total += s.reward;
+      tokens.push(s.reward);
+    }
+    updateSampleUI(n + ' samples: [' + tokens.join(', ') + ']');
+  }
+
+  function resetSamples() {
+    sampleData = { rewards: [], total: 0 };
+    document.getElementById('sample-hist').textContent = '(no samples yet)';
+    document.getElementById('s-count').textContent = '0';
+    document.getElementById('s-avg').textContent = '—';
+    document.getElementById('s-err').textContent = '';
+  }
+
+  function updateSampleUI(msg) {
+    var hist = document.getElementById('sample-hist');
+    if (sampleData.rewards.length <= 1 && hist.textContent === '(no samples yet)') {
+      hist.textContent = '';
+    }
+    hist.textContent += (hist.textContent ? '  ' : '') + msg;
+    hist.scrollTop = hist.scrollHeight;
+
+    var n = sampleData.rewards.length;
+    var avg = sampleData.total / n;
+    document.getElementById('s-count').textContent = n;
+    document.getElementById('s-avg').textContent = avg.toFixed(2);
+
+    var err = Math.abs(avg - 8.6);
+    document.getElementById('s-err').textContent = 'Error: ' + err.toFixed(2) + (err < 0.3 ? ' ✓ converging!' : '');
+  }
+
+  // Initialize EV calculator
+  document.addEventListener('DOMContentLoaded', function() {
+    updateEV();
+  });
+</script>
+</body>
+</html>

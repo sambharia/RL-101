@@ -36,6 +36,18 @@ high-trust and beginner-friendly for the foundations the book assumes.
 - **EleutherAI / Hugging Face Discords**
   Use for: open-source LM training practitioners; real implementation wisdom.
 
+### Probability & statistics (for the RL/RLHF math)
+- **Seeing Theory — Brown University** https://seeing-theory.brown.edu/
+  Beautiful interactive visualizations of probability distributions, expectation,
+  and sampling (frequentist inference chapter). Use for: visual intuition on how
+  sample averages converge to expectations. Best companion for Lesson 4+.
+- **3Blue1Brown — Essence of Probability** (select videos from the main channel)
+  https://www.youtube.com/c/3blue1brown
+  Use for: visual intuition on Bayes, distributions, and the central limit theorem.
+- **Stanford CS229 — Probability Review** (Autumn 2018 notes)
+  https://cs229.stanford.edu/section/cs229-prob.pdf
+  Concise 12-page review of distributions, expectation, variance, and Bayes' rule
+  at the level assumed by ML courses. Use for: quick reference when equations appear.
+
 ## Gaps
-- Need a vetted, beginner-friendly probability refresher matched to RL (expectation,
-  sampling, log-probabilities). To be sourced when we reach the math-heavy lessons.
+- (none currently identified)

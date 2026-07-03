@@ -1,0 +1,622 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lesson 6 — The Three-Step RLHF Pipeline</title>
+  <link rel="stylesheet" href="../assets/lesson.css">
+  <script defer src="../assets/quiz.js"></script>
+
+  <!-- KaTeX -->
+  <link rel="stylesheet"
+        href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css"
+        crossorigin="anonymous">
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js" crossorigin="anonymous"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"
+          crossorigin="anonymous"
+          onload="renderMathInElement(document.body,{delimiters:[
+            {left:'$$',right:'$$',display:true},
+            {left:'$',right:'$',display:false}
+          ],throwOnError:false});"></script>
+
+  <style>
+    .recall-card {
+      background: #f6fbf7; border: 1px solid #b7d9c2;
+      border-left: 4px solid var(--good); border-radius: 8px;
+      padding: 1rem 1.2rem; margin: 1.1rem 0;
+    }
+    .recall-card .rc-q { font-weight: 600; margin: 0 0 0.7rem; }
+    .recall-card .rc-reveal {
+      font-family: ui-sans-serif, sans-serif; font-size: 0.82rem;
+      background: var(--good); color: #fff; border: none; border-radius: 6px;
+      padding: 0.35rem 0.85rem; cursor: pointer;
+    }
+    .recall-card .rc-answer {
+      margin-top: 0.8rem; border-top: 1px solid #b7d9c2;
+      padding-top: 0.8rem; font-size: 0.95rem;
+    }
+    .math-box {
+      background: #fff; border: 1px solid var(--rule);
+      border-left: 4px solid #1d6fb8; border-radius: 8px;
+      padding: 1rem 1.4rem; margin: 1.4rem 0; font-size: 0.96rem;
+    }
+    .math-box .mb-title {
+      font-family: ui-sans-serif, sans-serif; font-size: 0.72rem;
+      text-transform: uppercase; letter-spacing: 0.1em; font-weight: 700;
+      color: #1d6fb8; margin: 0 0 0.7rem;
+    }
+    .sym-row { display: flex; align-items: baseline; gap: 0.6rem; margin: 0.45rem 0; }
+    .sym { font-weight: 700; color: #1d6fb8; min-width: 100px; font-size: 0.93rem; }
+    .surprise {
+      background: #fffbf0; border: 1px solid #e8d87a;
+      border-left: 4px solid #c8a800; border-radius: 8px;
+      padding: 1rem 1.2rem; margin: 1.4rem 0;
+    }
+    .surprise .s-title {
+      font-family: ui-sans-serif, sans-serif; font-size: 0.72rem;
+      text-transform: uppercase; letter-spacing: 0.1em; font-weight: 700;
+      color: #8a6e00; margin: 0 0 0.5rem;
+    }
+    .mastery {
+      background: #1a1a1a; color: #f4f1e8;
+      border-radius: 10px; padding: 1.3rem 1.5rem; margin: 2.2rem 0;
+    }
+    .mastery h3 { color: #f4c36a; margin: 0 0 0.7rem; font-size: 1rem; }
+    .mastery .rung {
+      margin: 0.8rem 0; padding: 0.65rem 0.9rem;
+      border-radius: 6px; background: rgba(255,255,255,0.07); font-size: 0.93rem;
+    }
+    .mastery .rung-label {
+      font-family: ui-sans-serif, sans-serif; font-size: 0.7rem;
+      text-transform: uppercase; letter-spacing: 0.1em; opacity: 0.7;
+      display: block; margin-bottom: 0.3rem;
+    }
+    .mastery .gate-note { margin-top: 0.9rem; font-size: 0.82rem; opacity: 0.7; font-style: italic; }
+    .worked {
+      background: #f0f7ff; border: 1px solid #b0d0f0;
+      border-left: 4px solid #2980b9; border-radius: 8px;
+      padding: 1rem 1.3rem; margin: 1.4rem 0; font-size: 0.95rem;
+    }
+    .worked .w-title {
+      font-family: ui-sans-serif, sans-serif; font-size: 0.72rem;
+      text-transform: uppercase; letter-spacing: 0.1em; font-weight: 700;
+      color: #2980b9; margin: 0 0 0.7rem;
+    }
+    .worked .step { margin: 0.6rem 0; }
+    .worked .step-label { font-weight: 700; color: #2980b9; margin-bottom: 0.2rem; }
+    .feynman {
+      background: #faf5eb; border: 1px solid #e0d5b8;
+      border-left: 4px solid #b8860b; border-radius: 8px;
+      padding: 1rem 1.2rem; margin: 1.4rem 0;
+    }
+    .feynman .f-title {
+      font-family: ui-sans-serif, sans-serif; font-size: 0.72rem;
+      text-transform: uppercase; letter-spacing: 0.1em; font-weight: 700;
+      color: #8a6e00; margin: 0 0 0.5rem;
+    }
+    .pipeline {
+      font-family: "SF Mono", ui-monospace, Menlo, monospace; font-size: 0.8rem;
+      background: #1a1a1a; color: #f4f1e8; border-radius: 10px;
+      padding: 1.3rem; text-align: center; line-height: 1.8; margin: 1.6rem 0;
+      white-space: pre; overflow-x: auto;
+    }
+    .pipeline .step-label { color: #f4c36a; font-weight: 700; }
+    .pipeline .arrow { color: #7ec699; }
+    .mapping-table {
+      border-collapse: collapse; width: 100%; margin: 1rem 0; font-size: 0.9rem;
+    }
+    .mapping-table th {
+      background: #1d6fb8; color: #fff; padding: 0.55rem 0.7rem;
+      text-align: left; font-weight: 600;
+      font-family: ui-sans-serif, sans-serif; font-size: 0.82rem;
+    }
+    .mapping-table td {
+      border: 1px solid var(--rule); padding: 0.5rem 0.7rem;
+      background: #fff; vertical-align: top;
+    }
+    .mapping-table tr:nth-child(even) td { background: #f8f7f3; }
+    .timeline {
+      border-left: 3px solid #1d6fb8; margin: 1.4rem 0; padding-left: 1.2rem;
+    }
+    .timeline .tl-step {
+      margin: 1.2rem 0; position: relative;
+    }
+    .timeline .tl-step::before {
+      content: ''; position: absolute; left: -1.55rem; top: 0.35rem;
+      width: 12px; height: 12px; border-radius: 50%;
+      background: #1d6fb8; border: 2px solid #fff;
+    }
+    .timeline .tl-title {
+      font-family: ui-sans-serif, sans-serif; font-weight: 700;
+      font-size: 0.9rem; color: #1d6fb8;
+    }
+    .timeline .tl-body { font-size: 0.93rem; margin-top: 0.3rem; }
+  </style>
+</head>
+<body>
+<div class="wrap">
+
+  <p class="kicker">RLHF for Beginners · Lesson 6 of 23</p>
+  <h1>The Three-Step RLHF Pipeline</h1>
+  <p class="subtitle">Pre-training gives you a base model that predicts text. Post-training turns it into an assistant. Three steps: SFT, Reward Model, RL. After this lesson, you know the full map.</p>
+  <div class="meta-row">
+    <span>Phase 1 — The RLHF big picture</span>
+    <span>Prerequisites: All of Phase 0 (Lessons 1–5b)</span>
+    <span>~30 min</span>
+  </div>
+
+
+  <!-- ═══════════════════════════════════
+       WARM-UP RECALL
+  ════════════════════════════════════════ -->
+  <h2>Warm-up: pull it back from memory</h2>
+
+  <div class="recall-card">
+    <p class="rc-q">SR1 (Lesson 5) — What are the six core RL terms? State the RL objective in one sentence.</p>
+    <button class="rc-reveal" onclick="revealAnswer(this)">Reveal</button>
+    <div class="rc-answer" style="display:none">
+      Agent, state, action, reward, policy, return. RL objective: find the policy that maximizes expected return.
+    </div>
+  </div>
+
+  <div class="recall-card">
+    <p class="rc-q">SR2 (Lesson 5b) — In your capstone, what did you identify as the part of the training loop that changes when you go from supervised to RLHF?</p>
+    <button class="rc-reveal" onclick="revealAnswer(this)">Reveal</button>
+    <div class="rc-answer" style="display:none">
+      The loss signal changes. In supervised training, the loss compares against the correct next token from the data. In RLHF, the loss comes from a reward model's score. The forward pass (gpt function) stays the same.
+    </div>
+  </div>
+
+  <div class="recall-card">
+    <p class="rc-q">SR3 (Lesson 4) — What is the RLHF objective in symbols? Name each part.</p>
+    <button class="rc-reveal" onclick="revealAnswer(this)">Reveal</button>
+    <div class="rc-answer" style="display:none">
+      $\max_\pi \mathbb{E}_{y \sim \pi}[R(y)] - \beta \text{KL}[\pi \| \pi_\text{ref}]$. Maximize expected reward minus a penalty for drifting too far from the reference policy.
+    </div>
+  </div>
+
+
+  <!-- ═══════════════════════════════════
+       § 1 — THE BIG PICTURE
+  ════════════════════════════════════════ -->
+  <h2>1. From raw text to helpful assistant</h2>
+
+  <p>A language model starts life by reading the internet. It learns to predict the next token — that's all. If you give it a question, it might continue it with another question, or with a Wikipedia paragraph, or with nonsense. It has knowledge but no <em>behavior</em>.</p>
+
+  <p>The journey from "predicts text" to "helpful assistant" has two big phases:</p>
+
+  <div class="pipeline"><span class="step-label">PRE-TRAINING</span>                    <span class="step-label">POST-TRAINING</span>
+
+Read the internet               Turn into an assistant
+Learn to predict text     <span class="arrow">───▸</span>    Learn to be helpful
+(Lessons 2–3b)                   (This lesson onward)
+
+                                 Three steps:
+                                 <span class="step-label">Step 1: SFT</span>
+                                 <span class="step-label">Step 2: Reward Model</span>
+                                 <span class="step-label">Step 3: RL (RLHF)</span></div>
+
+  <p>Pre-training is what microGPT does: predict the next token from data. You already understand this completely. Post-training is where RLHF lives. It has three steps, each building on the last.</p>
+
+
+  <!-- ═══════════════════════════════════
+       § 2 — THE THREE STEPS
+  ════════════════════════════════════════ -->
+  <h2>2. The three steps</h2>
+
+  <p>Here's the full pipeline at a glance. Then we'll zoom into each step.</p>
+
+  <div class="pipeline"><span class="step-label">Base Model</span> <span class="arrow">──SFT──▸</span> <span class="step-label">SFT Model</span> <span class="arrow">──Train RM──▸</span> <span class="step-label">Reward Model</span>
+                                             <span class="arrow">│</span>
+<span class="step-label">SFT Model</span> <span class="arrow">───────── RL + Reward Model ─────────▸</span> <span class="step-label">Final Model</span></div>
+
+
+  <!-- ═══════════════════════════════════
+       § 3 — STEP 1: SFT
+  ════════════════════════════════════════ -->
+  <h2>3. Step 1: Supervised Fine-Tuning (SFT)</h2>
+
+  <p>The base model predicts text, but it doesn't know how to <em>answer questions</em>. It's never seen a conversation format. SFT teaches it the format.</p>
+
+  <div class="feynman">
+    <div class="f-title">What SFT actually does</div>
+    <p>You take the base model and train it on a dataset of (prompt, ideal response) pairs — written by humans. The training is <em>exactly</em> the same as what you did in microGPT: next-token prediction with cross-entropy loss. The only difference is the data.</p>
+  </div>
+
+  <div class="worked">
+    <div class="w-title">Worked example: SFT training data</div>
+    <div class="step">
+      <div class="step-label">Pre-training data (raw internet):</div>
+      "The capital of France is Paris. Paris is located on the Seine river and has a population of..."
+    </div>
+    <div class="step">
+      <div class="step-label">SFT data (conversations):</div>
+      <strong>User:</strong> What is the capital of France?<br>
+      <strong>Assistant:</strong> The capital of France is Paris.
+    </div>
+    <p>Same training method ($-\log P$ of the correct next token), different data format. The model learns: when you see "User: [question]", respond with "Assistant: [helpful answer]".</p>
+  </div>
+
+  <div class="math-box">
+    <div class="mb-title">SFT training — you already know this</div>
+    <p>SFT loss is the same cross-entropy loss from Lesson 3:</p>
+    $$\mathcal{L}_\text{SFT} = -\sum_{t} \log \pi_\theta(y_t \mid x, y_{<t})$$
+    <div class="sym-row"><span class="sym">$y_t$</span> The correct token at position $t$ (from the human-written response).</div>
+    <div class="sym-row"><span class="sym">$y_{<t}$</span> All tokens before position $t$.</div>
+    <div class="sym-row"><span class="sym">$x$</span> The prompt.</div>
+    <p style="margin-top:0.8rem;">This is exactly <code>-probs[target_id].log()</code> from microGPT — summed over every token in the response.</p>
+  </div>
+
+  <div class="surprise">
+    <div class="s-title">What SFT can and can't do</div>
+    <p><strong>Can do:</strong> Teach the model the conversation format. Make it answer questions instead of continuing text. Give it a "voice" — helpful, concise, structured.</p>
+    <p><strong>Can't do:</strong> Make the model choose the <em>best</em> answer among many good ones. SFT treats every human-written response as equally correct. It can't learn "this response is better than that one" — only "this is what you should say." For preference and quality, you need Steps 2 and 3.</p>
+  </div>
+
+  <h3>What comes out of SFT</h3>
+  <p>An <strong>SFT model</strong> — a language model that can have conversations and follow instructions. It's already useful. But it's not great at subtle quality judgments: when is a longer answer better? When should it refuse? How formal should it be? Those need human preferences.</p>
+
+
+  <!-- ═══════════════════════════════════
+       § 4 — STEP 2: REWARD MODEL
+  ════════════════════════════════════════ -->
+  <h2>4. Step 2: Train a Reward Model</h2>
+
+  <p>The SFT model can answer questions. Now we need a way to measure <em>how good</em> each answer is — automatically, without a human scoring every response. That's the reward model.</p>
+
+  <h3>How you build one</h3>
+
+  <div class="timeline">
+    <div class="tl-step">
+      <div class="tl-title">a. Collect comparisons</div>
+      <div class="tl-body">Give a prompt to the SFT model. Generate two (or more) different responses. Show both to a human and ask: <strong>"Which response is better?"</strong> The human picks one. Repeat thousands of times.</div>
+    </div>
+    <div class="tl-step">
+      <div class="tl-title">b. Build a dataset of preferences</div>
+      <div class="tl-body">Each data point looks like: (prompt, winning response, losing response). No scores — just "A is better than B."</div>
+    </div>
+    <div class="tl-step">
+      <div class="tl-title">c. Train a model to predict the human's preference</div>
+      <div class="tl-body">Take a language model (often the SFT model itself), replace the final layer so it outputs <strong>one number</strong> instead of token probabilities. Train it so that: winning response gets a higher score than losing response.</div>
+    </div>
+  </div>
+
+  <div class="worked">
+    <div class="w-title">Worked example: reward model training data</div>
+    <p><strong>Prompt:</strong> "Explain gravity to a 5-year-old."</p>
+    <p><strong>Response A:</strong> "Gravity is the force of attraction between objects with mass, proportional to the product of their masses and inversely proportional to the square of the distance between them."</p>
+    <p><strong>Response B:</strong> "You know how when you throw a ball up, it comes back down? That's gravity! The Earth is really big and heavy, so it pulls everything toward it — like a giant magnet for everything."</p>
+    <p><strong>Human judgment:</strong> B is better (appropriate for a 5-year-old).</p>
+    <div class="step">
+      <div class="step-label">After training:</div>
+      Reward model scores: R(A) = 3.2, R(B) = 7.8<br>
+      Higher score for B — the reward model learned the human's preference.
+    </div>
+  </div>
+
+  <div class="math-box">
+    <div class="mb-title">Reward model architecture</div>
+    <p>The reward model is a transformer — same architecture as the language model — but with a different final layer:</p>
+    <div class="sym-row"><span class="sym">Language model</span> Input tokens → transformer → <strong>logits over vocabulary</strong> (50,257 numbers)</div>
+    <div class="sym-row"><span class="sym">Reward model</span> Input tokens → transformer → <strong>single scalar score</strong> (1 number)</div>
+    <p style="margin-top:0.8rem;">Think of it as: replace <code>lm_head [27×16]</code> from microGPT with a <code>reward_head [1×16]</code>. Instead of 27 logits, you get 1 number: the reward.</p>
+  </div>
+
+  <div class="feynman">
+    <div class="f-title">Why not just ask humans every time?</div>
+    <p>During RL training (Step 3), the model generates thousands of responses per batch. You can't have humans score each one — it's too slow and expensive. The reward model is a <strong>proxy for human judgment</strong>: it learned what humans prefer from the comparison data, and now it can score new responses automatically. It's not perfect, but it's fast enough to run inside a training loop.</p>
+  </div>
+
+  <div class="surprise">
+    <div class="s-title">The reward model is also a language model</div>
+    <p>This surprises people. The reward model is typically initialized from the SFT model — same transformer, same weights — with just the output layer swapped. It reads the prompt and response, processes them through the same attention and MLP blocks, and then produces a single number instead of next-token probabilities. It "understands" language the same way the policy does — it just outputs a score instead of text.</p>
+  </div>
+
+
+  <!-- ═══════════════════════════════════
+       § 5 — STEP 3: RL
+  ════════════════════════════════════════ -->
+  <h2>5. Step 3: RL optimization (the RLHF step)</h2>
+
+  <p>Now you have everything you need:</p>
+  <ul>
+    <li>A <strong>policy</strong> (the SFT model) that can generate responses</li>
+    <li>A <strong>reward model</strong> that can score them</li>
+  </ul>
+
+  <p>Step 3 connects them: generate responses, score them with the reward model, and update the policy to produce higher-scoring responses.</p>
+
+  <div class="timeline">
+    <div class="tl-step">
+      <div class="tl-title">a. Sample a prompt from the dataset</div>
+      <div class="tl-body">"Explain photosynthesis."</div>
+    </div>
+    <div class="tl-step">
+      <div class="tl-title">b. Generate a response using the current policy</div>
+      <div class="tl-body">The model (agent) samples tokens one at a time: "Plants convert sunlight into energy through..."</div>
+    </div>
+    <div class="tl-step">
+      <div class="tl-title">c. Score the response with the reward model</div>
+      <div class="tl-body">Reward model reads prompt + response and outputs a score: R = 7.2</div>
+    </div>
+    <div class="tl-step">
+      <div class="tl-title">d. Update the policy to increase the probability of high-reward responses</div>
+      <div class="tl-body">Use policy gradient methods (coming in Lessons 10–11) to push the model toward generating responses like this one more often — while staying close to the original SFT model (the KL penalty).</div>
+    </div>
+  </div>
+
+  <div class="math-box">
+    <div class="mb-title">The RLHF objective — now you know every piece</div>
+    $$\max_{\pi}\; \mathbb{E}_{x \sim \mathcal{D},\, y \sim \pi(\cdot\,|\,x)}\!\Big[\,R(x,y)\,\Big] \;-\; \beta\,\text{KL}\!\big[\,\pi \;\|\; \pi_{\text{ref}}\,\big]$$
+    <div class="sym-row"><span class="sym">$\pi$</span> The policy being trained (started as the SFT model).</div>
+    <div class="sym-row"><span class="sym">$\pi_\text{ref}$</span> The reference policy (the SFT model, frozen — never updated).</div>
+    <div class="sym-row"><span class="sym">$R(x,y)$</span> The reward model's score for response $y$ to prompt $x$.</div>
+    <div class="sym-row"><span class="sym">$\text{KL}[\pi \| \pi_\text{ref}]$</span> How far the policy has drifted from the reference. Built from log-ratios: $\log \frac{\pi(y)}{\pi_\text{ref}(y)}$.</div>
+    <div class="sym-row"><span class="sym">$\beta$</span> Controls the tradeoff: high $\beta$ = stay close to SFT model, low $\beta$ = chase reward harder.</div>
+  </div>
+
+  <div class="feynman">
+    <div class="f-title">Why the KL penalty?</div>
+    <p>Without the KL penalty, the model would find degenerate ways to maximize the reward score — repeating phrases the reward model likes, producing nonsensical text that happens to score well, or collapsing to one memorized response. The KL penalty says: "you can improve, but don't become a completely different model." It keeps the policy close to the SFT model's natural language abilities while allowing targeted improvements.</p>
+  </div>
+
+  <div class="worked">
+    <div class="w-title">Worked example: one RLHF training step</div>
+    <div class="step">
+      <div class="step-label">Prompt:</div>
+      "What's the best way to learn programming?"
+    </div>
+    <div class="step">
+      <div class="step-label">Policy generates:</div>
+      "Start with Python. Build small projects. Read other people's code."
+    </div>
+    <div class="step">
+      <div class="step-label">Reward model scores:</div>
+      R = 8.1 (high — helpful, concise, actionable)
+    </div>
+    <div class="step">
+      <div class="step-label">Log-ratio check:</div>
+      $\log \frac{\pi(\text{response})}{\pi_\text{ref}(\text{response})} = 0.3$ (small drift — fine)
+    </div>
+    <div class="step">
+      <div class="step-label">Update:</div>
+      Increase probability of responses like this one. The KL is small, so the update goes through without much penalty.
+    </div>
+    <br>
+    <p>Now suppose the model generates: "PYTHON PYTHON PYTHON BEST BEST BEST"</p>
+    <div class="step">
+      <div class="step-label">Reward model scores:</div>
+      R = 6.5 (the word "Python" helped, but it's garbage)
+    </div>
+    <div class="step">
+      <div class="step-label">Log-ratio check:</div>
+      $\log \frac{\pi(\text{response})}{\pi_\text{ref}(\text{response})} = 4.7$ (huge drift — the SFT model would never say this)
+    </div>
+    <div class="step">
+      <div class="step-label">Effective objective:</div>
+      $8.1 - \beta \times 4.7$ — the KL penalty eats the reward. Net score is low. Model does NOT learn to repeat this.
+    </div>
+  </div>
+
+
+  <!-- ═══════════════════════════════════
+       § 6 — THE FULL MAP
+  ════════════════════════════════════════ -->
+  <h2>6. Putting it all together</h2>
+
+  <table class="mapping-table">
+    <tr><th>Step</th><th>Input</th><th>Output</th><th>Training signal</th><th>You learned the method in</th></tr>
+    <tr>
+      <td><strong>Pre-training</strong></td>
+      <td>Raw internet text</td>
+      <td>Base model</td>
+      <td>$-\log P(\text{next token})$</td>
+      <td>Lessons 2–3 (microGPT)</td>
+    </tr>
+    <tr>
+      <td><strong>Step 1: SFT</strong></td>
+      <td>Base model + conversation data</td>
+      <td>SFT model</td>
+      <td>$-\log P(\text{next token})$ on conversations</td>
+      <td>Same method, new data</td>
+    </tr>
+    <tr>
+      <td><strong>Step 2: Reward Model</strong></td>
+      <td>SFT model + human comparisons</td>
+      <td>Reward model (outputs 1 number)</td>
+      <td>Winning response should score higher</td>
+      <td>(New — this lesson)</td>
+    </tr>
+    <tr>
+      <td><strong>Step 3: RL</strong></td>
+      <td>SFT model + reward model</td>
+      <td>Final aligned model</td>
+      <td>$\max \mathbb{E}[R] - \beta \text{KL}$</td>
+      <td>Lessons 4–5 (probability, RL)</td>
+    </tr>
+  </table>
+
+  <div class="feynman">
+    <div class="f-title">The plain-English summary</div>
+    <p><strong>Pre-training:</strong> Read the internet, learn to predict text.<br>
+    <strong>SFT:</strong> Read conversations, learn to answer questions.<br>
+    <strong>Reward model:</strong> Learn what humans prefer by looking at comparisons.<br>
+    <strong>RL:</strong> Generate responses, score them, get better at generating high-scoring ones — but don't go crazy.</p>
+  </div>
+
+
+  <!-- ═══════════════════════════════════
+       § 7 — THE POST-TRAINING LANDSCAPE
+  ════════════════════════════════════════ -->
+  <h2>7. The post-training landscape (beyond the three steps)</h2>
+
+  <p>The three-step pipeline (SFT → RM → RL) is the classic RLHF recipe from the original InstructGPT paper (2022). But the field has evolved. Here's what the landscape looks like now:</p>
+
+  <div class="worked">
+    <div class="w-title">Variations on the theme</div>
+    <div class="step">
+      <div class="step-label">DPO (Direct Preference Optimization):</div>
+      Skip the reward model entirely. Train directly on preference pairs using a clever loss function that implicitly defines the reward. Simpler pipeline, fewer moving parts. (Lesson 12)
+    </div>
+    <div class="step">
+      <div class="step-label">RLAIF (RL from AI Feedback):</div>
+      Replace human comparisons with AI-generated comparisons. A strong model judges which response is better instead of a human. Cheaper and faster to scale. (Lesson 17)
+    </div>
+    <div class="step">
+      <div class="step-label">Rejection Sampling:</div>
+      Generate many responses, score them all with the reward model, and fine-tune on only the best ones. No RL algorithm needed — just cherry-pick and train with SFT. The simplest "RLHF" that works. (Lesson 13)
+    </div>
+    <div class="step">
+      <div class="step-label">RLVR (RL with Verifiable Rewards):</div>
+      For math and code, you don't need a reward model — you can check if the answer is correct automatically. The reward is binary: right or wrong. (Lesson 14)
+    </div>
+  </div>
+
+  <p>All of these are variations on the same core idea: <strong>get a signal for what's good, and push the model toward it</strong>. The classic three-step pipeline is the foundation that makes all the variations understandable.</p>
+
+
+  <!-- ═══════════════════════════════════
+       SELF-CHECK MCQ
+  ════════════════════════════════════════ -->
+  <h2>Self-check</h2>
+
+  <div class="quiz" data-answer="2">
+    <p class="q">Q1 — What is the key difference between pre-training and SFT?</p>
+    <ul class="opts">
+      <li><button class="opt">SFT uses a different model architecture (more layers, bigger embeddings)</button></li>
+      <li><button class="opt">Same training method ($-\log P$ of next token), but SFT trains on conversation-format data</button></li>
+      <li><button class="opt">SFT uses reinforcement learning instead of supervised learning</button></li>
+      <li><button class="opt">SFT trains on a larger dataset than pre-training</button></li>
+    </ul>
+    <p class="feedback right" data-when="right">Correct. SFT is mechanically identical to pre-training — same loss function, same training loop. The only difference is the data: pre-training uses raw text, SFT uses curated (prompt, response) pairs. The format teaches the model to behave as an assistant.</p>
+    <p class="feedback nope" data-when="nope">SFT uses the exact same training method as pre-training — predict the next token, compute $-\log P(\text{correct})$. The only change is the data: instead of raw internet text, you train on curated (prompt, response) conversations.</p>
+  </div>
+
+  <div class="quiz" data-answer="3">
+    <p class="q">Q2 — What does the reward model output?</p>
+    <ul class="opts">
+      <li><button class="opt">A probability distribution over the vocabulary (same as a language model)</button></li>
+      <li><button class="opt">A corrected version of the response</button></li>
+      <li><button class="opt">A single number (scalar score) representing how good the response is</button></li>
+      <li><button class="opt">A binary yes/no judgment: good response or bad response</button></li>
+    </ul>
+    <p class="feedback right" data-when="right">Correct. The reward model reads the prompt and response, processes them through a transformer, and outputs a single number. Higher = better. Think of it as replacing <code>lm_head [27×16]</code> with <code>reward_head [1×16]</code>.</p>
+    <p class="feedback nope" data-when="nope">The reward model is a transformer that outputs a single scalar score — one number. Not probabilities over tokens, not corrected text, not binary. Just one number: how good is this response?</p>
+  </div>
+
+  <div class="quiz" data-answer="4">
+    <p class="q">Q3 (hard) — Why does RLHF need a KL penalty? What would go wrong without it?</p>
+    <ul class="opts">
+      <li><button class="opt">The model would forget how to generate text entirely</button></li>
+      <li><button class="opt">The gradients would become too large and training would diverge numerically</button></li>
+      <li><button class="opt">The reward model would become inaccurate over time</button></li>
+      <li><button class="opt">The model would find degenerate ways to maximize the reward score (repetitive text, nonsense that scores well) by drifting too far from natural language</button></li>
+    </ul>
+    <p class="feedback right" data-when="right">Correct. The reward model is an imperfect proxy for human judgment. Without the KL penalty, the policy would exploit the reward model's weaknesses — producing text that scores high but is actually low quality. The KL penalty constrains the policy to stay close to the SFT model, which already generates natural, coherent language. This is a form of Goodhart's Law: "when a measure becomes a target, it ceases to be a good measure."</p>
+    <p class="feedback nope" data-when="nope">Without the KL penalty, the model would "hack" the reward model — finding degenerate text that scores high but isn't actually good (repetition, strange phrasing, exploiting blind spots). The KL penalty keeps the model close to the SFT model's natural language, preventing this reward hacking.</p>
+  </div>
+
+
+  <!-- ═══════════════════════════════════
+       MASTERY CHECK
+  ════════════════════════════════════════ -->
+  <h2>Mastery check</h2>
+
+  <div class="mastery">
+    <h3>🔒 Lesson 6 Mastery Check</h3>
+
+    <div class="rung">
+      <span class="rung-label">Rung 1 — Recall (necessary, not sufficient)</span>
+      Name the three steps of the RLHF pipeline in order. For each step: what goes in, what comes out, and what is the training signal?
+    </div>
+
+    <div class="rung">
+      <span class="rung-label">Rung 2 — Apply (must pass)</span>
+      You're building an AI writing assistant. Walk through how you would apply the three-step pipeline:
+      <ol style="margin:0.5rem 0 0; padding-left:1.2rem; font-size:0.93rem;">
+        <li>What data would you need for SFT? Give a specific example of one training sample.</li>
+        <li>How would you collect data for the reward model? What would one data point look like?</li>
+        <li>During the RL step, the model generates: "Once upon a time time time time time." The reward model gives it a score of 5.2. The KL divergence from the reference is very large. Would this response's score survive the KL penalty? Why or why not?</li>
+      </ol>
+    </div>
+
+    <div class="rung">
+      <span class="rung-label">Rung 3 — Explain/Transfer (must pass)</span>
+      A colleague says: "Why not just use SFT with really good data? Why do we need RL at all?" Give a concrete explanation of what RL can do that SFT cannot — focusing on the difference between "copying the right answer" and "learning what's better."
+    </div>
+
+    <p class="gate-note">Pass = Rung 2 AND Rung 3 both correct. Post answers in chat.</p>
+  </div>
+
+
+  <!-- ═══════════════════════════════════
+       SPACED RECALL
+  ════════════════════════════════════════ -->
+  <h2>For next time: questions to answer from memory</h2>
+
+  <div class="recall-card">
+    <p class="rc-q">SR1 — What are the three steps of the RLHF pipeline? What is the training signal for each?</p>
+    <button class="rc-reveal" onclick="revealAnswer(this)">Reveal (only after you've tried)</button>
+    <div class="rc-answer" style="display:none">
+      (1) <strong>SFT:</strong> train on (prompt, response) pairs using cross-entropy loss ($-\log P$ of correct token). (2) <strong>Reward Model:</strong> train on human preference comparisons — winning response should score higher. (3) <strong>RL:</strong> generate responses, score with reward model, maximize $\mathbb{E}[R] - \beta \text{KL}$.
+    </div>
+  </div>
+
+  <div class="recall-card">
+    <p class="rc-q">SR2 — What does the reward model output, and how is its architecture related to the language model?</p>
+    <button class="rc-reveal" onclick="revealAnswer(this)">Reveal (only after you've tried)</button>
+    <div class="rc-answer" style="display:none">
+      The reward model outputs a <strong>single scalar score</strong> (one number). Its architecture is the same transformer as the language model, but with the final layer replaced: instead of projecting to vocab_size logits, it projects to 1 number. Often initialized from the SFT model's weights.
+    </div>
+  </div>
+
+  <div class="recall-card">
+    <p class="rc-q">SR3 — Why does RLHF need the KL penalty? What goes wrong without it?</p>
+    <button class="rc-reveal" onclick="revealAnswer(this)">Reveal (only after you've tried)</button>
+    <div class="rc-answer" style="display:none">
+      Without KL, the policy exploits the reward model — producing degenerate text (repetition, nonsense) that scores high but isn't actually good. The KL penalty keeps the policy close to the SFT model's natural language, preventing reward hacking. It's Goodhart's Law in action.
+    </div>
+  </div>
+
+
+  <!-- ═══════════════════════════════════
+       PRIMARY SOURCE
+  ════════════════════════════════════════ -->
+  <div class="box" style="border-left-color:#1c6b3c;">
+    <div class="box-title" style="color:#1c6b3c;">Primary source recommendation</div>
+    <p><strong><a href="https://arxiv.org/abs/2203.02155" target="_blank">Training language models to follow instructions with human feedback (InstructGPT paper)</a></strong> — Ouyang et al., 2022. The paper that introduced the three-step RLHF pipeline to language models. Read the introduction and Section 3 (Method) — they describe the exact pipeline from this lesson. Figure 2 is the best single diagram of the three steps.</p>
+  </div>
+
+
+  <!-- ═══════════════════════════════════
+       ASK TEACHER
+  ════════════════════════════════════════ -->
+  <div class="ask-teacher">
+    <strong>Stuck? Confused? Ask.</strong> Post any question in chat — your teacher can re-explain any section, give you a worked example, or go deeper on the math. The mastery check is a conversation, not an exam.
+  </div>
+
+
+  <!-- ═══════════════════════════════════
+       NAV
+  ════════════════════════════════════════ -->
+  <div class="lesson-nav">
+    <a href="0005b-capstone-microgpt.html">&larr; Lesson 5b: Capstone</a>
+    <a href="#" style="color:var(--muted); pointer-events:none;">Lesson 7: The RLHF Objective &rarr;</a>
+  </div>
+
+</div><!-- /wrap -->
+
+<script>
+  function revealAnswer(btn) {
+    var ans = btn.nextElementSibling;
+    if (ans.style.display === 'none') {
+      ans.style.display = 'block';
+      btn.textContent = 'Hide';
+    } else {
+      ans.style.display = 'none';
+      btn.textContent = 'Reveal';
+    }
+  }
+</script>
+</body>
+</html>
