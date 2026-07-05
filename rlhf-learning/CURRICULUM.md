@@ -15,10 +15,15 @@ Legend: [ ] todo · [~] in progress · [x] done
         → covers microgpt.py lines 29–71 (autograd Value class) + lines 150–183 (training loop)
 - [x] 0003b Model architecture: embeddings, attention, MLP (what's inside the transformer)
         → covers microgpt.py lines 73–143: the gpt() forward pass
-- [~] 0004 Probability you actually need (distributions, expectation, sampling, log-probs)
-- [ ] 0005 What is reinforcement learning? (agent, state, action, reward, policy, return)
--
+- [x] 0004 Probability you actually need (distributions, expectation, sampling, log-probs)
+- [x] 0005 What is reinforcement learning? (agent, state, action, reward, policy, return)
+- [x] 0005b CAPSTONE: Rebuild microGPT from scratch (pseudocode)
 ---
+
+## Phase 1 — The RLHF big picture
+- [x] 0006 The three-step RLHF pipeline (SFT → Reward Model → RL)  [mastered 2026-07-05]
+- [ ] 0007 The RLHF Objective (deeper dive into the math)
+
 
 ## How testing works (so you can trust your own progress)
 The gate for every lesson is one clear **Mastery Check** with three rungs:

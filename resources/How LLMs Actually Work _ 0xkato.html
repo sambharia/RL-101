@@ -1,0 +1,2018 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+
+    
+
+    <meta charset="utf-8">
+    <meta name=viewport content="width=device-width, initial-scale=1">
+    <meta name=author content="0xkato">
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+    <!-- Begin Jekyll SEO tag v2.8.0 -->
+<title>How LLMs Actually Work | 0xkato</title>
+<meta name="generator" content="Jekyll v3.10.0" />
+<meta property="og:title" content="How LLMs Actually Work" />
+<meta name="author" content="0xkato" />
+<meta property="og:locale" content="en_US" />
+<meta name="description" content="A from-the-ground-up walkthrough of how modern LLMs work, from tokens to transformer blocks to the next-token loop" />
+<meta property="og:description" content="A from-the-ground-up walkthrough of how modern LLMs work, from tokens to transformer blocks to the next-token loop" />
+<link rel="canonical" href="https://0xkato.xyz/how-llms-actually-work/" />
+<meta property="og:url" content="https://0xkato.xyz/how-llms-actually-work/" />
+<meta property="og:site_name" content="0xkato" />
+<meta property="og:type" content="article" />
+<meta property="article:published_time" content="2026-06-01T13:37:00+00:00" />
+<meta name="twitter:card" content="summary" />
+<meta property="twitter:title" content="How LLMs Actually Work" />
+<meta name="twitter:site" content="@" />
+<meta name="twitter:creator" content="@0xkato" />
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"BlogPosting","author":{"@type":"Person","name":"0xkato"},"dateModified":"2026-06-01T13:37:00+00:00","datePublished":"2026-06-01T13:37:00+00:00","description":"A from-the-ground-up walkthrough of how modern LLMs work, from tokens to transformer blocks to the next-token loop","headline":"How LLMs Actually Work","mainEntityOfPage":{"@type":"WebPage","@id":"https://0xkato.xyz/how-llms-actually-work/"},"url":"https://0xkato.xyz/how-llms-actually-work/"}</script>
+<!-- End Jekyll SEO tag -->
+
+
+    <link rel="apple-touch-icon-precomposed" sizes="57x57" href="https://0xkato.xyz/assets/images/favicon/apple-touch-icon-57x57.png" />
+<link rel="apple-touch-icon-precomposed" sizes="114x114" href="https://0xkato.xyz/assets/images/favicon/apple-touch-icon-114x114.png" />
+<link rel="apple-touch-icon-precomposed" sizes="72x72" href="https://0xkato.xyz/assets/images/favicon/apple-touch-icon-72x72.png" />
+<link rel="apple-touch-icon-precomposed" sizes="144x144" href="https://0xkato.xyz/assets/images/favicon/apple-touch-icon-144x144.png" />
+<link rel="apple-touch-icon-precomposed" sizes="60x60" href="https://0xkato.xyz/assets/images/favicon/apple-touch-icon-60x60.png" />
+<link rel="apple-touch-icon-precomposed" sizes="120x120" href="https://0xkato.xyz/assets/images/favicon/apple-touch-icon-120x120.png" />
+<link rel="apple-touch-icon-precomposed" sizes="76x76" href="https://0xkato.xyz/assets/images/favicon/apple-touch-icon-76x76.png" />
+<link rel="apple-touch-icon-precomposed" sizes="152x152" href="https://0xkato.xyz/assets/images/favicon/apple-touch-icon-152x152.png" />
+<link rel="icon" type="image/png" href="https://0xkato.xyz/assets/images/favicon/favicon-196x196.png" sizes="196x196" />
+<link rel="icon" type="image/png" href="https://0xkato.xyz/assets/images/favicon/favicon-96x96.png" sizes="96x96" />
+<link rel="icon" type="image/png" href="https://0xkato.xyz/assets/images/favicon/favicon-32x32.png" sizes="32x32" />
+<link rel="icon" type="image/png" href="https://0xkato.xyz/assets/images/favicon/favicon-16x16.png" sizes="16x16" />
+<link rel="icon" type="image/png" href="https://0xkato.xyz/assets/images/favicon/favicon-128.png" sizes="128x128" />
+<meta name="application-name" content="&nbsp;"/>
+<meta name="msapplication-TileColor" content="#FFFFFF" />
+<meta name="msapplication-TileImage" content="mstile-144x144.png" />
+<meta name="msapplication-square70x70logo" content="mstile-70x70.png" />
+<meta name="msapplication-square150x150logo" content="mstile-150x150.png" />
+<meta name="msapplication-wide310x150logo" content="mstile-310x150.png" />
+<meta name="msapplication-square310x310logo" content="mstile-310x310.png" />
+
+
+    <link rel="alternate" type="application/rss+xml" title="0xkato" href="https://0xkato.xyz/feed.xml" />
+
+    <script>window.FontAwesomeKitConfig = {"asyncLoading":{"enabled":false},"autoA11y":{"enabled":true},"baseUrl":"https://ka-f.fontawesome.com","baseUrlKit":"https://kit.fontawesome.com","detectConflictsUntil":null,"iconUploads":{},"id":7821852,"license":"free","method":"js","minify":{"enabled":true},"token":"d9b09040a7","v4FontFaceShim":{"enabled":true},"v4shim":{"enabled":true},"v5FontFaceShim":{"enabled":true},"version":"6.4.2"};!function(t){"function"==typeof define&&define.amd?define("kit-loader",t):t()}((function(){"use strict";function t(t,e){var n=Object.keys(t);if(Object.getOwnPropertySymbols){var r=Object.getOwnPropertySymbols(t);e&&(r=r.filter((function(e){return Object.getOwnPropertyDescriptor(t,e).enumerable}))),n.push.apply(n,r)}return n}function e(e){for(var n=1;n<arguments.length;n++){var o=null!=arguments[n]?arguments[n]:{};n%2?t(Object(o),!0).forEach((function(t){r(e,t,o[t])})):Object.getOwnPropertyDescriptors?Object.defineProperties(e,Object.getOwnPropertyDescriptors(o)):t(Object(o)).forEach((function(t){Object.defineProperty(e,t,Object.getOwnPropertyDescriptor(o,t))}))}return e}function n(t){return(n="function"==typeof Symbol&&"symbol"==typeof Symbol.iterator?function(t){return typeof t}:function(t){return t&&"function"==typeof Symbol&&t.constructor===Symbol&&t!==Symbol.prototype?"symbol":typeof t})(t)}function r(t,e,n){return(e=function(t){var e=function(t,e){if("object"!=typeof t||null===t)return t;var n=t[Symbol.toPrimitive];if(void 0!==n){var r=n.call(t,e||"default");if("object"!=typeof r)return r;throw new TypeError("@@toPrimitive must return a primitive value.")}return("string"===e?String:Number)(t)}(t,"string");return"symbol"==typeof e?e:String(e)}(e))in t?Object.defineProperty(t,e,{value:n,enumerable:!0,configurable:!0,writable:!0}):t[e]=n,t}function o(t,e){return function(t){if(Array.isArray(t))return t}(t)||function(t,e){var n=null==t?null:"undefined"!=typeof Symbol&&t[Symbol.iterator]||t["@@iterator"];if(null!=n){var r,o,i,c,a=[],u=!0,f=!1;try{if(i=(n=n.call(t)).next,0===e){if(Object(n)!==n)return;u=!1}else for(;!(u=(r=i.call(n)).done)&&(a.push(r.value),a.length!==e);u=!0);}catch(t){f=!0,o=t}finally{try{if(!u&&null!=n.return&&(c=n.return(),Object(c)!==c))return}finally{if(f)throw o}}return a}}(t,e)||function(t,e){if(!t)return;if("string"==typeof t)return i(t,e);var n=Object.prototype.toString.call(t).slice(8,-1);"Object"===n&&t.constructor&&(n=t.constructor.name);if("Map"===n||"Set"===n)return Array.from(t);if("Arguments"===n||/^(?:Ui|I)nt(?:8|16|32)(?:Clamped)?Array$/.test(n))return i(t,e)}(t,e)||function(){throw new TypeError("Invalid attempt to destructure non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method.")}()}function i(t,e){(null==e||e>t.length)&&(e=t.length);for(var n=0,r=new Array(e);n<e;n++)r[n]=t[n];return r}function c(t,e){var n=e&&e.addOn||"",r=e&&e.baseFilename||t.license+n,o=e&&e.minify?".min":"",i=e&&e.fileSuffix||t.method,c=e&&e.subdir||t.method;return t.baseUrl+"/releases/"+("latest"===t.version?"latest":"v".concat(t.version))+"/"+c+"/"+r+o+"."+i}function a(t,e){var n=e||["fa"],r="."+Array.prototype.join.call(n,",."),o=t.querySelectorAll(r);Array.prototype.forEach.call(o,(function(e){var n=e.getAttribute("title");e.setAttribute("aria-hidden","true");var r=!e.nextElementSibling||!e.nextElementSibling.classList.contains("sr-only");if(n&&r){var o=t.createElement("span");o.innerHTML=n,o.classList.add("sr-only"),e.parentNode.insertBefore(o,e.nextSibling)}}))}var u,f=function(){},s="undefined"!=typeof global&&void 0!==global.process&&"function"==typeof global.process.emit,l="undefined"==typeof setImmediate?setTimeout:setImmediate,d=[];function h(){for(var t=0;t<d.length;t++)d[t][0](d[t][1]);d=[],u=!1}function m(t,e){d.push([t,e]),u||(u=!0,l(h,0))}function p(t){var e=t.owner,n=e._state,r=e._data,o=t[n],i=t.then;if("function"==typeof o){n="fulfilled";try{r=o(r)}catch(t){g(i,t)}}v(i,r)||("fulfilled"===n&&b(i,r),"rejected"===n&&g(i,r))}function v(t,e){var r;try{if(t===e)throw new TypeError("A promises callback cannot return that same promise.");if(e&&("function"==typeof e||"object"===n(e))){var o=e.then;if("function"==typeof o)return o.call(e,(function(n){r||(r=!0,e===n?y(t,n):b(t,n))}),(function(e){r||(r=!0,g(t,e))})),!0}}catch(e){return r||g(t,e),!0}return!1}function b(t,e){t!==e&&v(t,e)||y(t,e)}function y(t,e){"pending"===t._state&&(t._state="settled",t._data=e,m(A,t))}function g(t,e){"pending"===t._state&&(t._state="settled",t._data=e,m(S,t))}function w(t){t._then=t._then.forEach(p)}function A(t){t._state="fulfilled",w(t)}function S(t){t._state="rejected",w(t),!t._handled&&s&&global.process.emit("unhandledRejection",t._data,t)}function O(t){global.process.emit("rejectionHandled",t)}function j(t){if("function"!=typeof t)throw new TypeError("Promise resolver "+t+" is not a function");if(this instanceof j==!1)throw new TypeError("Failed to construct 'Promise': Please use the 'new' operator, this object constructor cannot be called as a function.");this._then=[],function(t,e){function n(t){g(e,t)}try{t((function(t){b(e,t)}),n)}catch(t){n(t)}}(t,this)}j.prototype={constructor:j,_state:"pending",_then:null,_data:void 0,_handled:!1,then:function(t,e){var n={owner:this,then:new this.constructor(f),fulfilled:t,rejected:e};return!e&&!t||this._handled||(this._handled=!0,"rejected"===this._state&&s&&m(O,this)),"fulfilled"===this._state||"rejected"===this._state?m(p,n):this._then.push(n),n.then},catch:function(t){return this.then(null,t)}},j.all=function(t){if(!Array.isArray(t))throw new TypeError("You must pass an array to Promise.all().");return new j((function(e,n){var r=[],o=0;function i(t){return o++,function(n){r[t]=n,--o||e(r)}}for(var c,a=0;a<t.length;a++)(c=t[a])&&"function"==typeof c.then?c.then(i(a),n):r[a]=c;o||e(r)}))},j.race=function(t){if(!Array.isArray(t))throw new TypeError("You must pass an array to Promise.race().");return new j((function(e,n){for(var r,o=0;o<t.length;o++)(r=t[o])&&"function"==typeof r.then?r.then(e,n):e(r)}))},j.resolve=function(t){return t&&"object"===n(t)&&t.constructor===j?t:new j((function(e){e(t)}))},j.reject=function(t){return new j((function(e,n){n(t)}))};var E="function"==typeof Promise?Promise:j;function P(t,e){var n=e.fetch,r=e.XMLHttpRequest,o=e.token,i=t;return o&&!function(t){return t.indexOf("kit-upload.css")>-1}(t)&&("URLSearchParams"in window?(i=new URL(t)).searchParams.set("token",o):i=i+"?token="+encodeURIComponent(o)),i=i.toString(),new E((function(t,e){if("function"==typeof n)n(i,{mode:"cors",cache:"default"}).then((function(t){if(t.ok)return t.text();throw new Error("")})).then((function(e){t(e)})).catch(e);else if("function"==typeof r){var o=new r;o.addEventListener("loadend",(function(){this.responseText?t(this.responseText):e(new Error(""))}));["abort","error","timeout"].map((function(t){o.addEventListener(t,(function(){e(new Error(""))}))})),o.open("GET",i),o.send()}else{e(new Error(""))}}))}function _(t,e,n){var r=t;return[[/(url\("?)\.\.\/\.\.\/\.\./g,function(t,n){return"".concat(n).concat(e)}],[/(url\("?)\.\.\/webfonts/g,function(t,r){return"".concat(r).concat(e,"/releases/v").concat(n,"/webfonts")}],[/(url\("?)https:\/\/kit-free([^.])*\.fontawesome\.com/g,function(t,n){return"".concat(n).concat(e)}]].forEach((function(t){var e=o(t,2),n=e[0],i=e[1];r=r.replace(n,i)})),r}function F(t,n){var r=arguments.length>2&&void 0!==arguments[2]?arguments[2]:function(){},o=n.document||o,i=a.bind(a,o,["fa","fab","fas","far","fal","fad","fak"]);t.autoA11y.enabled&&r(i);var u=t.subsetPath&&t.baseUrl+"/"+t.subsetPath,f=[{id:"fa-main",addOn:void 0,url:u}];if(t.v4shim&&t.v4shim.enabled&&f.push({id:"fa-v4-shims",addOn:"-v4-shims"}),t.v5FontFaceShim&&t.v5FontFaceShim.enabled&&f.push({id:"fa-v5-font-face",addOn:"-v5-font-face"}),t.v4FontFaceShim&&t.v4FontFaceShim.enabled&&f.push({id:"fa-v4-font-face",addOn:"-v4-font-face"}),!u&&t.customIconsCssPath){var s=t.customIconsCssPath.indexOf("kit-upload.css")>-1?t.baseUrlKit:t.baseUrl,l=s+"/"+t.customIconsCssPath;f.push({id:"fa-kit-upload",url:l})}var d=f.map((function(r){return new E((function(o,i){var a=r.url||c(t,{addOn:r.addOn,minify:t.minify.enabled}),u={id:r.id},f=t.subset?u:e(e(e({},n),u),{},{baseUrl:t.baseUrl,version:t.version,id:r.id,contentFilter:function(t,e){return _(t,e.baseUrl,e.version)}});P(a,n).then((function(t){o(C(t,f))})).catch(i)}))}));return E.all(d)}function C(t,e){var n=e.contentFilter||function(t,e){return t},r=document.createElement("style"),o=document.createTextNode(n(t,e));return r.appendChild(o),r.media="all",e.id&&r.setAttribute("id",e.id),e&&e.detectingConflicts&&e.detectionIgnoreAttr&&r.setAttributeNode(document.createAttribute(e.detectionIgnoreAttr)),r}function I(t,n){n.autoA11y=t.autoA11y.enabled,"pro"===t.license&&(n.autoFetchSvg=!0,n.fetchSvgFrom=t.baseUrl+"/releases/"+("latest"===t.version?"latest":"v".concat(t.version))+"/svgs",n.fetchUploadedSvgFrom=t.uploadsUrl);var r=[];return t.v4shim.enabled&&r.push(new E((function(r,o){P(c(t,{addOn:"-v4-shims",minify:t.minify.enabled}),n).then((function(t){r(U(t,e(e({},n),{},{id:"fa-v4-shims"})))})).catch(o)}))),r.push(new E((function(r,o){P(t.subsetPath&&t.baseUrl+"/"+t.subsetPath||c(t,{minify:t.minify.enabled}),n).then((function(t){var o=U(t,e(e({},n),{},{id:"fa-main"}));r(function(t,e){var n=e&&void 0!==e.autoFetchSvg?e.autoFetchSvg:void 0,r=e&&void 0!==e.autoA11y?e.autoA11y:void 0;void 0!==r&&t.setAttribute("data-auto-a11y",r?"true":"false");n&&(t.setAttributeNode(document.createAttribute("data-auto-fetch-svg")),t.setAttribute("data-fetch-svg-from",e.fetchSvgFrom),t.setAttribute("data-fetch-uploaded-svg-from",e.fetchUploadedSvgFrom));return t}(o,n))})).catch(o)}))),E.all(r)}function U(t,e){var n=document.createElement("SCRIPT"),r=document.createTextNode(t);return n.appendChild(r),n.referrerPolicy="strict-origin",e.id&&n.setAttribute("id",e.id),e&&e.detectingConflicts&&e.detectionIgnoreAttr&&n.setAttributeNode(document.createAttribute(e.detectionIgnoreAttr)),n}function T(t){var e,n=[],r=document,o=r.documentElement.doScroll,i=(o?/^loaded|^c/:/^loaded|^i|^c/).test(r.readyState);i||r.addEventListener("DOMContentLoaded",e=function(){for(r.removeEventListener("DOMContentLoaded",e),i=1;e=n.shift();)e()}),i?setTimeout(t,0):n.push(t)}function L(t){"undefined"!=typeof MutationObserver&&new MutationObserver(t).observe(document,{childList:!0,subtree:!0})}try{if(window.FontAwesomeKitConfig){var k=window.FontAwesomeKitConfig,x={detectingConflicts:k.detectConflictsUntil&&new Date<=new Date(k.detectConflictsUntil),detectionIgnoreAttr:"data-fa-detection-ignore",fetch:window.fetch,token:k.token,XMLHttpRequest:window.XMLHttpRequest,document:document},M=document.currentScript,N=M?M.parentElement:document.head;(function(){var t=arguments.length>0&&void 0!==arguments[0]?arguments[0]:{},e=arguments.length>1&&void 0!==arguments[1]?arguments[1]:{};return"js"===t.method?I(t,e):"css"===t.method?F(t,e,(function(t){T(t),L(t)})):void 0})(k,x).then((function(t){t.map((function(t){try{N.insertBefore(t,M?M.nextSibling:null)}catch(e){N.appendChild(t)}})),x.detectingConflicts&&M&&T((function(){M.setAttributeNode(document.createAttribute(x.detectionIgnoreAttr));var t=function(t,e){var n=document.createElement("script");return e&&e.detectionIgnoreAttr&&n.setAttributeNode(document.createAttribute(e.detectionIgnoreAttr)),n.src=c(t,{baseFilename:"conflict-detection",fileSuffix:"js",subdir:"js",minify:t.minify.enabled}),n}(k,x);document.body.appendChild(t)}))})).catch((function(t){console.error("".concat("Font Awesome Kit:"," ").concat(t))}))}}catch(t){console.error("".concat("Font Awesome Kit:"," ").concat(t))}}));</script>
+    <style>
+
+    
+
+    @charset "UTF-8";
+/*! normalize.css v8.0.1 | MIT License | github.com/necolas/normalize.css */
+/* Document ========================================================================== */
+/** 1. Correct the line height in all browsers. 2. Prevent adjustments of font size after orientation changes in iOS. */
+html { line-height: 1.15; /* 1 */ -webkit-text-size-adjust: 100%; /* 2 */ }
+
+/* Sections ========================================================================== */
+/** Remove the margin in all browsers. */
+body { margin: 0; }
+
+/** Render the `main` element consistently in IE. */
+main { display: block; }
+
+/** Correct the font size and margin on `h1` elements within `section` and `article` contexts in Chrome, Firefox, and Safari. */
+h1 { font-size: 2em; margin: 0.67em 0; }
+
+/* Grouping content ========================================================================== */
+/** 1. Add the correct box sizing in Firefox. 2. Show the overflow in Edge and IE. */
+hr { box-sizing: content-box; /* 1 */ height: 0; /* 1 */ overflow: visible; /* 2 */ }
+
+/** 1. Correct the inheritance and scaling of font size in all browsers. 2. Correct the odd `em` font sizing in all browsers. */
+pre { font-family: monospace, monospace; /* 1 */ font-size: 1em; /* 2 */ }
+
+/* Text-level semantics ========================================================================== */
+/** Remove the gray background on active links in IE 10. */
+a { background-color: transparent; }
+
+/** 1. Remove the bottom border in Chrome 57- 2. Add the correct text decoration in Chrome, Edge, IE, Opera, and Safari. */
+abbr[title] { border-bottom: none; /* 1 */ text-decoration: underline; /* 2 */ text-decoration: underline dotted; /* 2 */ }
+
+/** Add the correct font weight in Chrome, Edge, and Safari. */
+b, strong { font-weight: bolder; }
+
+/** 1. Correct the inheritance and scaling of font size in all browsers. 2. Correct the odd `em` font sizing in all browsers. */
+code, kbd, samp { font-family: monospace, monospace; /* 1 */ font-size: 1em; /* 2 */ }
+
+/** Add the correct font size in all browsers. */
+small { font-size: 80%; }
+
+/** Prevent `sub` and `sup` elements from affecting the line height in all browsers. */
+sub, sup { font-size: 75%; line-height: 0; position: relative; vertical-align: baseline; }
+
+sub { bottom: -0.25em; }
+
+sup { top: -0.5em; }
+
+/* Embedded content ========================================================================== */
+/** Remove the border on images inside links in IE 10. */
+img { border-style: none; }
+
+/* Forms ========================================================================== */
+/** 1. Change the font styles in all browsers. 2. Remove the margin in Firefox and Safari. */
+button, input, optgroup, select, textarea { font-family: inherit; /* 1 */ font-size: 100%; /* 1 */ line-height: 1.15; /* 1 */ margin: 0; /* 2 */ }
+
+/** Show the overflow in IE. 1. Show the overflow in Edge. */
+button, input { /* 1 */ overflow: visible; }
+
+/** Remove the inheritance of text transform in Edge, Firefox, and IE. 1. Remove the inheritance of text transform in Firefox. */
+button, select { /* 1 */ text-transform: none; }
+
+/** Correct the inability to style clickable types in iOS and Safari. */
+button, [type="button"], [type="reset"], [type="submit"] { -webkit-appearance: button; }
+
+/** Remove the inner border and padding in Firefox. */
+button::-moz-focus-inner, [type="button"]::-moz-focus-inner, [type="reset"]::-moz-focus-inner, [type="submit"]::-moz-focus-inner { border-style: none; padding: 0; }
+
+/** Restore the focus styles unset by the previous rule. */
+button:-moz-focusring, [type="button"]:-moz-focusring, [type="reset"]:-moz-focusring, [type="submit"]:-moz-focusring { outline: 1px dotted ButtonText; }
+
+/** Correct the padding in Firefox. */
+fieldset { padding: 0.35em 0.75em 0.625em; }
+
+/** 1. Correct the text wrapping in Edge and IE. 2. Correct the color inheritance from `fieldset` elements in IE. 3. Remove the padding so developers are not caught out when they zero out `fieldset` elements in all browsers. */
+legend { box-sizing: border-box; /* 1 */ color: inherit; /* 2 */ display: table; /* 1 */ max-width: 100%; /* 1 */ padding: 0; /* 3 */ white-space: normal; /* 1 */ }
+
+/** Add the correct vertical alignment in Chrome, Firefox, and Opera. */
+progress { vertical-align: baseline; }
+
+/** Remove the default vertical scrollbar in IE 10+. */
+textarea { overflow: auto; }
+
+/** 1. Add the correct box sizing in IE 10. 2. Remove the padding in IE 10. */
+[type="checkbox"], [type="radio"] { box-sizing: border-box; /* 1 */ padding: 0; /* 2 */ }
+
+/** Correct the cursor style of increment and decrement buttons in Chrome. */
+[type="number"]::-webkit-inner-spin-button, [type="number"]::-webkit-outer-spin-button { height: auto; }
+
+/** 1. Correct the odd appearance in Chrome and Safari. 2. Correct the outline style in Safari. */
+[type="search"] { -webkit-appearance: textfield; /* 1 */ outline-offset: -2px; /* 2 */ }
+
+/** Remove the inner padding in Chrome and Safari on macOS. */
+[type="search"]::-webkit-search-decoration { -webkit-appearance: none; }
+
+/** 1. Correct the inability to style clickable types in iOS and Safari. 2. Change font properties to `inherit` in Safari. */
+::-webkit-file-upload-button { -webkit-appearance: button; /* 1 */ font: inherit; /* 2 */ }
+
+/* Interactive ========================================================================== */
+/* Add the correct display in Edge, IE 10+, and Firefox. */
+details { display: block; }
+
+/* Add the correct display in all browsers. */
+summary { display: list-item; }
+
+/* Misc ========================================================================== */
+/** Add the correct display in IE 10+. */
+template { display: none; }
+
+/** Add the correct display in IE 10. */
+[hidden] { display: none; }
+
+.highlight .c { color: #999; font-style: italic; }
+.highlight .err { color: #a61717; background-color: #e3d2d2; }
+.highlight .k { color: #6699ff; font-weight: bold; }
+.highlight .o { color: #ddd; }
+.highlight .cm { color: #999; font-style: italic; }
+.highlight .cp { color: #999; font-weight: bold; }
+.highlight .c1 { color: #999; font-style: italic; }
+.highlight .cs { color: #999; font-weight: bold; font-style: italic; }
+.highlight .gd { color: #000000; background-color: #ffdddd; }
+.highlight .gd .x { color: #000000; background-color: #ffaaaa; }
+.highlight .ge { font-style: italic; }
+.highlight .gr { color: #aa0000; }
+.highlight .gh { color: #999999; }
+.highlight .gi { color: #000000; background-color: #ddffdd; }
+.highlight .gi .x { color: #000000; background-color: #aaffaa; }
+.highlight .go { color: #888888; }
+.highlight .gp { color: #aaa; }
+.highlight .gs { font-weight: bold; }
+.highlight .gu { color: #800080; font-weight: bold; }
+.highlight .gt { color: #aa0000; }
+.highlight .kc { color: #6699ff; font-weight: bold; }
+.highlight .kd { color: #6699ff; font-weight: bold; }
+.highlight .kn { color: #6699ff; font-weight: bold; }
+.highlight .kp { color: #6699ff; font-weight: bold; }
+.highlight .kr { color: #6699ff; font-weight: bold; }
+.highlight .kt { color: #9999ff; font-weight: bold; }
+.highlight .m { color: #009999; }
+.highlight .s { color: #ff6666; }
+.highlight .n { color: #ddd; }
+.highlight .na { color: #66cccc; }
+.highlight .nb { color: #0086b3; }
+.highlight .nc { color: #9999ff; font-weight: bold; }
+.highlight .no { color: #66cccc; }
+.highlight .ni { color: #800080; }
+.highlight .ne { color: #ff6666; font-weight: bold; }
+.highlight .nf { color: #ff6666; font-weight: bold; }
+.highlight .nn { color: #555555; }
+.highlight .nt { color: #6699ff; }
+.highlight .nv { color: #66cccc; }
+.highlight .ow { color: #6699ff; font-weight: bold; }
+.highlight .w { color: #bbbbbb; }
+.highlight .mf { color: #009999; }
+.highlight .mh { color: #009999; }
+.highlight .mi { color: #009999; }
+.highlight .mo { color: #009999; }
+.highlight .sb { color: #ff6666; }
+.highlight .sc { color: #ff6666; }
+.highlight .sd { color: #ff6666; }
+.highlight .s2 { color: #ff6666; }
+.highlight .se { color: #ff6666; }
+.highlight .sh { color: #ff6666; }
+.highlight .si { color: #ff6666; }
+.highlight .sx { color: #ff6666; }
+.highlight .sr { color: #009926; }
+.highlight .s1 { color: #ff6666; }
+.highlight .ss { color: #990073; }
+.highlight .bp { color: #999999; }
+.highlight .vc { color: #66cccc; }
+.highlight .vg { color: #66cccc; }
+.highlight .vi { color: #66cccc; }
+.highlight .il { color: #009999; }
+.highlight .gc { color: #999; background-color: #EAF2F5; }
+
+body, html { font-size: 62.5%; }
+
+body { font: 16px "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif; color: #d0d0d0; background: #0a0a0a; min-height: 100vh; -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; position: relative; }
+
+h1, h2, h3, h4 { font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif; color: #ff4444; -webkit-font-smoothing: antialiased; text-rendering: optimizeLegibility; }
+
+h1 { font-size: 3rem; letter-spacing: -0.5px; color: #ffffff; font-weight: 700; }
+
+h2 { font-size: 2.2rem; color: #d0d0d0; }
+
+h3 { font-size: 2rem; color: #d0d0d0; }
+
+h4 { font-size: 1.6rem; color: #d0d0d0; }
+
+a { color: #ff4444; text-decoration: none; font-weight: 300; transition: all 0.2s ease; position: relative; }
+a:hover { color: #ff5555; }
+
+p { line-height: 1.7; color: #d0d0d0; font-weight: 400; margin-bottom: 20px; letter-spacing: 0.2px; }
+@media only screen and (max-width: 400px) { p { letter-spacing: 0.2px; } }
+
+strong { font-weight: 600; color: #ffffff; }
+
+ul li, ol li { line-height: 2.4rem; font-weight: 400; color: #d0d0d0; }
+
+img, pre, iframe { max-width: 100%; }
+
+img, pre { border-radius: 4px; }
+
+figcaption { position: relative; top: -20px; left: 0; right: 0; margin: 0 auto; width: 100%; text-align: center; font-size: 1.3rem; color: #a0a0a0; font-weight: 300; }
+@media only screen and (max-width: 400px) { figcaption { font-size: 1.2rem; } }
+
+blockquote { padding-left: 15px; border-left: 3px solid #333333; }
+
+hr { border: none; height: 1px; margin: 40px auto; background: #333333; width: 100%; }
+
+figure.highlight { width: 100%; margin: 0; }
+
+code { padding: 3px 6px; font-family: "JetBrains Mono", "Fira Code", "Consolas", Liberation Mono, Menlo, Courier, monospace; font-size: 13px; vertical-align: middle; background: #f5f5f5; border: 1px solid #ddd; border-radius: 3px; color: #000; }
+
+pre > code, tt { padding: 1px 0; font-family: "JetBrains Mono", "Fira Code", "Consolas", Liberation Mono, Menlo, Courier, monospace; font-size: 12px; line-height: 20px; background: #0a0a0a; border-radius: 2px; }
+
+pre { box-sizing: border-box; margin: 0 0 1.75em 0; width: 100%; padding: 15px 20px; font-family: "JetBrains Mono", "Fira Code", "Consolas", Liberation Mono, Menlo, Courier, monospace; font-size: 13px; line-height: 1.6; overflow: auto; background: #f8f8f8; border: 1px solid #ddd; border-radius: 4px; position: relative; }
+pre:before { content: "CODE"; position: absolute; top: 0; right: 0; padding: 2px 8px; background: #666; color: #fff; font-size: 10px; font-weight: bold; letter-spacing: 1px; }
+
+.wrapper-normal, .wrapper-large { height: 100%; width: 96%; margin: 0 auto; }
+@media only screen and (max-width: 400px) { .wrapper-normal, .wrapper-large { width: 88%; } }
+@media only screen and (min-width: 400px) and (max-width: 1050px) { .wrapper-normal, .wrapper-large { width: 88%; } }
+
+.wrapper-normal { max-width: 560px; }
+
+.wrapper-large { max-width: 810px; }
+
+/* general helpers */
+.text-center { text-align: center; }
+
+.clearfix:before, .clearfix:after { content: ""; display: table; }
+
+.clearfix:after { clear: both; }
+
+/* animations */
+.animated { animation: fade-in-down 0.6s; animation-delay: 0.3s; animation-fill-mode: both; }
+
+@keyframes fade-in-down { 0% { opacity: 0; transform: translateY(-10px); }
+  100% { opacity: 1; transform: translateY(0); } }
+.home, .blog, .projects, .research { margin-top: 120px; position: relative; z-index: 10; }
+.home > .list, .blog > .list, .projects > .list, .research > .list { border-top: 2px solid #ff3333; margin-top: 30px; padding-top: 40px; position: relative; }
+.home > .list:before, .blog > .list:before, .projects > .list:before, .research > .list:before { content: ""; display: none; }
+
+.home > .list > .item, .blog > .list > .item, .projects > .list > .item, .research > .list > .item { display: block; width: 95%; margin: 0 auto 15px; position: relative; transition: all 0.3s ease; padding: 15px; border-left: 2px solid transparent; }
+.home > .list > .item:hover, .blog > .list > .item:hover, .projects > .list > .item:hover, .research > .list > .item:hover { border-left-color: #ff3333; background: rgba(255, 68, 68, 0.03); transform: translateX(10px); }
+.home > .list > .item:hover:before, .blog > .list > .item:hover:before, .projects > .list > .item:hover:before, .research > .list > .item:hover:before { content: ">"; position: absolute; left: -8px; top: 50%; transform: translateY(-50%); color: #ff3333; font-weight: bold; font-size: 1.2rem; }
+.home > .list > .item > .url, .blog > .list > .item > .url, .projects > .list > .item > .url, .research > .list > .item > .url { width: 100%; display: block; padding: 20px 0; text-decoration: none; }
+.home > .list > .item > .url > .title, .blog > .list > .item > .url > .title, .projects > .list > .item > .url > .title, .research > .list > .item > .url > .title { margin: 0; width: 70%; font-weight: 600; transition: all ease-in-out 0.2s; text-transform: none; letter-spacing: 0.5px; font-size: 1.1rem; line-height: 1.4; padding-right: 10px; color: #d0d0d0; }
+@media (max-width: 768px) { .home > .list > .item > .url > .title, .blog > .list > .item > .url > .title, .projects > .list > .item > .url > .title, .research > .list > .item > .url > .title { width: 100%; padding-right: 0; } }
+.home > .list > .item:hover > .url > .title, .blog > .list > .item:hover > .url > .title, .projects > .list > .item:hover > .url > .title, .research > .list > .item:hover > .url > .title { color: #ff3333; }
+.home > .list aside, .blog > .list aside, .projects > .list aside, .research > .list aside { position: absolute; right: 15px; top: 50%; transform: translateY(-50%); margin: 0; font-weight: 400; font-size: 0.9rem; color: #a0a0a0; text-align: right; transition: all ease-in-out 0.2s; font-family: "JetBrains Mono", "Fira Code", "Consolas", Liberation Mono, Menlo, Courier, monospace; }
+@media (max-width: 768px) { .home > .list aside, .blog > .list aside, .projects > .list aside, .research > .list aside { display: none; } }
+.home > .list .item:hover .url aside, .blog > .list .item:hover .url aside, .projects > .list .item:hover .url aside, .research > .list .item:hover .url aside { color: #d0d0d0; }
+
+@keyframes pulse { 0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; } }
+.blog > .list > .item > .url > .title, .projects > .list > .item > .url > .title, .research > .list > .item > .url > .title { display: inline; }
+.blog > .list > .item > .url > .emoji, .projects > .list > .item > .url > .emoji, .research > .list > .item > .url > .emoji { display: inline; position: relative; top: -4px; margin-right: 10px; }
+
+.page { margin-top: 125px; }
+.page > h1 { text-align: center; margin-bottom: 6rem; }
+
+.about img { width: 50%; margin: 0 auto; display: block; }
+
+.post { margin-top: 140px; position: relative; z-index: 10; }
+@media (max-width: 768px) { .post { margin-top: 120px; } }
+.post > .title { text-align: center; margin-bottom: 3rem; position: relative; }
+@media (max-width: 768px) { .post > .title { margin-bottom: 3rem; font-size: 2.4rem; line-height: 1.3; } }
+.post > .title:before { content: ""; display: none; }
+.post > .date, .post > .post-tags { color: #a0a0a0; font-weight: 300; font-size: 1.4rem; text-transform: uppercase; text-align: center; display: block; margin-bottom: 6rem; letter-spacing: 1px; -webkit-font-smoothing: antialiased; text-rendering: optimizeLegibility; }
+.post > .date { margin-bottom: 2rem; }
+@media (max-width: 768px) { .post > .date { display: none; } }
+@media (max-width: 768px) { .post > .post-tags { font-size: 1.1rem; margin-bottom: 3rem; margin-top: 0; } }
+.post > .post-tags > .item { padding: 4px 10px; border-radius: 0; font-size: 0.85rem; background: transparent; color: #a0a0a0; letter-spacing: 1px; margin: 3px 4px; text-decoration: none; display: inline-block; border: 1px solid #2d2d2d; transition: all 0.2s ease; text-transform: uppercase; position: relative; }
+.post > .post-tags > .item:before { content: "#"; color: #ff3333; margin-right: 3px; }
+.post > .post-tags > .item:hover { background: rgba(255, 51, 51, 0.1); border-color: #ff3333; color: #ff3333; transform: scale(1.05); }
+.post > h2, .post > h3, .post > h4 { margin-top: 40px; }
+.post > h2 a, .post > h3 a, .post > h4 a { text-decoration: none; }
+.post > .title-image { max-height: 120px; display: block; margin: 0 auto; }
+.post > .blog-navigation { font-size: 1.4rem; display: block; width: auto; overflow: hidden; }
+.post > .blog-navigation a { display: block; width: 50%; float: left; margin: 1em 0; }
+.post > .blog-navigation .next { text-align: right; }
+
+.tags { margin-top: 125px; }
+.tags > .list { border-top: 1px solid #1a1a1a; margin-top: 30px; padding-top: 40px; position: relative; }
+.tags > .list:before { display: block; content: " "; width: 7px; height: 7px; border: #1a1a1a 1px solid; position: absolute; top: -5px; left: 50%; margin-left: -5px; background: #0a0a0a; box-shadow: #0a0a0a 0 0 0 5px; border-radius: 3px; }
+
+.tags > .list > .item { font-weight: 300; text-transform: uppercase; text-align: center; -webkit-font-smoothing: antialiased; text-rendering: optimizeLegibility; padding: 3px 9px; border-radius: 3px; font-size: 1.3rem; background: #1a1a1a; color: #d0d0d0; letter-spacing: 1px; margin: 0 0.5rem 1rem; text-decoration: none; display: inline-block; }
+
+.tag-list > .list { padding: 0; }
+.tag-list > .list > .item { display: block; width: 80%; margin: 0 10%; }
+.tag-list > .list > .item > .url { width: 100%; height: 100%; display: block; padding: 20px 0; text-decoration: none; }
+.tag-list > .list > .item > .url > .title { margin: 0; width: 75%; font-weight: 400; transition: all ease-in-out 0.2s; font-size: 1.6rem; }
+.tag-list > .list > .item:hover > .url > .title { color: #ff4444; }
+.tag-list > .list aside { position: relative; top: 2px; margin: 0; width: 25%; float: right; font-weight: 300; color: #a0a0a0; text-align: right; transition: all ease-in-out 0.2s; font-size: 1.6rem; }
+.tag-list > .list .item:hover .url aside { color: #d0d0d0; }
+
+.author { padding: 3rem 0; border-bottom: 1px solid #1a1a1a; border-top: 1px solid #1a1a1a; max-width: 100%; margin: 4rem auto 0; }
+.author > .toleft > .selfie { width: 90%; border-radius: 100%; }
+.author > .toright > .name, .author > .toright > .bio { width: 60%; display: inline-block; }
+.author > .toright > .name { font-size: 1.5rem; font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif; font-weight: 500; margin: 6px 0 0; }
+@media only screen and (max-width: 400px) { .author > .toright > .name { width: 100%; display: block; } }
+@media only screen and (min-width: 400px) and (max-width: 1050px) { .author > .toright > .name { width: 100%; display: block; } }
+.author > .toright > .bio { font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif; font-weight: 300; color: #a0a0a0; font-size: 1.3rem; text-align: justify; line-height: 1.5; margin: 0; }
+@media only screen and (max-width: 400px) { .author > .toright > .bio { width: 100%; display: block; } }
+@media only screen and (min-width: 400px) and (max-width: 1050px) { .author > .toright > .bio { width: 100%; display: block; } }
+.author > .toleft { width: 10%; display: inline-block; }
+@media only screen and (max-width: 400px) { .author > .toleft { width: 20%; } }
+@media only screen and (min-width: 400px) and (max-width: 1050px) { .author > .toleft { width: 20%; } }
+.author > .toright { width: 89%; display: inline-block; vertical-align: top; }
+@media only screen and (max-width: 400px) { .author > .toright { width: 78%; } }
+@media only screen and (min-width: 400px) and (max-width: 1050px) { .author > .toright { width: 78%; } }
+
+.no-disqus { border-bottom: none; padding-bottom: 0; }
+
+.disqus { margin: 0 auto; max-width: 100%; padding: 40px 0; }
+
+.footer-main { border-top: 1px solid #1a1a1a; padding: 40px 0; margin: 40px 0 0; font-size: 1.3rem; color: #a0a0a0; font-weight: 300; text-align: center; position: relative; }
+.footer-main:before { display: block; content: " "; width: 7px; height: 7px; border: #1a1a1a 1px solid; position: absolute; top: -5px; left: 50%; margin-left: -5px; background: #0a0a0a; box-shadow: #0a0a0a 0 0 0 5px; border-radius: 3px; }
+.footer-main > .copyright { padding-left: 10px; }
+.footer-main > .link { display: inline; vertical-align: middle; }
+.footer-main > .link > .icon { width: 15px !important; fill: #a0a0a0 !important; transition: ease-in-out all 0.3s; position: relative; display: inherit; top: -2px; margin: 0; left: 2px; }
+.footer-main > .link > .icon:hover { fill: #ff4444 !important; }
+.footer-main > .extra { color: #a0a0a0; margin-top: 0; font-weight: 300; }
+.footer-main > .extra > .link { color: #ff4444; text-decoration: none; border-bottom: 1px solid transparent; transition: ease-in-out all 0.3s; padding-bottom: 1px; font-weight: 300; }
+.footer-main > .extra > .link:hover { border-color: #a0a0a0; }
+
+.header-home { display: block; margin: 0 auto; text-align: center; position: relative; z-index: 99; padding: 100px 0 60px 0; }
+.header-home:before { content: ""; position: absolute; top: 0; left: 0; right: 0; height: 1px; background: linear-gradient(90deg, transparent 20%, #ff3333 50%, transparent 80%); opacity: 0.3; }
+.header-home > .link > .selfie { width: 120px; height: 120px; margin-bottom: 25px; border-radius: 0; transition: all 0.3s; opacity: 1; border: 2px solid #ff3333; position: relative; filter: grayscale(50%); clip-path: polygon(20% 0%, 80% 0%, 100% 20%, 100% 80%, 80% 100%, 20% 100%, 0% 80%, 0% 20%); }
+.header-home > .link > .selfie:hover { transform: scale(1.05) rotate(5deg); filter: grayscale(0%); border-color: #ff5555; box-shadow: 0 0 20px rgba(255, 51, 51, 0.4); }
+.header-home > .title { font-size: 3.2rem; margin: 0 0 20px; font-weight: 900; color: #ff4444; text-transform: uppercase; letter-spacing: 3px; position: relative; }
+.header-home > .title:after { content: "_"; animation: blink 1s infinite; color: #ff3333; }
+.header-home > .description { font-size: 1.1rem; font-weight: 400; font-family: "JetBrains Mono", "Fira Code", "Consolas", Liberation Mono, Menlo, Courier, monospace; color: #a0a0a0; width: 70%; max-width: 500px; margin: 0 auto 30px; line-height: 1.6; padding: 15px; background: rgba(45, 45, 45, 0.3); border-left: 3px solid #ff3333; text-align: left; position: relative; }
+.header-home > .description:before { content: "> "; color: #ff3333; font-weight: bold; }
+.header-home > .description a { font-weight: 400; color: #ff3333; text-decoration: none; border-bottom: 1px dashed #ff3333; }
+.header-home > .description a:hover { color: #ff5555; border-bottom-style: solid; }
+
+@keyframes blink { 0%, 50% { opacity: 1; }
+  51%, 100% { opacity: 0; } }
+.nav { position: fixed; right: 30px; top: 30px; z-index: 1000; }
+
+.nav-home { position: relative; margin-top: 30px; text-align: center; z-index: 100; }
+
+.nav > .list, .nav-home > .list { list-style: none; margin: 0; padding: 0; display: inline-flex; gap: 5px; justify-content: center; }
+.nav > .list > .item, .nav-home > .list > .item { display: inline-block; }
+.nav > .list > .item > .link, .nav-home > .list > .item > .link { display: inline-block; font-weight: 600; font-size: 13px; padding: 10px 20px; text-decoration: none; color: #a0a0a0; transition: all 0.3s ease; text-transform: uppercase; letter-spacing: 1.5px; position: relative; background: #0a0a0a; border: 1px solid #333333; }
+.nav > .list > .item > .link:before, .nav-home > .list > .item > .link:before { content: ""; position: absolute; top: 0; left: 0; width: 0; height: 100%; background: linear-gradient(90deg, #ff3333, transparent); transition: width 0.3s ease; opacity: 0.1; z-index: -1; }
+.nav > .list > .item > .link:after, .nav-home > .list > .item > .link:after { content: "[ ]"; position: absolute; right: -25px; color: #ff3333; opacity: 0; transition: all 0.3s ease; font-family: "JetBrains Mono", "Fira Code", "Consolas", Liberation Mono, Menlo, Courier, monospace; font-size: 10px; }
+.nav > .list > .item > .link:hover, .nav-home > .list > .item > .link:hover { color: #ff3333; border-color: #ff3333; padding-left: 25px; }
+.nav > .list > .item > .link:hover:before, .nav-home > .list > .item > .link:hover:before { width: 100%; }
+.nav > .list > .item > .link:hover:after, .nav-home > .list > .item > .link:hover:after { opacity: 0.5; right: 10px; }
+
+.nav-home > .list > .item > .link { font-size: 14px; padding: 12px 24px; margin: 0 5px; }
+
+@media only screen and (max-width: 400px), only screen and (min-width: 400px) and (max-width: 1050px) { .nav, .nav-home { position: fixed; top: 20px; right: 20px; left: auto; z-index: 1000; }
+  .nav:before, .nav-home:before { content: "☰"; display: block; font-size: 28px; padding: 10px 15px; background: #0a0a0a; border: 2px solid #333333; border-radius: 4px; cursor: pointer; color: #a0a0a0; text-align: center; width: 50px; box-sizing: border-box; transition: all 0.3s ease; }
+  .nav:hover:before, .nav-home:hover:before { color: #ff3333; border-color: #ff3333; }
+  .nav > .list, .nav-home > .list { display: none; position: absolute; top: 60px; right: 0; flex-direction: column; background: #0a0a0a; border: 2px solid #333333; border-radius: 4px; padding: 10px 0; min-width: 200px; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15); overflow: hidden; }
+  .nav > .list > .item, .nav-home > .list > .item { display: block; width: 100%; }
+  .nav > .list > .item > .link, .nav-home > .list > .item > .link { display: block; width: 100%; text-align: left; border: none; border-bottom: 1px solid #333333; border-radius: 0; padding: 15px 20px; background: transparent; box-sizing: border-box; position: relative; }
+  .nav > .list > .item > .link:before, .nav > .list > .item > .link:after, .nav-home > .list > .item > .link:before, .nav-home > .list > .item > .link:after { display: none; }
+  .nav > .list > .item > .link:hover, .nav-home > .list > .item > .link:hover { background: rgba(255, 51, 51, 0.05); transform: translateX(10px); transition: all 0.3s ease; }
+  .nav > .list > .item:last-child > .link, .nav-home > .list > .item:last-child > .link { border-bottom: none; }
+  .nav.expanded:before, .nav-home.expanded:before { content: "✕"; color: #ff3333; border-color: #ff3333; }
+  .nav.expanded > .list, .nav-home.expanded > .list { display: flex; }
+  .nav-home { position: relative; top: 0; right: 0; margin-top: 80px; text-align: center; }
+  .nav-home:before { position: fixed; top: 20px; right: 20px; }
+  .nav-home > .list { position: fixed; top: 60px; right: 20px; } }
+.evidence { color: #ff4444; }
+
+.star > .url > .title { width: auto !important; display: inline; }
+
+.twitter-tweet { margin: 10px auto; }
+
+.icon { display: inline-block; width: 17px; height: 17px; fill: #ffffff; text-align: center; color: #a0a0a0; margin: 7px auto; }
+
+.caption { position: relative; top: 1rem; left: 0; right: 0; margin: 0 auto; width: 100%; text-align: center; font-size: 1.3rem; font-weight: 300; }
+
+.bigger-image { min-width: 130%; margin: 5rem 0 5rem -15%; }
+@media only screen and (max-width: 400px) { .bigger-image { min-width: 114%; margin: 2rem 0 2rem -7%; } }
+@media only screen and (min-width: 400px) and (max-width: 1050px) { .bigger-image { min-width: 114%; margin: 2rem 0 2rem -7%; } }
+
+.breaker { height: 1px; margin: 6rem auto; width: 100%; }
+.breaker:before { content: "• • •"; width: 100%; text-align: center; display: block; color: #a0a0a0; letter-spacing: 4px; position: relative; top: -8px; }
+
+.lost-container { text-align: center; }
+
+.related { margin: 10rem 0 0rem; }
+.related a { font-weight: 300; }
+
+.share { float: right; width: 40%; display: inline; text-align: right; position: relative; }
+@media only screen and (max-width: 400px) { .share { width: 100%; display: block; top: 0; text-align: left; float: none; margin-top: 5px; } }
+@media only screen and (min-width: 400px) and (max-width: 1050px) { .share { width: 100%; display: block; top: 0; text-align: left; float: none; margin-top: 5px; } }
+.share > .twitter, .share > .facebook, .share > .linkedin { display: inline; vertical-align: middle; font-size: 13px; font-weight: 700; color: #fff; padding: 6px 10px; border-radius: 3px; margin-left: 5px; text-decoration: none; }
+@media only screen and (max-width: 400px) { .share > .twitter, .share > .facebook, .share > .linkedin { margin: 0 5px 10px 0; } }
+@media only screen and (min-width: 400px) and (max-width: 1050px) { .share > .twitter, .share > .facebook, .share > .linkedin { margin: 0 5px 10px 0; } }
+.share > .twitter { background: #4fafed; }
+.share > .facebook { background: #4361b3; }
+.share > .linkedin { background: #0077b5; }
+.share svg { fill: #0a0a0a; position: relative; top: 0; margin: 0; margin-right: 4px; display: inherit; }
+
+@media only screen and (min-width: 780px) { .side-by-side { width: 130%; margin: 6rem 0 6rem -15%; } }
+@media only screen and (max-width: 780px) { .side-by-side { width: 100%; margin: 4rem 0; } }
+.side-by-side > .toleft, .side-by-side > .toright { display: inline-block; width: 47.5%; }
+@media only screen and (max-width: 780px) { .side-by-side > .toleft img, .side-by-side > .toright img { text-align: center; display: block; margin: 0 auto; } }
+@media only screen and (min-width: 780px) { .side-by-side > .toleft { margin-right: 2%; } }
+@media only screen and (max-width: 780px) { .side-by-side > .toleft { width: 100%; margin: 0 0 4rem 0; } }
+@media only screen and (min-width: 780px) { .side-by-side > .toright { margin-left: 2%; vertical-align: top; } }
+@media only screen and (max-width: 780px) { .side-by-side > .toright { width: 100%; margin: 0 0 4rem 0; } }
+.side-by-side > .toleft > p, .side-by-side > .toright > p { margin: 0 0 4rem 0; }
+@media only screen and (max-width: 780px) { .side-by-side > .toleft > p, .side-by-side > .toright > p { margin: 0; } }
+
+.social-links > .link { margin: 0; text-decoration: none; position: relative; display: inline-block; height: 35px; width: 35px; color: #ffffff; }
+.social-links > .link:hover > svg { color: #ff4444; }
+.social-links > svg { transition: all ease-in-out 0.2s; }
+
+.spoiler { position: relative; }
+.spoiler:before { content: ""; background-color: #fafae0; position: absolute; top: 0; bottom: 0; left: 0; right: 0; z-index: 50; }
+.spoiler:hover:before { display: none; }
+
+.wrapper-normal, .wrapper-large { position: relative; }
+
+button, .btn { background: #1a1a1a; border: 1px solid #333333; color: #d0d0d0; padding: 8px 16px; cursor: pointer; transition: all 0.2s ease; font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif; border-radius: 4px; font-weight: 500; }
+button:hover, .btn:hover { background: #1a1a1a; border-color: #ff4444; color: #ff4444; }
+
+@media (prefers-color-scheme: dark) { /*! normalize.css v8.0.1 | MIT License | github.com/necolas/normalize.css */
+  /* Document ========================================================================== */
+  /** 1. Correct the line height in all browsers. 2. Prevent adjustments of font size after orientation changes in iOS. */
+  html { line-height: 1.15; /* 1 */ -webkit-text-size-adjust: 100%; /* 2 */ }
+  /* Sections ========================================================================== */
+  /** Remove the margin in all browsers. */
+  body { margin: 0; }
+  /** Render the `main` element consistently in IE. */
+  main { display: block; }
+  /** Correct the font size and margin on `h1` elements within `section` and `article` contexts in Chrome, Firefox, and Safari. */
+  h1 { font-size: 2em; margin: 0.67em 0; }
+  /* Grouping content ========================================================================== */
+  /** 1. Add the correct box sizing in Firefox. 2. Show the overflow in Edge and IE. */
+  hr { box-sizing: content-box; /* 1 */ height: 0; /* 1 */ overflow: visible; /* 2 */ }
+  /** 1. Correct the inheritance and scaling of font size in all browsers. 2. Correct the odd `em` font sizing in all browsers. */
+  pre { font-family: monospace, monospace; /* 1 */ font-size: 1em; /* 2 */ }
+  /* Text-level semantics ========================================================================== */
+  /** Remove the gray background on active links in IE 10. */
+  a { background-color: transparent; }
+  /** 1. Remove the bottom border in Chrome 57- 2. Add the correct text decoration in Chrome, Edge, IE, Opera, and Safari. */
+  abbr[title] { border-bottom: none; /* 1 */ text-decoration: underline; /* 2 */ text-decoration: underline dotted; /* 2 */ }
+  /** Add the correct font weight in Chrome, Edge, and Safari. */
+  b, strong { font-weight: bolder; }
+  /** 1. Correct the inheritance and scaling of font size in all browsers. 2. Correct the odd `em` font sizing in all browsers. */
+  code, kbd, samp { font-family: monospace, monospace; /* 1 */ font-size: 1em; /* 2 */ }
+  /** Add the correct font size in all browsers. */
+  small { font-size: 80%; }
+  /** Prevent `sub` and `sup` elements from affecting the line height in all browsers. */
+  sub, sup { font-size: 75%; line-height: 0; position: relative; vertical-align: baseline; }
+  sub { bottom: -0.25em; }
+  sup { top: -0.5em; }
+  /* Embedded content ========================================================================== */
+  /** Remove the border on images inside links in IE 10. */
+  img { border-style: none; }
+  /* Forms ========================================================================== */
+  /** 1. Change the font styles in all browsers. 2. Remove the margin in Firefox and Safari. */
+  button, input, optgroup, select, textarea { font-family: inherit; /* 1 */ font-size: 100%; /* 1 */ line-height: 1.15; /* 1 */ margin: 0; /* 2 */ }
+  /** Show the overflow in IE. 1. Show the overflow in Edge. */
+  button, input { /* 1 */ overflow: visible; }
+  /** Remove the inheritance of text transform in Edge, Firefox, and IE. 1. Remove the inheritance of text transform in Firefox. */
+  button, select { /* 1 */ text-transform: none; }
+  /** Correct the inability to style clickable types in iOS and Safari. */
+  button, [type="button"], [type="reset"], [type="submit"] { -webkit-appearance: button; }
+  /** Remove the inner border and padding in Firefox. */
+  button::-moz-focus-inner, [type="button"]::-moz-focus-inner, [type="reset"]::-moz-focus-inner, [type="submit"]::-moz-focus-inner { border-style: none; padding: 0; }
+  /** Restore the focus styles unset by the previous rule. */
+  button:-moz-focusring, [type="button"]:-moz-focusring, [type="reset"]:-moz-focusring, [type="submit"]:-moz-focusring { outline: 1px dotted ButtonText; }
+  /** Correct the padding in Firefox. */
+  fieldset { padding: 0.35em 0.75em 0.625em; }
+  /** 1. Correct the text wrapping in Edge and IE. 2. Correct the color inheritance from `fieldset` elements in IE. 3. Remove the padding so developers are not caught out when they zero out `fieldset` elements in all browsers. */
+  legend { box-sizing: border-box; /* 1 */ color: inherit; /* 2 */ display: table; /* 1 */ max-width: 100%; /* 1 */ padding: 0; /* 3 */ white-space: normal; /* 1 */ }
+  /** Add the correct vertical alignment in Chrome, Firefox, and Opera. */
+  progress { vertical-align: baseline; }
+  /** Remove the default vertical scrollbar in IE 10+. */
+  textarea { overflow: auto; }
+  /** 1. Add the correct box sizing in IE 10. 2. Remove the padding in IE 10. */
+  [type="checkbox"], [type="radio"] { box-sizing: border-box; /* 1 */ padding: 0; /* 2 */ }
+  /** Correct the cursor style of increment and decrement buttons in Chrome. */
+  [type="number"]::-webkit-inner-spin-button, [type="number"]::-webkit-outer-spin-button { height: auto; }
+  /** 1. Correct the odd appearance in Chrome and Safari. 2. Correct the outline style in Safari. */
+  [type="search"] { -webkit-appearance: textfield; /* 1 */ outline-offset: -2px; /* 2 */ }
+  /** Remove the inner padding in Chrome and Safari on macOS. */
+  [type="search"]::-webkit-search-decoration { -webkit-appearance: none; }
+  /** 1. Correct the inability to style clickable types in iOS and Safari. 2. Change font properties to `inherit` in Safari. */
+  ::-webkit-file-upload-button { -webkit-appearance: button; /* 1 */ font: inherit; /* 2 */ }
+  /* Interactive ========================================================================== */
+  /* Add the correct display in Edge, IE 10+, and Firefox. */
+  details { display: block; }
+  /* Add the correct display in all browsers. */
+  summary { display: list-item; }
+  /* Misc ========================================================================== */
+  /** Add the correct display in IE 10+. */
+  template { display: none; }
+  /** Add the correct display in IE 10. */
+  [hidden] { display: none; }
+  .highlight .hll { background-color: #f8f8f8; }
+  .highlight .c { color: #555; font-style: italic; }
+  .highlight .err { color: #a61717; background-color: #e3d2d2; }
+  .highlight .k { color: #000080; font-weight: bold; }
+  .highlight .l { color: #009999; }
+  .highlight .n { color: #333; }
+  .highlight .o { color: #333; }
+  .highlight .p { color: #333; }
+  .highlight .cm { color: #555; font-style: italic; }
+  .highlight .cp { color: #555; font-weight: bold; }
+  .highlight .c1 { color: #555; font-style: italic; }
+  .highlight .cs { color: #555; font-weight: bold; font-style: italic; }
+  .highlight .ge { font-style: italic; }
+  .highlight .gs { font-weight: bold; }
+  .highlight .kc { color: #000080; font-weight: bold; }
+  .highlight .kd { color: #000080; font-weight: bold; }
+  .highlight .kn { color: #000080; font-weight: bold; }
+  .highlight .kp { color: #000080; font-weight: bold; }
+  .highlight .kr { color: #000080; font-weight: bold; }
+  .highlight .kt { color: #445588; font-weight: bold; }
+  .highlight .ld { color: #d14; }
+  .highlight .m { color: #006666; }
+  .highlight .s { color: #d14; }
+  .highlight .na { color: #006666; }
+  .highlight .nb { color: #006699; }
+  .highlight .nc { color: #445588; font-weight: bold; }
+  .highlight .no { color: #006666; }
+  .highlight .nd { color: #006666; }
+  .highlight .ni { color: #800080; }
+  .highlight .ne { color: #990000; font-weight: bold; }
+  .highlight .nf { color: #990000; font-weight: bold; }
+  .highlight .nl { color: #333; }
+  .highlight .nn { color: #555555; }
+  .highlight .nx { color: #333; }
+  .highlight .py { color: #333; }
+  .highlight .nt { color: #000080; }
+  .highlight .nv { color: #006666; }
+  .highlight .ow { color: #000080; font-weight: bold; }
+  .highlight .w { color: #bbbbbb; }
+  .highlight .mf { color: #006666; }
+  .highlight .mh { color: #006666; }
+  .highlight .mi { color: #006666; }
+  .highlight .mo { color: #006666; }
+  .highlight .sb { color: #d14; }
+  .highlight .sc { color: #d14; }
+  .highlight .sd { color: #d14; }
+  .highlight .s2 { color: #d14; }
+  .highlight .se { color: #d14; }
+  .highlight .sh { color: #d14; }
+  .highlight .si { color: #d14; }
+  .highlight .sx { color: #d14; }
+  .highlight .sr { color: #009926; }
+  .highlight .s1 { color: #d14; }
+  .highlight .ss { color: #990073; }
+  .highlight .bp { color: #555555; }
+  .highlight .vc { color: #006666; }
+  .highlight .vg { color: #006666; }
+  .highlight .vi { color: #006666; }
+  .highlight .il { color: #006666; }
+  .highlight .gu { color: #800080; font-weight: bold; }
+  .highlight .gd { color: #000000; background-color: #ffdddd; }
+  .highlight .gi { color: #000000; background-color: #ddffdd; }
+  body, html { font-size: 62.5%; }
+  body { font: 16px "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif; color: #000000; background: #ffffff; min-height: 100vh; -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; position: relative; }
+  h1, h2, h3, h4 { font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif; color: #cc0000; -webkit-font-smoothing: antialiased; text-rendering: optimizeLegibility; }
+  h1 { font-size: 3rem; letter-spacing: -0.5px; color: #000000; font-weight: 700; }
+  h2 { font-size: 2.2rem; color: #000000; }
+  h3 { font-size: 2rem; color: #000000; }
+  h4 { font-size: 1.6rem; color: #000000; }
+  a { color: #cc0000; text-decoration: none; font-weight: 300; transition: all 0.2s ease; position: relative; }
+  a:hover { color: #dd2222; }
+  p { line-height: 1.7; color: #000000; font-weight: 400; margin-bottom: 20px; letter-spacing: 0.2px; } }
+@media only screen and (prefers-color-scheme: dark) and (max-width: 400px) { p { letter-spacing: 0.2px; } }
+
+@media (prefers-color-scheme: dark) { strong { font-weight: 600; color: #000000; }
+  ul li, ol li { line-height: 2.4rem; font-weight: 400; color: #000000; }
+  img, pre, iframe { max-width: 100%; }
+  img, pre { border-radius: 4px; }
+  figcaption { position: relative; top: -20px; left: 0; right: 0; margin: 0 auto; width: 100%; text-align: center; font-size: 1.3rem; color: #1a1a1a; font-weight: 300; } }
+@media only screen and (prefers-color-scheme: dark) and (max-width: 400px) { figcaption { font-size: 1.2rem; } }
+
+@media (prefers-color-scheme: dark) { blockquote { padding-left: 15px; border-left: 3px solid #dddddd; }
+  hr { border: none; height: 1px; margin: 40px auto; background: #dddddd; width: 100%; }
+  figure.highlight { width: 100%; margin: 0; }
+  code { padding: 3px 6px; font-family: "JetBrains Mono", "Fira Code", "Consolas", Liberation Mono, Menlo, Courier, monospace; font-size: 13px; vertical-align: middle; background: #f5f5f5; border: 1px solid #ddd; border-radius: 3px; color: #000; }
+  pre > code, tt { padding: 1px 0; font-family: "JetBrains Mono", "Fira Code", "Consolas", Liberation Mono, Menlo, Courier, monospace; font-size: 12px; line-height: 20px; background: #ffffff; border-radius: 2px; }
+  pre { box-sizing: border-box; margin: 0 0 1.75em 0; width: 100%; padding: 15px 20px; font-family: "JetBrains Mono", "Fira Code", "Consolas", Liberation Mono, Menlo, Courier, monospace; font-size: 13px; line-height: 1.6; overflow: auto; background: #f8f8f8; border: 1px solid #ddd; border-radius: 4px; position: relative; }
+  pre:before { content: "CODE"; position: absolute; top: 0; right: 0; padding: 2px 8px; background: #666; color: #fff; font-size: 10px; font-weight: bold; letter-spacing: 1px; }
+  .wrapper-normal, .wrapper-large { height: 100%; width: 96%; margin: 0 auto; } }
+@media only screen and (prefers-color-scheme: dark) and (max-width: 400px) { .wrapper-normal, .wrapper-large { width: 88%; } }
+@media only screen and (prefers-color-scheme: dark) and (min-width: 400px) and (max-width: 1050px) { .wrapper-normal, .wrapper-large { width: 88%; } }
+
+@media (prefers-color-scheme: dark) { .wrapper-normal { max-width: 560px; }
+  .wrapper-large { max-width: 810px; }
+  /* general helpers */
+  .text-center { text-align: center; }
+  .clearfix:before, .clearfix:after { content: ""; display: table; }
+  .clearfix:after { clear: both; }
+  /* animations */
+  .animated { animation: fade-in-down 0.6s; animation-delay: 0.3s; animation-fill-mode: both; }
+  @keyframes fade-in-down { 0% { opacity: 0; transform: translateY(-10px); }
+    100% { opacity: 1; transform: translateY(0); } }
+  .home, .blog, .projects, .research { margin-top: 120px; position: relative; z-index: 10; }
+  .home > .list, .blog > .list, .projects > .list, .research > .list { border-top: 2px solid #cc0000; margin-top: 30px; padding-top: 40px; position: relative; }
+  .home > .list:before, .blog > .list:before, .projects > .list:before, .research > .list:before { content: ""; display: none; }
+  .home > .list > .item, .blog > .list > .item, .projects > .list > .item, .research > .list > .item { display: block; width: 95%; margin: 0 auto 15px; position: relative; transition: all 0.3s ease; padding: 15px; border-left: 2px solid transparent; }
+  .home > .list > .item:hover, .blog > .list > .item:hover, .projects > .list > .item:hover, .research > .list > .item:hover { border-left-color: #cc0000; background: rgba(255, 68, 68, 0.03); transform: translateX(10px); }
+  .home > .list > .item:hover:before, .blog > .list > .item:hover:before, .projects > .list > .item:hover:before, .research > .list > .item:hover:before { content: ">"; position: absolute; left: -8px; top: 50%; transform: translateY(-50%); color: #cc0000; font-weight: bold; font-size: 1.2rem; }
+  .home > .list > .item > .url, .blog > .list > .item > .url, .projects > .list > .item > .url, .research > .list > .item > .url { width: 100%; display: block; padding: 20px 0; text-decoration: none; }
+  .home > .list > .item > .url > .title, .blog > .list > .item > .url > .title, .projects > .list > .item > .url > .title, .research > .list > .item > .url > .title { margin: 0; width: 70%; font-weight: 600; transition: all ease-in-out 0.2s; text-transform: none; letter-spacing: 0.5px; font-size: 1.1rem; line-height: 1.4; padding-right: 10px; color: #000000; } }
+@media (prefers-color-scheme: dark) and (max-width: 768px) { .home > .list > .item > .url > .title, .blog > .list > .item > .url > .title, .projects > .list > .item > .url > .title, .research > .list > .item > .url > .title { width: 100%; padding-right: 0; } }
+@media (prefers-color-scheme: dark) { .home > .list > .item:hover > .url > .title, .blog > .list > .item:hover > .url > .title, .projects > .list > .item:hover > .url > .title, .research > .list > .item:hover > .url > .title { color: #cc0000; }
+  .home > .list aside, .blog > .list aside, .projects > .list aside, .research > .list aside { position: absolute; right: 15px; top: 50%; transform: translateY(-50%); margin: 0; font-weight: 400; font-size: 0.9rem; color: #1a1a1a; text-align: right; transition: all ease-in-out 0.2s; font-family: "JetBrains Mono", "Fira Code", "Consolas", Liberation Mono, Menlo, Courier, monospace; } }
+@media (prefers-color-scheme: dark) and (max-width: 768px) { .home > .list aside, .blog > .list aside, .projects > .list aside, .research > .list aside { display: none; } }
+@media (prefers-color-scheme: dark) { .home > .list .item:hover .url aside, .blog > .list .item:hover .url aside, .projects > .list .item:hover .url aside, .research > .list .item:hover .url aside { color: #000000; }
+  @keyframes pulse { 0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; } }
+  .blog > .list > .item > .url > .title, .projects > .list > .item > .url > .title, .research > .list > .item > .url > .title { display: inline; }
+  .blog > .list > .item > .url > .emoji, .projects > .list > .item > .url > .emoji, .research > .list > .item > .url > .emoji { display: inline; position: relative; top: -4px; margin-right: 10px; }
+  .page { margin-top: 125px; }
+  .page > h1 { text-align: center; margin-bottom: 6rem; }
+  .about img { width: 50%; margin: 0 auto; display: block; }
+  .post { margin-top: 140px; position: relative; z-index: 10; } }
+@media (prefers-color-scheme: dark) and (max-width: 768px) { .post { margin-top: 120px; } }
+@media (prefers-color-scheme: dark) { .post > .title { text-align: center; margin-bottom: 3rem; position: relative; } }
+@media (prefers-color-scheme: dark) and (max-width: 768px) { .post > .title { margin-bottom: 3rem; font-size: 2.4rem; line-height: 1.3; } }
+@media (prefers-color-scheme: dark) { .post > .title:before { content: ""; display: none; }
+  .post > .date, .post > .post-tags { color: #1a1a1a; font-weight: 300; font-size: 1.4rem; text-transform: uppercase; text-align: center; display: block; margin-bottom: 6rem; letter-spacing: 1px; -webkit-font-smoothing: antialiased; text-rendering: optimizeLegibility; }
+  .post > .date { margin-bottom: 2rem; } }
+@media (prefers-color-scheme: dark) and (max-width: 768px) { .post > .date { display: none; } }
+@media (prefers-color-scheme: dark) and (max-width: 768px) { .post > .post-tags { font-size: 1.1rem; margin-bottom: 3rem; margin-top: 0; } }
+@media (prefers-color-scheme: dark) { .post > .post-tags > .item { padding: 4px 10px; border-radius: 0; font-size: 0.85rem; background: transparent; color: #1a1a1a; letter-spacing: 1px; margin: 3px 4px; text-decoration: none; display: inline-block; border: 1px solid #2d2d2d; transition: all 0.2s ease; text-transform: uppercase; position: relative; }
+  .post > .post-tags > .item:before { content: "#"; color: #cc0000; margin-right: 3px; }
+  .post > .post-tags > .item:hover { background: rgba(255, 51, 51, 0.1); border-color: #cc0000; color: #cc0000; transform: scale(1.05); }
+  .post > h2, .post > h3, .post > h4 { margin-top: 40px; }
+  .post > h2 a, .post > h3 a, .post > h4 a { text-decoration: none; }
+  .post > .title-image { max-height: 120px; display: block; margin: 0 auto; }
+  .post > .blog-navigation { font-size: 1.4rem; display: block; width: auto; overflow: hidden; }
+  .post > .blog-navigation a { display: block; width: 50%; float: left; margin: 1em 0; }
+  .post > .blog-navigation .next { text-align: right; }
+  .tags { margin-top: 125px; }
+  .tags > .list { border-top: 1px solid #1a1a1a; margin-top: 30px; padding-top: 40px; position: relative; }
+  .tags > .list:before { display: block; content: " "; width: 7px; height: 7px; border: #1a1a1a 1px solid; position: absolute; top: -5px; left: 50%; margin-left: -5px; background: #ffffff; box-shadow: #ffffff 0 0 0 5px; border-radius: 3px; }
+  .tags > .list > .item { font-weight: 300; text-transform: uppercase; text-align: center; -webkit-font-smoothing: antialiased; text-rendering: optimizeLegibility; padding: 3px 9px; border-radius: 3px; font-size: 1.3rem; background: #1a1a1a; color: #000000; letter-spacing: 1px; margin: 0 0.5rem 1rem; text-decoration: none; display: inline-block; }
+  .tag-list > .list { padding: 0; }
+  .tag-list > .list > .item { display: block; width: 80%; margin: 0 10%; }
+  .tag-list > .list > .item > .url { width: 100%; height: 100%; display: block; padding: 20px 0; text-decoration: none; }
+  .tag-list > .list > .item > .url > .title { margin: 0; width: 75%; font-weight: 400; transition: all ease-in-out 0.2s; font-size: 1.6rem; }
+  .tag-list > .list > .item:hover > .url > .title { color: #cc0000; }
+  .tag-list > .list aside { position: relative; top: 2px; margin: 0; width: 25%; float: right; font-weight: 300; color: #1a1a1a; text-align: right; transition: all ease-in-out 0.2s; font-size: 1.6rem; }
+  .tag-list > .list .item:hover .url aside { color: #000000; }
+  .author { padding: 3rem 0; border-bottom: 1px solid #1a1a1a; border-top: 1px solid #1a1a1a; max-width: 100%; margin: 4rem auto 0; }
+  .author > .toleft > .selfie { width: 90%; border-radius: 100%; }
+  .author > .toright > .name, .author > .toright > .bio { width: 60%; display: inline-block; }
+  .author > .toright > .name { font-size: 1.5rem; font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif; font-weight: 500; margin: 6px 0 0; } }
+@media only screen and (prefers-color-scheme: dark) and (max-width: 400px) { .author > .toright > .name { width: 100%; display: block; } }
+@media only screen and (prefers-color-scheme: dark) and (min-width: 400px) and (max-width: 1050px) { .author > .toright > .name { width: 100%; display: block; } }
+@media (prefers-color-scheme: dark) { .author > .toright > .bio { font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif; font-weight: 300; color: #1a1a1a; font-size: 1.3rem; text-align: justify; line-height: 1.5; margin: 0; } }
+@media only screen and (prefers-color-scheme: dark) and (max-width: 400px) { .author > .toright > .bio { width: 100%; display: block; } }
+@media only screen and (prefers-color-scheme: dark) and (min-width: 400px) and (max-width: 1050px) { .author > .toright > .bio { width: 100%; display: block; } }
+@media (prefers-color-scheme: dark) { .author > .toleft { width: 10%; display: inline-block; } }
+@media only screen and (prefers-color-scheme: dark) and (max-width: 400px) { .author > .toleft { width: 20%; } }
+@media only screen and (prefers-color-scheme: dark) and (min-width: 400px) and (max-width: 1050px) { .author > .toleft { width: 20%; } }
+@media (prefers-color-scheme: dark) { .author > .toright { width: 89%; display: inline-block; vertical-align: top; } }
+@media only screen and (prefers-color-scheme: dark) and (max-width: 400px) { .author > .toright { width: 78%; } }
+@media only screen and (prefers-color-scheme: dark) and (min-width: 400px) and (max-width: 1050px) { .author > .toright { width: 78%; } }
+
+@media (prefers-color-scheme: dark) { .no-disqus { border-bottom: none; padding-bottom: 0; }
+  .disqus { margin: 0 auto; max-width: 100%; padding: 40px 0; }
+  .footer-main { border-top: 1px solid #1a1a1a; padding: 40px 0; margin: 40px 0 0; font-size: 1.3rem; color: #1a1a1a; font-weight: 300; text-align: center; position: relative; }
+  .footer-main:before { display: block; content: " "; width: 7px; height: 7px; border: #1a1a1a 1px solid; position: absolute; top: -5px; left: 50%; margin-left: -5px; background: #ffffff; box-shadow: #ffffff 0 0 0 5px; border-radius: 3px; }
+  .footer-main > .copyright { padding-left: 10px; }
+  .footer-main > .link { display: inline; vertical-align: middle; }
+  .footer-main > .link > .icon { width: 15px !important; fill: #1a1a1a !important; transition: ease-in-out all 0.3s; position: relative; display: inherit; top: -2px; margin: 0; left: 2px; }
+  .footer-main > .link > .icon:hover { fill: #cc0000 !important; }
+  .footer-main > .extra { color: #1a1a1a; margin-top: 0; font-weight: 300; }
+  .footer-main > .extra > .link { color: #cc0000; text-decoration: none; border-bottom: 1px solid transparent; transition: ease-in-out all 0.3s; padding-bottom: 1px; font-weight: 300; }
+  .footer-main > .extra > .link:hover { border-color: #1a1a1a; }
+  .header-home { display: block; margin: 0 auto; text-align: center; position: relative; z-index: 99; padding: 100px 0 60px 0; }
+  .header-home:before { content: ""; position: absolute; top: 0; left: 0; right: 0; height: 1px; background: linear-gradient(90deg, transparent 20%, #cc0000 50%, transparent 80%); opacity: 0.3; }
+  .header-home > .link > .selfie { width: 120px; height: 120px; margin-bottom: 25px; border-radius: 0; transition: all 0.3s; opacity: 1; border: 2px solid #cc0000; position: relative; filter: grayscale(50%); clip-path: polygon(20% 0%, 80% 0%, 100% 20%, 100% 80%, 80% 100%, 20% 100%, 0% 80%, 0% 20%); }
+  .header-home > .link > .selfie:hover { transform: scale(1.05) rotate(5deg); filter: grayscale(0%); border-color: #dd2222; box-shadow: 0 0 20px rgba(255, 51, 51, 0.4); }
+  .header-home > .title { font-size: 3.2rem; margin: 0 0 20px; font-weight: 900; color: #cc0000; text-transform: uppercase; letter-spacing: 3px; position: relative; }
+  .header-home > .title:after { content: "_"; animation: blink 1s infinite; color: #cc0000; }
+  .header-home > .description { font-size: 1.1rem; font-weight: 400; font-family: "JetBrains Mono", "Fira Code", "Consolas", Liberation Mono, Menlo, Courier, monospace; color: #1a1a1a; width: 70%; max-width: 500px; margin: 0 auto 30px; line-height: 1.6; padding: 15px; background: rgba(45, 45, 45, 0.3); border-left: 3px solid #cc0000; text-align: left; position: relative; }
+  .header-home > .description:before { content: "> "; color: #cc0000; font-weight: bold; }
+  .header-home > .description a { font-weight: 400; color: #cc0000; text-decoration: none; border-bottom: 1px dashed #cc0000; }
+  .header-home > .description a:hover { color: #dd2222; border-bottom-style: solid; }
+  @keyframes blink { 0%, 50% { opacity: 1; }
+    51%, 100% { opacity: 0; } }
+  .nav { position: fixed; right: 30px; top: 30px; z-index: 1000; }
+  .nav-home { position: relative; margin-top: 30px; text-align: center; z-index: 100; }
+  .nav > .list, .nav-home > .list { list-style: none; margin: 0; padding: 0; display: inline-flex; gap: 5px; justify-content: center; }
+  .nav > .list > .item, .nav-home > .list > .item { display: inline-block; }
+  .nav > .list > .item > .link, .nav-home > .list > .item > .link { display: inline-block; font-weight: 600; font-size: 13px; padding: 10px 20px; text-decoration: none; color: #1a1a1a; transition: all 0.3s ease; text-transform: uppercase; letter-spacing: 1.5px; position: relative; background: #ffffff; border: 1px solid #dddddd; }
+  .nav > .list > .item > .link:before, .nav-home > .list > .item > .link:before { content: ""; position: absolute; top: 0; left: 0; width: 0; height: 100%; background: linear-gradient(90deg, #cc0000, transparent); transition: width 0.3s ease; opacity: 0.1; z-index: -1; }
+  .nav > .list > .item > .link:after, .nav-home > .list > .item > .link:after { content: "[ ]"; position: absolute; right: -25px; color: #cc0000; opacity: 0; transition: all 0.3s ease; font-family: "JetBrains Mono", "Fira Code", "Consolas", Liberation Mono, Menlo, Courier, monospace; font-size: 10px; }
+  .nav > .list > .item > .link:hover, .nav-home > .list > .item > .link:hover { color: #cc0000; border-color: #cc0000; padding-left: 25px; }
+  .nav > .list > .item > .link:hover:before, .nav-home > .list > .item > .link:hover:before { width: 100%; }
+  .nav > .list > .item > .link:hover:after, .nav-home > .list > .item > .link:hover:after { opacity: 0.5; right: 10px; }
+  .nav-home > .list > .item > .link { font-size: 14px; padding: 12px 24px; margin: 0 5px; } }
+@media only screen and (prefers-color-scheme: dark) and (max-width: 400px), only screen and (prefers-color-scheme: dark) and (min-width: 400px) and (max-width: 1050px) { .nav, .nav-home { position: fixed; top: 20px; right: 20px; left: auto; z-index: 1000; }
+  .nav:before, .nav-home:before { content: "☰"; display: block; font-size: 28px; padding: 10px 15px; background: #ffffff; border: 2px solid #dddddd; border-radius: 4px; cursor: pointer; color: #1a1a1a; text-align: center; width: 50px; box-sizing: border-box; transition: all 0.3s ease; }
+  .nav:hover:before, .nav-home:hover:before { color: #cc0000; border-color: #cc0000; }
+  .nav > .list, .nav-home > .list { display: none; position: absolute; top: 60px; right: 0; flex-direction: column; background: #ffffff; border: 2px solid #dddddd; border-radius: 4px; padding: 10px 0; min-width: 200px; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15); overflow: hidden; }
+  .nav > .list > .item, .nav-home > .list > .item { display: block; width: 100%; }
+  .nav > .list > .item > .link, .nav-home > .list > .item > .link { display: block; width: 100%; text-align: left; border: none; border-bottom: 1px solid #dddddd; border-radius: 0; padding: 15px 20px; background: transparent; box-sizing: border-box; position: relative; }
+  .nav > .list > .item > .link:before, .nav > .list > .item > .link:after, .nav-home > .list > .item > .link:before, .nav-home > .list > .item > .link:after { display: none; }
+  .nav > .list > .item > .link:hover, .nav-home > .list > .item > .link:hover { background: rgba(204, 0, 0, 0.05); transform: translateX(10px); transition: all 0.3s ease; }
+  .nav > .list > .item:last-child > .link, .nav-home > .list > .item:last-child > .link { border-bottom: none; }
+  .nav.expanded:before, .nav-home.expanded:before { content: "✕"; color: #cc0000; border-color: #cc0000; }
+  .nav.expanded > .list, .nav-home.expanded > .list { display: flex; }
+  .nav-home { position: relative; top: 0; right: 0; margin-top: 80px; text-align: center; }
+  .nav-home:before { position: fixed; top: 20px; right: 20px; }
+  .nav-home > .list { position: fixed; top: 60px; right: 20px; } }
+@media (prefers-color-scheme: dark) { .evidence { color: #cc0000; }
+  .star > .url > .title { width: auto !important; display: inline; }
+  .twitter-tweet { margin: 10px auto; }
+  .icon { display: inline-block; width: 17px; height: 17px; fill: #000000; text-align: center; color: #1a1a1a; margin: 7px auto; }
+  .caption { position: relative; top: 1rem; left: 0; right: 0; margin: 0 auto; width: 100%; text-align: center; font-size: 1.3rem; font-weight: 300; }
+  .bigger-image { min-width: 130%; margin: 5rem 0 5rem -15%; } }
+@media only screen and (prefers-color-scheme: dark) and (max-width: 400px) { .bigger-image { min-width: 114%; margin: 2rem 0 2rem -7%; } }
+@media only screen and (prefers-color-scheme: dark) and (min-width: 400px) and (max-width: 1050px) { .bigger-image { min-width: 114%; margin: 2rem 0 2rem -7%; } }
+
+@media (prefers-color-scheme: dark) { .breaker { height: 1px; margin: 6rem auto; width: 100%; }
+  .breaker:before { content: "• • •"; width: 100%; text-align: center; display: block; color: #1a1a1a; letter-spacing: 4px; position: relative; top: -8px; }
+  .lost-container { text-align: center; }
+  .related { margin: 10rem 0 0rem; }
+  .related a { font-weight: 300; }
+  .share { float: right; width: 40%; display: inline; text-align: right; position: relative; } }
+@media only screen and (prefers-color-scheme: dark) and (max-width: 400px) { .share { width: 100%; display: block; top: 0; text-align: left; float: none; margin-top: 5px; } }
+@media only screen and (prefers-color-scheme: dark) and (min-width: 400px) and (max-width: 1050px) { .share { width: 100%; display: block; top: 0; text-align: left; float: none; margin-top: 5px; } }
+@media (prefers-color-scheme: dark) { .share > .twitter, .share > .facebook, .share > .linkedin { display: inline; vertical-align: middle; font-size: 13px; font-weight: 700; color: #fff; padding: 6px 10px; border-radius: 3px; margin-left: 5px; text-decoration: none; } }
+@media only screen and (prefers-color-scheme: dark) and (max-width: 400px) { .share > .twitter, .share > .facebook, .share > .linkedin { margin: 0 5px 10px 0; } }
+@media only screen and (prefers-color-scheme: dark) and (min-width: 400px) and (max-width: 1050px) { .share > .twitter, .share > .facebook, .share > .linkedin { margin: 0 5px 10px 0; } }
+@media (prefers-color-scheme: dark) { .share > .twitter { background: #4fafed; }
+  .share > .facebook { background: #4361b3; }
+  .share > .linkedin { background: #0077b5; }
+  .share svg { fill: #ffffff; position: relative; top: 0; margin: 0; margin-right: 4px; display: inherit; } }
+@media only screen and (prefers-color-scheme: dark) and (min-width: 780px) { .side-by-side { width: 130%; margin: 6rem 0 6rem -15%; } }
+@media only screen and (prefers-color-scheme: dark) and (max-width: 780px) { .side-by-side { width: 100%; margin: 4rem 0; } }
+@media (prefers-color-scheme: dark) { .side-by-side > .toleft, .side-by-side > .toright { display: inline-block; width: 47.5%; } }
+@media only screen and (prefers-color-scheme: dark) and (max-width: 780px) { .side-by-side > .toleft img, .side-by-side > .toright img { text-align: center; display: block; margin: 0 auto; } }
+@media only screen and (prefers-color-scheme: dark) and (min-width: 780px) { .side-by-side > .toleft { margin-right: 2%; } }
+@media only screen and (prefers-color-scheme: dark) and (max-width: 780px) { .side-by-side > .toleft { width: 100%; margin: 0 0 4rem 0; } }
+@media only screen and (prefers-color-scheme: dark) and (min-width: 780px) { .side-by-side > .toright { margin-left: 2%; vertical-align: top; } }
+@media only screen and (prefers-color-scheme: dark) and (max-width: 780px) { .side-by-side > .toright { width: 100%; margin: 0 0 4rem 0; } }
+@media (prefers-color-scheme: dark) { .side-by-side > .toleft > p, .side-by-side > .toright > p { margin: 0 0 4rem 0; } }
+@media only screen and (prefers-color-scheme: dark) and (max-width: 780px) { .side-by-side > .toleft > p, .side-by-side > .toright > p { margin: 0; } }
+
+@media (prefers-color-scheme: dark) { .social-links > .link { margin: 0; text-decoration: none; position: relative; display: inline-block; height: 35px; width: 35px; color: #000000; }
+  .social-links > .link:hover > svg { color: #cc0000; }
+  .social-links > svg { transition: all ease-in-out 0.2s; }
+  .spoiler { position: relative; }
+  .spoiler:before { content: ""; background-color: #fafae0; position: absolute; top: 0; bottom: 0; left: 0; right: 0; z-index: 50; }
+  .spoiler:hover:before { display: none; }
+  .wrapper-normal, .wrapper-large { position: relative; }
+  button, .btn { background: #1a1a1a; border: 1px solid #dddddd; color: #000000; padding: 8px 16px; cursor: pointer; transition: all 0.2s ease; font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif; border-radius: 4px; font-weight: 500; }
+  button:hover, .btn:hover { background: #1a1a1a; border-color: #cc0000; color: #cc0000; } }
+
+    </style>
+
+</head>
+<body>
+    <script>
+        // Mobile navigation dropdown functionality
+        document.addEventListener('DOMContentLoaded', function() {
+            const isMobile = window.matchMedia('(max-width: 768px)').matches ||
+                             window.matchMedia('(max-width: 1050px)').matches;
+
+            if (isMobile) {
+                const navElements = document.querySelectorAll('nav, .nav, .nav-home');
+                navElements.forEach(nav => {
+                    nav.addEventListener('click', function(e) {
+                        // Only toggle if clicking on the nav itself (hamburger) or list, not on actual links
+                        const isLink = e.target.tagName === 'A';
+                        if (!isLink) {
+                            e.preventDefault();
+                            nav.classList.toggle('expanded');
+                        } else {
+                            // Close menu when link is clicked
+                            nav.classList.remove('expanded');
+                        }
+                    });
+                });
+            }
+        });
+    </script>
+
+    <div class="wrapper-normal">
+        
+            <div class="post">
+        
+
+            
+
+
+
+<nav class="nav">
+    <ul class="list">
+        
+            <li class="item">
+                <a class="link" href="/">Home</a>
+            </li>
+        
+
+        
+            
+                <li class="item">
+                    <a class="link" href="/blog">Blog</a>
+                </li>
+            
+        
+
+        
+            
+                <li class="item">
+                    <a class="link" href="/projects">Research</a>
+                </li>
+            
+        
+
+        
+            
+                <li class="item">
+                    <a class="link" href="/about">About</a>
+                </li>
+            
+        
+
+        
+            <li class="item">
+                <a class="link" href="https://github.com/0xkato/Portfolio/tree/main">Portfolio</a>
+            </li>
+        
+    </ul>
+</nav>
+
+
+
+
+
+<h1 class="title">How LLMs Actually Work</h1>
+
+<span class="date">
+    <time datetime="01-06-2026">Monday. June 01, 2026</time>
+     - <span class="reading-time" title="Estimated read time">
+    
+
+    
+        26 mins
+    
+</span>
+
+</span>
+
+
+    <div class="post-tags">
+        
+            <a class="item" href="https://0xkato.xyz/tags/#machine-learning">Machine Learning</a>
+        
+            <a class="item" href="https://0xkato.xyz/tags/#transformers">Transformers</a>
+        
+            <a class="item" href="https://0xkato.xyz/tags/#llm">LLM</a>
+        
+            <a class="item" href="https://0xkato.xyz/tags/#neural-networks">Neural Networks</a>
+        
+            <a class="item" href="https://0xkato.xyz/tags/#ai">AI</a>
+        
+    </div>
+
+
+<p>This post is a walkthrough of how LLMs work. Modern LLMs are mostly built by stacking transformer blocks over and over, so understanding the transformer machinery gets you most of the way there.</p>
+
+<p>I’ll cover the core mechanisms inside modern transformer-based LLMs, without all that sticky math stuff. Don’t get me wrong, you should learn the math, but this can serve as an introduction.</p>
+
+<p>Most modern LLMs share the same transformer-family skeleton. The differences come from what each one was trained on, the scale and configuration choices, and the post-training done on top. By the end, you should be able to read many modern LLM papers or model cards and know which piece of the architecture each section is talking about.</p>
+
+<p>Here’s the path:</p>
+
+<ol>
+  <li>Tokens, how a string of text becomes a sequence of integers</li>
+  <li>Embeddings, how those integers get meaning</li>
+  <li>Positional encoding, how the model knows what order the tokens came in</li>
+  <li>Attention, how tokens share information with each other</li>
+  <li>Multi-head attention, how the model tracks many kinds of relationships at once</li>
+  <li>The feed-forward network, where a large share of the model’s stored structure lives</li>
+  <li>The residual stream and layer normalization, what makes deep stacks trainable</li>
+  <li>Predicting the next token, what the model actually outputs and how the generation loop works</li>
+  <li>Architecture vs trained weights, what’s broadly shared across modern LLMs, and what’s different</li>
+</ol>
+
+<p><img src="/assets/transformer-pipeline.png" alt="Transformer pipeline from tokenization to next-token prediction" class="bigger-image" /></p>
+
+<p>Tiny explainers appear throughout so anyone can follow along, regardless of background.</p>
+
+<hr />
+
+<h2 id="tokenization">Tokenization</h2>
+
+<p>Models don’t read text directly. They read integer IDs. The step that converts your prompt into a sequence of those integers.</p>
+
+<p>That conversion step is called tokenization. A tokenizer takes a string and produces a sequence of integers, where each integer points to an entry in a fixed vocabulary. Modern LLM vocabularies usually contain tens of thousands to a few hundred thousand entries.</p>
+
+<blockquote>
+  <p><strong>Tiny explainer: token ID</strong><br />
+A token ID is the integer the model uses for one vocabulary entry. The model works with the number, not the written word itself.</p>
+</blockquote>
+
+<p>Tokens aren’t usually whole words. They’re usually subword pieces. The word “tokenization” might split into [“token”, “ization”]. The word “running” might split into [“run”, “ning”]. The reason is efficiency. Whole-word vocabularies are too big and don’t generalize to new words. Character-level vocabularies are too small and force the model to learn even the simplest patterns from scratch. Subword tokenization sits in the middle. The most common pieces become single tokens, and rare or novel words get composed from smaller pieces.</p>
+
+<blockquote>
+  <p><strong>Tiny explainer: vocabulary</strong><br />
+The vocabulary is the tokenizer’s fixed list of pieces. Each piece has an ID, and the model can only directly receive IDs from that list.</p>
+</blockquote>
+
+<p>The trade-off shows up in places people don’t expect. The classic example: ask an LLM how many R’s are in “strawberry.” LLMs used to get it wrong. That’s not the model failing at counting. It’s the model not operating on letters directly, only token IDs that happen to spell out a word a human would split letter by letter.</p>
+
+<p><img src="/assets/transformer-tokenization.png" alt="Tokenization turns text into token IDs" class="bigger-image" /></p>
+
+<p>Different model families use different tokenizers. GPT models use Byte Pair Encoding variants. SentencePiece is common in LLaMA-style models. The choice matters for compute (fewer tokens means less work) and for things like multilingual coverage, but the basic shape is the same. Text in, integers out.</p>
+
+<p>Now that the prompt is a sequence of integers, the next step is to give those integers meaning.</p>
+
+<hr />
+
+<h2 id="embeddings">Embeddings</h2>
+
+<p>A token ID like <code class="language-plaintext highlighter-rouge">1024</code> is just a row index. It doesn’t mean anything by itself. The thing that gives it meaning is a giant table called the embedding matrix.</p>
+
+<p>Every model has one. It has one row per entry in the vocabulary, and each row is a long vector of numbers. The length of each row is the model’s hidden size. In many 7B-class models, that means 4,096 numbers per token. Larger models usually use wider vectors.</p>
+
+<blockquote>
+  <p><strong>Tiny explainer: vector</strong><br />
+A vector is a list of numbers. In a transformer, each token becomes a vector so the model can do math with it.</p>
+</blockquote>
+
+<p>When the tokenizer hands the model an integer, the model looks up that row and uses the vector instead. That vector is the token’s embedding. It’s the model’s representation of what that token “means,” learned during training.</p>
+
+<blockquote>
+  <p><strong>Tiny explainer: embedding matrix</strong><br />
+The embedding matrix is a lookup table. Token ID in, learned vector out.</p>
+</blockquote>
+
+<p>The interesting property of these embeddings is that semantically similar tokens end up with similar vectors. The vector for “king” is close in space to the vector for “queen,” and the vector for “Paris” is close to “France.” None of this is hard-coded. It emerges from training on enough text, and the model learns these positions because they let it predict text well.</p>
+
+<p>You can do arithmetic on embeddings and it sometimes works. The famous example is <code class="language-plaintext highlighter-rouge">king − man + woman ≈ queen</code>. The geometry of embedding space carries real semantic structure, even though nobody told the model to build it that way.</p>
+
+<p><img src="/assets/transformer-embedding-analogy.png" alt="Embedding space analogy with semantic relationships" class="bigger-image" /></p>
+
+<p>Worth being clear on: at this stage every token has been replaced by its embedding, but the embedding alone says nothing about where the token sits in the sequence. The vector for “dog” is the same vector whether “dog” is the first word in your prompt or the fifth. That’s a problem.</p>
+
+<p>That’s the gap positional encoding fills.</p>
+
+<hr />
+
+<h2 id="positional-encoding">Positional encoding</h2>
+
+<p>Plain self-attention doesn’t have a built-in representation of word order. Without some positional signal, it has no direct way to know that “dog” came before “bites” instead of after it.</p>
+
+<p>Word order changes meaning. So the model needs another piece. It needs a way to inject the position of each token into the math.</p>
+
+<blockquote>
+  <p><strong>Tiny explainer: positional encoding</strong><br />
+Positional encoding is how the model gets order information. It tells the model where each token sits in the sequence.</p>
+</blockquote>
+
+<p>The original transformer paper (Vaswani et al. 2017) did this by giving each position its own pattern of numbers and adding it directly to each token’s embedding before any other processing. Position 1 had one pattern, position 5 had a different pattern, position 100 had another. The patterns came from sine and cosine waves at different frequencies. Now the embedding for “dog” at position 1 was different from the embedding for “dog” at position 5, just because the position pattern added to it was different.</p>
+
+<p>That worked, and sinusoidal encodings were chosen partly because they can extrapolate beyond the exact sequence lengths seen during training. But additive position schemes still had two problems that became important as models scaled up.</p>
+
+<p>First, the embedding had to carry both meaning and position in the same set of numbers. There’s only so much you can pack in.</p>
+
+<p>Second, learned absolute position embeddings in particular don’t generalize cleanly. If you trained on prompts up to 2,048 tokens long, the model never saw position 5,000 during training, and the embedding for that position was not learned in the same way.</p>
+
+<p>Modern models mostly use a different scheme called Rotary Position Embeddings (RoPE), introduced by Su et al. in 2021 and now used in LLaMA, Mistral, Gemma, Qwen, and most other open-weight families. The intuition: instead of adding position info to each token’s vector, RoPE rotates the Query and Key vectors by an angle that depends on the token’s position. A token at position 1 gets a small turn, a token at position 100 gets a bigger turn. When two tokens are later compared during attention, what matters is the difference between their Query and Key rotations, which encodes how far apart they are.</p>
+
+<blockquote>
+  <p><strong>Tiny explainer: RoPE</strong><br />
+RoPE stands for Rotary Position Embeddings. Instead of adding a position vector, it rotates Query and Key vectors so relative distance shows up during attention.</p>
+</blockquote>
+
+<p><img src="/assets/transformer-rope.png" alt="Rotary position embeddings rotate vectors by position" class="bigger-image" /></p>
+
+<p>The practical advantages are real. RoPE encodes relative position naturally (which is closer to what attention actually wants). It generalizes better to longer contexts. And it doesn’t add new parameters to the model.</p>
+
+<p>Even with good positional encoding, modern LLMs have a documented “lost in the middle” problem (Liu et al. 2023). They use information at the start and end of long prompts more reliably than information buried in the middle. That’s why prompt engineering tips like “put important context first” or “repeat key info at the end” actually help. The model isn’t using every part of your prompt equally well.</p>
+
+<p>With token meaning and position both encoded, the next question is how do tokens actually exchange information?</p>
+
+<hr />
+
+<h2 id="attention">Attention</h2>
+
+<p>This is the mechanism that gave the architecture its name. Attention.</p>
+
+<p>Inside every transformer layer, attention does one thing. It lets each token look at the other tokens it is allowed to see and decide which ones matter for what comes next.</p>
+
+<p>It does this by giving each token three roles at once. Each token gets transformed into three new vectors, called Query, Key, and Value (Q, K, V).</p>
+
+<blockquote>
+  <p><strong>Tiny explainer: Q, K, V</strong><br />
+Query means “what am I looking for,” Key means “what do I match with,” and Value is the information that gets copied when the match is strong.</p>
+</blockquote>
+
+<ul>
+  <li>The Query asks, “what am I looking for from other tokens?”</li>
+  <li>The Key says, “this is what I offer to tokens looking at me.”</li>
+  <li>The Value carries, “this is what gets passed along when a match happens.”</li>
+</ul>
+
+<p>The same token plays all three roles at the same time. The Q, K, V transformations are learned matrices, so the model figures out during training what each token should look for and what it should offer.</p>
+
+<p>Matching happens through a similarity score. Each token’s Query is compared against the Key of each token it is allowed to see, using a scaled dot product. Intuitively, this measures how much the two vectors line up. The scaling keeps the numbers stable before softmax.</p>
+
+<blockquote>
+  <p><strong>Tiny explainer: dot product</strong><br />
+A dot product is a simple way to score how aligned two vectors are. Higher alignment means a stronger match.</p>
+</blockquote>
+
+<p>The match scores then get turned into weights using softmax. Softmax takes any set of numbers and turns them into a probability-like distribution that sums to 1. Tokens with higher match scores get higher weights, and the weights are then used to take a weighted average of the value vectors.</p>
+
+<blockquote>
+  <p><strong>Tiny explainer: softmax</strong><br />
+Softmax turns raw scores into weights that add up to 1. Big scores get big weights, small scores get small weights.</p>
+</blockquote>
+
+<p>An example. Consider the sentence “The cat that I saw yesterday was sleeping.” When the model processes “was,” it needs to figure out what’s doing the sleeping. The Query vector for “was” gets compared against the Key vectors of the tokens it is allowed to see. The dot product with “cat” is high, because the model has learned that verbs like “was” need a subject and that subjects like “cat” produce Key vectors that line up well. The dot product with “yesterday” is low. Softmax turns those scores into weights, “cat” gets a high weight, “yesterday” gets a low one. The model then takes a weighted sum of the corresponding value vectors, so the value for “cat” dominates the result. The new representation of “was” is now mostly shaped by the value of “cat.” That’s how a token several positions back becomes the referent.</p>
+
+<p>There’s a constraint specific to GPT-style language models, which is that they generate text left to right. A token at position 5 is only allowed to attend to positions 1 through 5. It cannot attend to tokens at positions 6, 7, 8, because those haven’t been generated yet. This is called causal masking. The implementation is simple: future tokens get match scores so low they end up with effectively zero weight after softmax.</p>
+
+<blockquote>
+  <p><strong>Tiny explainer: causal masking</strong><br />
+Causal masking hides future tokens. It keeps a decoder-only language model from looking ahead while predicting the next token.</p>
+</blockquote>
+
+<p><img src="/assets/transformer-attention-heatmap.png" alt="Attention heatmap showing causal masking and high attention to cat" class="bigger-image" /></p>
+
+<p>One of the most interesting findings in interpretability research is about specialized attention heads called induction heads, found by Anthropic in 2022. These heads learn to spot patterns of the form “A B … A” in the prompt and predict that B comes next. When the model sees “A” the second time, the induction head looks back to where “A” appeared before, sees what came after, and copies that. They’re one of the clearest known mechanisms behind in-context learning, the ability of an LLM to pick up a pattern from your prompt and continue it.</p>
+
+<blockquote>
+  <p><strong>Tiny explainer: induction head</strong><br />
+An induction head is an attention head that notices repeated patterns in the prompt and helps continue them.</p>
+</blockquote>
+
+<p>Attention has one big cost. In full attention, each token compares against all the tokens it is allowed to see, so doubling the prompt length roughly quadruples the work. This is why long prompts are expensive to run, and why a lot of recent research is about making attention more efficient (FlashAttention, sparse attention, linear attention).</p>
+
+<p>But one attention head only gives the model one learned view of those relationships.</p>
+
+<hr />
+
+<h2 id="multi-head-attention">Multi-head attention</h2>
+
+<p>A single attention pass gives the model one way of deciding which tokens matter to which other tokens. That’s not enough. Language has many relationships happening at the same time. Subject and verb agreement. Pronouns and the names they refer to. Long-range references between sentences. Word order and local phrases.</p>
+
+<p>Multi-head attention solves this by running attention many times in parallel, with each parallel pass operating in its own smaller space. Each parallel pass is called a head.</p>
+
+<blockquote>
+  <p><strong>Tiny explainer: attention head</strong><br />
+An attention head is one independent attention pass with its own learned projections.</p>
+</blockquote>
+
+<p>The part that’s often described wrong, including in plenty of tutorials. Each head doesn’t get a literal slice of the original token vector. Each head has its own learned projection matrices that map the full token vector down to its own smaller Q, K, and V vectors. So if a model has 4,096 numbers per token and 32 heads, each head usually works in a 128-dimensional space, but those 128 numbers are a learned projection of the full 4,096, not a fixed slice. Different “views” of the same token, not different chunks of it.</p>
+
+<p>Each head runs its attention pass independently. Then the outputs of all the heads get concatenated and passed through a final linear layer that mixes them back into one full-size vector. The model learns that final mixing too.</p>
+
+<p><img src="/assets/transformer-multi-head-attention.png" alt="Multi-head attention combines specialized attention heads" class="bigger-image" /></p>
+
+<p>What makes this interesting is that different heads often end up partially specialized. The model is never told what each head should do. Specialization emerges naturally during training. Researchers have found heads that track grammar (linking verbs to their objects, articles to their nouns), heads that figure out which pronoun refers to which name, heads that track positional patterns, induction heads, and many more. A single transformer layer might have 32 heads. A modern frontier model has dozens of layers. So a typical LLM has thousands of attention heads in total, each adding its own learned view.</p>
+
+<p>There’s a practical cost concern that drove a recent architectural change. Each head needs to keep its Key and Value vectors in memory for all the tokens already generated, so that when a new token gets generated the model doesn’t have to recompute everything from scratch. This is called the KV cache, and it’s the main memory cost of running an LLM at long context lengths.</p>
+
+<blockquote>
+  <p><strong>Tiny explainer: KV cache</strong><br />
+The KV cache stores old Key and Value vectors during generation. It saves the model from recomputing the whole prompt every time it adds a token.</p>
+</blockquote>
+
+<p>Modern decoder-only LLMs mostly use a variant called Grouped-Query Attention (GQA). Instead of every head having its own keys and values, groups of heads share the same key and value heads. LLaMA-2 70B has 64 query heads but only 8 key/value heads. Mistral 7B has 32 query heads and 8 key/value heads. The result is nearly the same accuracy as full multi-head attention but with much less memory pressure and inference cost.</p>
+
+<blockquote>
+  <p><strong>Tiny explainer: GQA</strong><br />
+Grouped-Query Attention lets multiple query heads share fewer key/value heads. That cuts KV-cache memory while keeping many query views.</p>
+</blockquote>
+
+<hr />
+
+<h2 id="feed-forward-network">Feed-forward network</h2>
+
+<p>After attention finishes mixing information between tokens, every layer has a second step that nobody talks about as much. The feed-forward network.</p>
+
+<p>Where attention is about tokens talking to each other, the feed-forward network is about each token, on its own, doing more processing. It runs on every token’s vector independently, with no cross-token mixing.</p>
+
+<p>The feed-forward network does three things in order:</p>
+<ol>
+  <li>Expand the token’s vector to a larger size (the original transformer used 4x, while modern SwiGLU models often use different expansion sizes).</li>
+  <li>Apply a non-linear function.</li>
+  <li>Compress the vector back down to its original size.</li>
+</ol>
+
+<p><img src="/assets/transformer-ffn.png" alt="Feed-forward network expands, transforms, and compresses each token vector" class="bigger-image" /></p>
+
+<p>That non-linear step in the middle is doing something specific that’s worth understanding. A non-linearity is a function that bends its input. The simplest one, ReLU, outputs zero for any negative number and passes positive numbers through unchanged.</p>
+
+<blockquote>
+  <p><strong>Tiny explainer: non-linearity</strong><br />
+A non-linearity is a function that prevents the network from collapsing into one big linear transformation.</p>
+</blockquote>
+
+<p>Without it, the FFN would just be two linear layers stacked together, and stacking pure linear math collapses. Two linear layers in a row are mathematically equivalent to a single linear layer, and a hundred linear layers in a row are still equivalent to one. The non-linearity is what stops that collapse, and it’s the reason the FFN can do something richer than a single matrix multiplication.</p>
+
+<p>The original transformer used ReLU. GPT and BERT moved to GELU. Modern models like LLaMA, Mistral, and PaLM use SwiGLU. The expand-then-compress structure stayed the same. The non-linearity itself is what’s been iterated on.</p>
+
+<p>Most of the parameters in a dense transformer model live in the FFN, not in attention. A large share of the weights sit in feed-forward layers.</p>
+
+<p>And those parameters aren’t generic. They’re where much of the model’s stored factual and semantic structure lives. Researchers have found that some neurons inside the FFN are strongly associated with specific concepts or facts. One neuron might activate strongly on Eiffel-Tower-related text. Another on programming languages. Another on past-tense verbs. When a model “knows” that Paris is the capital of France, that fact is represented across FFN weights and activations in specific layers.</p>
+
+<p>This stored-memory property has an interesting consequence. Researchers have figured out how to directly edit some facts in a trained model without retraining it. Methods like ROME (Rank-One Model Editing) can change “the Eiffel Tower is in Paris” to “the Eiffel Tower is in Rome” by making a targeted low-rank edit to a specific FFN weight matrix. The model then tends to generate text consistent with the edited association.</p>
+
+<p>Some modern frontier models have started replacing the dense FFN with something called Mixture of Experts (MoE). Instead of one feed-forward network per layer, the model has many parallel FFNs (called experts) and a tiny router network that picks which experts process each token. Mixtral 8x7B has 8 experts per layer; only 2 are activated for any given token. The total parameter count goes up substantially, but the compute per token grows much more slowly because only a few experts run. That’s how you scale parameter count without scaling inference cost in proportion.</p>
+
+<blockquote>
+  <p><strong>Tiny explainer: MoE</strong><br />
+Mixture of Experts means the model has several feed-forward networks and routes each token through only a few of them.</p>
+</blockquote>
+
+<p>Mixtral 8x7B has 46.7 billion total parameters but uses about 12.9 billion per token. This has become a common option for very large models because it lets you keep growing the parameter count without making inference cost grow in proportion.</p>
+
+<hr />
+
+<h2 id="residual-stream-and-layer-normalization">Residual stream and layer normalization</h2>
+
+<p>The residual stream is what makes the model “additive” instead of “replacing.” After attention runs, or after the feed-forward network runs, the result usually doesn’t replace the token’s vector. It gets added to it. Position by position. The new vector equals the old vector plus the sub-block’s output.</p>
+
+<blockquote>
+  <p><strong>Tiny explainer: residual connection</strong><br />
+A residual connection adds a block’s output back to the vector it started from. It gives information and gradients a shortcut through the network.</p>
+</blockquote>
+
+<p>Across thirty or fifty or a hundred layers, each layer’s contribution accumulates instead of simply overwriting the previous vector. That running sum is called the residual stream, and it has a strange property. The original input embeddings still have a direct additive path into late layers, mixed together with every sub-block’s contribution along the way.</p>
+
+<p><img src="/assets/transformer-residual-stream.png" alt="Residual stream accumulates attention and feed-forward outputs" class="bigger-image" /></p>
+
+<p>Residual connections weren’t invented for transformers. They came from ResNet (He et al. 2015), originally for image recognition. The motivation was that deep networks were impossible to train. The training signal got too weak (or sometimes too strong) by the time it traveled back through many layers. The model couldn’t actually learn from its own mistakes. Adding a shortcut path let the signal flow directly back from the output to the input. Suddenly you could train networks with hundreds of layers. Transformers inherited the same trick.</p>
+
+<p>In modern interpretability research, the residual stream has become the central object. Every component, every attention head, every feed-forward network, even the unembedding step at the end, reads from the residual stream and writes back to it.</p>
+
+<p>The second piece, layer normalization, exists for a much more practical reason. Without it, the residual stream would not stay stable. Numbers flowing through dozens of additions tend to either explode upward or collapse toward zero. Either way, training fails. Layer normalization rescales each token’s vector back into a controlled range between sub-blocks.</p>
+
+<blockquote>
+  <p><strong>Tiny explainer: layer normalization</strong><br />
+Layer normalization rescales a token vector so its numbers stay in a stable range while the model trains.</p>
+</blockquote>
+
+<p>The original 2017 transformer applied normalization AFTER each sub-block (post-norm). This worked for shallow models but became harder to train reliably as depth increased. Modern transformers (GPT-2 onward, LLaMA, Mistral) commonly apply normalization BEFORE each sub-block (pre-norm). That’s one of the changes that made very deep transformers easier to train.</p>
+
+<p>The function itself has also changed. Many modern open models (LLaMA, Mistral, Gemma, Phi) use a simpler variant called RMSNorm. The original layer normalization did two things at once: shift each vector toward zero, then rescale the size of the numbers. RMSNorm drops the shift step and keeps only the rescaling. Empirically, the rescaling carries most of the benefit while being cheaper to compute.</p>
+
+<blockquote>
+  <p><strong>Tiny explainer: RMSNorm</strong><br />
+RMSNorm is a cheaper normalization method that rescales vector size without subtracting the mean first.</p>
+</blockquote>
+
+<p>So that’s the unglamorous machinery. Without residual connections, very deep models become much harder to train. Without layer normalization, the running sum can blow up or collapse. With both, you get models hundreds of layers deep.</p>
+
+<hr />
+
+<h2 id="next-token-prediction">Next-token prediction</h2>
+
+<p>After all the layers of attention and feed-forward processing finish, the model has a vector for each token in the sequence. During generation, to predict the next word, it takes the final vector of the last token only.</p>
+
+<p>That last vector gets converted into one number per possible next token. If the vocabulary has 100,000 tokens, that’s 100,000 numbers. These numbers are called logits. They aren’t probabilities yet. They can be any size, positive or negative.</p>
+
+<blockquote>
+  <p><strong>Tiny explainer: logits</strong><br />
+Logits are raw scores for each possible next token. They become probabilities only after softmax.</p>
+</blockquote>
+
+<p>A softmax turns those logits into the model’s probability distribution over possible next tokens. Same operation as before, different place in the model.</p>
+
+<p>The model usually does not just pick the highest-probability token every time. Decoding settings control how deterministic or varied the output is. Temperature changes how sharp the distribution is. Top-k and top-p limit the choices to the most plausible next tokens. That is why the same model can feel precise in one setting and more creative in another.</p>
+
+<blockquote>
+  <p><strong>Tiny explainer: temperature</strong><br />
+Temperature controls randomness during sampling. Low temperature makes the model more conservative; high temperature makes it more varied.</p>
+</blockquote>
+
+<p>Once a token is picked, it gets added to the input. The model runs the next step on the longer sequence, usually reusing the KV cache so it doesn’t recompute the whole prefix from scratch. New attention for the new token. New feed-forward. New final vector. New prediction. The loop continues until the model emits an end-of-sequence token or hits a length limit. A whole paragraph is just this loop, one token at a time.</p>
+
+<p>This single objective, predicting the next token, is the core training signal for a base LLM. The base model isn’t trained on factual accuracy, conversational ability, reasoning, or coding directly. It’s trained to predict the next token in massive amounts of text. Later post-training can then tune the model for instruction following, preference, safety, and conversational behavior.</p>
+
+<p>There’s been a major efficiency innovation worth knowing about. It’s called speculative decoding. A small fast model proposes several tokens ahead. The big model verifies them in parallel. If the proposed tokens are accepted under the big model’s probabilities, accept them. If not, fall back to the big model. Done correctly, the output distribution matches running the big model alone, but the loop can run much faster.</p>
+
+<blockquote>
+  <p><strong>Tiny explainer: speculative decoding</strong><br />
+Speculative decoding uses a small draft model to guess ahead, then asks the larger model to verify several guessed tokens at once.</p>
+</blockquote>
+
+<p>The next-token prediction loop is the simplest part of the architecture, but it’s what makes the whole thing work.</p>
+
+<hr />
+
+<h2 id="architecture-vs-trained-weights">Architecture vs trained weights</h2>
+
+<p>We’ve gone through the core mechanisms: tokens, embeddings, positional encoding, attention, multi-head attention, the feed-forward network, the residual stream and normalization, and the next-token loop on the output side. That’s the basic architecture in one pass.</p>
+
+<p>So what’s actually different between GPT and Claude and Gemini and LLaMA? Public details vary, and the proprietary models do not publish every architectural choice. But at the level this post is covering, they broadly sit in the same transformer-family design space.</p>
+
+<p>Most modern transformer-based LLMs use the same broad structure: tokenization, embeddings, positional encoding, stacked transformer layers (each with multi-head attention and a feed-forward network), residual streams, layer normalization, and next-token prediction.</p>
+
+<p>What changes between models is:</p>
+<ol>
+  <li>The trained weights themselves, learned from different training data at different scales.</li>
+  <li>The configuration: number of layers, vocabulary size, head count, parameter count, MoE or dense.</li>
+  <li>The post-training: instruction tuning, learning from human feedback, safety controls applied on top of the base model.</li>
+</ol>
+
+<blockquote>
+  <p><strong>Tiny explainer: weights</strong><br />
+Weights are the learned numbers inside the model. Training changes those numbers until the model predicts text well.</p>
+</blockquote>
+
+<p>The 2023-2025 “modern transformer” stack converged on a common set of choices across many serious frontier and open-weight models, even though different teams arrived at them independently. Pre-norm placement. RMSNorm. RoPE. SwiGLU. Grouped-Query Attention. Mixture of Experts in some of the largest models. None of these were invented at once. They accumulated over about five years of refinement on top of the original 2017 design.</p>
+
+<hr />
+
+<h2 id="where-this-is-going">Where this is going</h2>
+
+<p>The convergence around transformer-family architectures is unusual in machine learning history. For most of the field’s life, every problem had its own specialized network. Image recognition used one kind. Language used another. Audio used a third. Vision and language teams barely shared methods.</p>
+
+<p>Now transformer-style models show up across language, vision, audio, and multimodal systems. The transformer absorbed a huge part of the field.</p>
+
+<p>That could change. Mamba and other state-space models are credible alternatives, especially for very long sequences. Hybrid architectures are being explored. Mixture-of-experts has already shifted what “the architecture” means at the frontier in ways that would have been considered exotic five years ago.</p>
+
+<p>But the core mechanisms in this post (tokens, embeddings, positional encoding, attention, the feed-forward network, the residual stream and normalization, and next-token prediction) are the durable parts. Even when the architecture changes, these are the problems any sequence model has to solve in some form.</p>
+
+<p>If you’ve made it this far, you can read many modern transformer papers or model cards and know which piece each section is talking about. That’s the goal.</p>
+
+<p>Feedback is extremely welcome. If any of this interests you, please reach out on X. I love making new friends.</p>
+
+
+
+    <div class="blog-navigation">
+        
+            <a class="prev" href="https://0xkato.xyz/the-next-jump/">&laquo; The Next Jump</a>
+        
+        
+    </div>
+
+
+
+    <div class="related">
+    
+    
+        
+        
+            
+                
+            
+                
+            
+                
+            
+                
+            
+                
+            
+        
+            
+                
+            
+                
+            
+                
+            
+                
+            
+                
+            
+        
+            
+                
+            
+                
+            
+                
+            
+                
+            
+                
+            
+        
+            
+                
+            
+                
+            
+                
+            
+                
+            
+                
+            
+        
+            
+                
+            
+                
+            
+                
+            
+                
+            
+                
+            
+        
+    
+        
+        
+            
+                
+            
+                
+            
+                
+            
+                
+            
+                
+            
+        
+            
+                
+                    
+                    <h4>Related Posts</h4>
+                    <ul>
+                    
+                    <li class="relatedPost">
+                        <a href="https://0xkato.xyz/the-next-jump/">The Next Jump
+                        
+                        </a>
+                    </li>
+                    
+                    
+                
+            
+                
+            
+                
+            
+                
+            
+                
+            
+        
+            
+                
+            
+                
+            
+                
+            
+                
+            
+                
+            
+        
+            
+                
+            
+                
+            
+                
+            
+                
+            
+                
+            
+        
+    
+        
+        
+            
+                
+            
+                
+            
+                
+            
+                
+            
+                
+            
+        
+            
+                
+            
+                
+            
+                
+            
+                
+            
+                
+            
+        
+            
+                
+            
+                
+            
+                
+            
+                
+            
+                
+            
+        
+            
+                
+            
+                
+            
+                
+            
+                
+            
+                
+            
+        
+            
+                
+            
+                
+            
+                
+            
+                
+            
+                
+            
+        
+    
+        
+        
+            
+                
+            
+                
+            
+                
+            
+                
+            
+                
+            
+        
+            
+                
+            
+                
+            
+                
+            
+                
+            
+                
+            
+        
+            
+                
+            
+                
+            
+                
+            
+                
+            
+                
+            
+        
+            
+                
+            
+                
+            
+                
+            
+                
+            
+                
+            
+        
+            
+                
+            
+                
+            
+                
+            
+                
+            
+                
+            
+        
+    
+        
+        
+            
+                
+            
+                
+            
+                
+            
+                
+            
+                
+            
+        
+            
+                
+            
+                
+            
+                
+            
+                
+            
+                
+            
+        
+            
+                
+            
+                
+            
+                
+            
+                
+            
+                
+            
+        
+            
+                
+            
+                
+            
+                
+            
+                
+            
+                
+            
+        
+            
+                
+            
+                
+            
+                
+            
+                
+            
+                
+            
+        
+            
+                
+            
+                
+            
+                
+            
+                
+            
+                
+            
+        
+            
+                
+            
+                
+            
+                
+            
+                
+            
+                
+            
+        
+    
+        
+        
+            
+                
+            
+                
+            
+                
+            
+                
+            
+                
+            
+        
+            
+                
+            
+                
+            
+                
+            
+                
+            
+                
+            
+        
+            
+                
+            
+                
+            
+                
+            
+                
+            
+                
+            
+        
+            
+                
+            
+                
+            
+                
+            
+                
+            
+                
+            
+        
+    
+        
+        
+            
+                
+            
+                
+            
+                
+            
+                
+            
+                
+            
+        
+            
+                
+            
+                
+            
+                
+            
+                
+            
+                
+            
+        
+            
+                
+            
+                
+            
+                
+            
+                
+            
+                
+            
+        
+            
+                
+            
+                
+            
+                
+            
+                
+            
+                
+            
+        
+    
+        
+        
+            
+                
+            
+                
+            
+                
+            
+                
+            
+                
+            
+        
+            
+                
+            
+                
+            
+                
+            
+                
+            
+                
+            
+        
+            
+                
+            
+                
+            
+                
+            
+                
+            
+                
+            
+        
+    
+        
+        
+            
+                
+            
+                
+            
+                
+            
+                
+            
+                
+            
+        
+            
+                
+            
+                
+            
+                
+            
+                
+            
+                
+            
+        
+    
+        
+        
+            
+                
+            
+                
+            
+                
+            
+                
+            
+                
+            
+        
+    
+        
+        
+            
+                
+            
+                
+            
+                
+            
+                
+            
+                
+            
+        
+            
+                
+            
+                
+            
+                
+            
+                
+            
+                
+            
+        
+            
+                
+            
+                
+            
+                
+            
+                
+            
+                
+            
+        
+    
+        
+        
+            
+                
+            
+                
+            
+                
+            
+                
+            
+                
+            
+        
+            
+                
+            
+                
+            
+                
+            
+                
+            
+                
+            
+        
+    
+        
+        
+            
+                
+            
+                
+            
+                
+            
+                
+            
+                
+            
+        
+            
+                
+            
+                
+            
+                
+            
+                
+            
+                
+            
+        
+    
+        
+        
+            
+                
+            
+                
+            
+                
+            
+                
+            
+                
+            
+        
+            
+                
+            
+                
+            
+                
+            
+                
+            
+                
+            
+        
+    
+        
+        
+            
+                
+            
+                
+            
+                
+            
+                
+            
+                
+            
+        
+            
+                
+            
+                
+            
+                
+            
+                
+            
+                
+            
+        
+    
+    
+        </ul>
+    
+</div>
+
+
+
+<section class="feedback">
+    <p class="feedback-text">
+        Feedback is extremely welcome. If any of this interests you, please reach out on <a href="https://x.com/0xkato" target="_blank" rel="noopener noreferrer">X</a>. I love making new friends.
+    </p>
+</section>
+
+
+
+<footer class="footer-main">
+    0xkato © 2026
+
+    <a class="link" href="https://0xkato.xyz/feed.xml" target="_blank" alt="anchor link to rss feed" aria-label="anchor link to rss feed">
+        <i class="fa-solid fa-rss"></i>
+    </a>
+
+</footer>
+
+
+            </div>
+                </div>
+            </div>
+    </div>
+</body>
+</html>
+

@@ -1,0 +1,718 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lesson 7 — The RLHF Objective</title>
+  <link rel="stylesheet" href="../assets/lesson.css">
+  <script defer src="../assets/quiz.js"></script>
+
+  <!-- KaTeX -->
+  <link rel="stylesheet"
+        href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css"
+        crossorigin="anonymous">
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js" crossorigin="anonymous"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"
+          crossorigin="anonymous"
+          onload="renderMathInElement(document.body,{delimiters:[
+            {left:'$$',right:'$$',display:true},
+            {left:'$',right:'$',display:false}
+          ],throwOnError:false});"></script>
+
+  <style>
+    .recall-card {
+      background: #f6fbf7; border: 1px solid #b7d9c2;
+      border-left: 4px solid var(--good); border-radius: 8px;
+      padding: 1rem 1.2rem; margin: 1.1rem 0;
+    }
+    .recall-card .rc-q { font-weight: 600; margin: 0 0 0.7rem; }
+    .recall-card .rc-reveal {
+      font-family: ui-sans-serif, sans-serif; font-size: 0.82rem;
+      background: var(--good); color: #fff; border: none; border-radius: 6px;
+      padding: 0.35rem 0.85rem; cursor: pointer;
+    }
+    .recall-card .rc-answer {
+      margin-top: 0.8rem; border-top: 1px solid #b7d9c2;
+      padding-top: 0.8rem; font-size: 0.95rem;
+    }
+    .math-box {
+      background: #fff; border: 1px solid var(--rule);
+      border-left: 4px solid #1d6fb8; border-radius: 8px;
+      padding: 1rem 1.4rem; margin: 1.4rem 0; font-size: 0.96rem;
+    }
+    .math-box .mb-title {
+      font-family: ui-sans-serif, sans-serif; font-size: 0.72rem;
+      text-transform: uppercase; letter-spacing: 0.1em; font-weight: 700;
+      color: #1d6fb8; margin: 0 0 0.7rem;
+    }
+    .sym-row { display: flex; align-items: baseline; gap: 0.6rem; margin: 0.45rem 0; }
+    .sym { font-weight: 700; color: #1d6fb8; min-width: 120px; font-size: 0.93rem; }
+    .surprise {
+      background: #fffbf0; border: 1px solid #e8d87a;
+      border-left: 4px solid #c8a800; border-radius: 8px;
+      padding: 1rem 1.2rem; margin: 1.4rem 0;
+    }
+    .surprise .s-title {
+      font-family: ui-sans-serif, sans-serif; font-size: 0.72rem;
+      text-transform: uppercase; letter-spacing: 0.1em; font-weight: 700;
+      color: #8a6e00; margin: 0 0 0.5rem;
+    }
+    .mastery {
+      background: #1a1a1a; color: #f4f1e8;
+      border-radius: 10px; padding: 1.3rem 1.5rem; margin: 2.2rem 0;
+    }
+    .mastery h3 { color: #f4c36a; margin: 0 0 0.7rem; font-size: 1rem; }
+    .mastery .rung {
+      margin: 0.8rem 0; padding: 0.65rem 0.9rem;
+      border-radius: 6px; background: rgba(255,255,255,0.07); font-size: 0.93rem;
+    }
+    .mastery .rung-label {
+      font-family: ui-sans-serif, sans-serif; font-size: 0.7rem;
+      text-transform: uppercase; letter-spacing: 0.1em; opacity: 0.7;
+      display: block; margin-bottom: 0.3rem;
+    }
+    .mastery .gate-note { margin-top: 0.9rem; font-size: 0.82rem; opacity: 0.7; font-style: italic; }
+    .worked {
+      background: #f0f7ff; border: 1px solid #b0d0f0;
+      border-left: 4px solid #2980b9; border-radius: 8px;
+      padding: 1rem 1.3rem; margin: 1.4rem 0; font-size: 0.95rem;
+    }
+    .worked .w-title {
+      font-family: ui-sans-serif, sans-serif; font-size: 0.72rem;
+      text-transform: uppercase; letter-spacing: 0.1em; font-weight: 700;
+      color: #2980b9; margin: 0 0 0.7rem;
+    }
+    .worked .step { margin: 0.6rem 0; }
+    .worked .step-label { font-weight: 700; color: #2980b9; margin-bottom: 0.2rem; }
+    .feynman {
+      background: #faf5eb; border: 1px solid #e0d5b8;
+      border-left: 4px solid #b8860b; border-radius: 8px;
+      padding: 1rem 1.2rem; margin: 1.4rem 0;
+    }
+    .feynman .f-title {
+      font-family: ui-sans-serif, sans-serif; font-size: 0.72rem;
+      text-transform: uppercase; letter-spacing: 0.1em; font-weight: 700;
+      color: #8a6e00; margin: 0 0 0.5rem;
+    }
+    .derivation {
+      background: #f9f5ff; border: 1px solid #d4c4f0;
+      border-left: 4px solid #7c3aed; border-radius: 8px;
+      padding: 1rem 1.3rem; margin: 1.4rem 0; font-size: 0.95rem;
+    }
+    .derivation .d-title {
+      font-family: ui-sans-serif, sans-serif; font-size: 0.72rem;
+      text-transform: uppercase; letter-spacing: 0.1em; font-weight: 700;
+      color: #7c3aed; margin: 0 0 0.7rem;
+    }
+    .derivation .d-step {
+      margin: 0.7rem 0; padding-left: 0.5rem;
+      border-left: 2px solid #d4c4f0;
+      padding-top: 0.2rem; padding-bottom: 0.2rem;
+    }
+    .derivation .d-step-label {
+      font-weight: 700; color: #7c3aed; font-size: 0.85rem;
+      margin-bottom: 0.2rem;
+    }
+    .token-table {
+      border-collapse: collapse; width: 100%; margin: 1rem 0; font-size: 0.88rem;
+    }
+    .token-table th {
+      background: #1d6fb8; color: #fff; padding: 0.5rem 0.6rem;
+      text-align: center; font-weight: 600;
+      font-family: ui-sans-serif, sans-serif; font-size: 0.8rem;
+    }
+    .token-table td {
+      border: 1px solid var(--rule); padding: 0.45rem 0.6rem;
+      background: #fff; text-align: center; vertical-align: middle;
+    }
+    .token-table tr:nth-child(even) td { background: #f8f7f3; }
+    .token-table .tok { font-family: "SF Mono", ui-monospace, Menlo, monospace; font-weight: 600; }
+    .big-result {
+      background: #1a1a1a; color: #f4f1e8;
+      border-radius: 10px; padding: 1.3rem 1.5rem; margin: 1.6rem 0;
+      text-align: center; font-size: 1.05rem;
+    }
+    .big-result .br-label {
+      font-family: ui-sans-serif, sans-serif; font-size: 0.7rem;
+      text-transform: uppercase; letter-spacing: 0.1em;
+      color: #f4c36a; margin-bottom: 0.6rem;
+    }
+  </style>
+</head>
+<body>
+<div class="wrap">
+
+  <p class="kicker">RLHF for Beginners · Lesson 7 of 23</p>
+  <h1>The RLHF Objective — Inside the Math</h1>
+  <p class="subtitle">You know the formula from <a href="0006-the-three-step-pipeline.html">Lesson 6</a>. Now we open it up: what does each piece actually compute for a real response, token by token? By the end, you'll be able to calculate the objective by hand — and you'll see the beautiful closed-form solution hiding inside it.</p>
+  <div class="meta-row">
+    <span>Phase 1 — The RLHF big picture</span>
+    <span>Prerequisites: Lessons 4 (probability), 6 (pipeline)</span>
+    <span>~35 min</span>
+  </div>
+
+
+  <!-- ═══════════════════════════════════
+       WARM-UP RECALL
+  ════════════════════════════════════════ -->
+  <h2>Warm-up: pull it back from memory</h2>
+
+  <div class="recall-card">
+    <p class="rc-q">SR1 (Lesson 6) — What are the three steps of the RLHF pipeline? What is the training signal for each?</p>
+    <button class="rc-reveal" onclick="revealAnswer(this)">Reveal</button>
+    <div class="rc-answer" style="display:none">
+      (1) <strong>SFT:</strong> train on (prompt, response) pairs using cross-entropy loss ($-\log P$ of correct token). (2) <strong>Reward Model:</strong> train on human preference comparisons — winning response should score higher. (3) <strong>RL:</strong> generate responses, score with reward model, maximize $\mathbb{E}[R] - \beta \text{KL}$.
+    </div>
+  </div>
+
+  <div class="recall-card">
+    <p class="rc-q">SR2 (Lesson 6) — What is the reference policy $\pi_\text{ref}$, and why does the objective include it?</p>
+    <button class="rc-reveal" onclick="revealAnswer(this)">Reveal</button>
+    <div class="rc-answer" style="display:none">
+      $\pi_\text{ref}$ is the SFT model, frozen — never updated during RL training. It's included in the KL penalty to prevent the policy from drifting too far from natural language and hacking the reward model.
+    </div>
+  </div>
+
+  <div class="recall-card">
+    <p class="rc-q">SR3 (Lesson 4) — What does $\log P(x)$ tell you? What happens to it when $P(x)$ is small?</p>
+    <button class="rc-reveal" onclick="revealAnswer(this)">Reveal</button>
+    <div class="rc-answer" style="display:none">
+      $\log P(x)$ is the log-probability of event $x$. When $P(x)$ is small (unlikely), $\log P(x)$ is a large negative number. When $P(x) = 1$, $\log P(x) = 0$. Log-probs turn products into sums, which is why we use them for sequences of tokens.
+    </div>
+  </div>
+
+
+  <!-- ═══════════════════════════════════
+       § 1 — THE QUESTION
+  ════════════════════════════════════════ -->
+  <h2>1. The formula you already know — but can you compute it?</h2>
+
+  <p>In <a href="0006-the-three-step-pipeline.html">Lesson 6</a>, you learned the RLHF objective:</p>
+
+  $$\max_{\pi}\; \mathbb{E}_{x \sim \mathcal{D},\, y \sim \pi(\cdot\,|\,x)}\!\Big[\,R(x,y)\,\Big] \;-\; \beta\,\text{KL}\!\big[\,\pi \;\|\; \pi_{\text{ref}}\,\big]$$
+
+  <p>You can name every symbol. But here's the test: suppose the model generates a 5-token response. Can you actually <em>calculate</em> each piece? What number does $\text{KL}[\pi \| \pi_\text{ref}]$ evaluate to? How does the model compute it, token by token?</p>
+
+  <p>That's what this lesson is about. We'll open up each piece, compute it on a concrete example, and discover a surprising result hiding inside the formula.</p>
+
+
+  <!-- ═══════════════════════════════════
+       § 2 — PROBABILITY OF A RESPONSE
+  ════════════════════════════════════════ -->
+  <h2>2. First: the probability of a full response</h2>
+
+  <p>Before we can touch KL divergence, we need one fact: how does a language model assign a probability to an entire response?</p>
+
+  <p>You already know from <a href="0002-what-a-language-model-really-is.html">Lesson 2</a> that LMs generate one token at a time. At each step, the model sees everything so far and produces a probability distribution over the next token. The probability of the full response is the product of all these per-token probabilities:</p>
+
+  <div class="math-box">
+    <div class="mb-title">Probability of a response — the chain rule</div>
+    $$\pi(y \mid x) = \prod_{t=1}^{T} \pi(y_t \mid x, y_1, \ldots, y_{t-1})$$
+    <div class="sym-row"><span class="sym">$y = (y_1, \ldots, y_T)$</span> The full response — a sequence of $T$ tokens.</div>
+    <div class="sym-row"><span class="sym">$x$</span> The prompt.</div>
+    <div class="sym-row"><span class="sym">$\pi(y_t \mid x, y_{<t})$</span> The probability the model assigns to token $y_t$, given the prompt and all previous tokens.</div>
+    <p style="margin-top:0.8rem;">This is just the chain rule of probability — and it's exactly how microGPT generates text: pick a token, append it, feed it back, repeat.</p>
+  </div>
+
+  <p>Taking the log turns the product into a sum (from <a href="0004-probability-you-need.html">Lesson 4</a>):</p>
+
+  $$\log \pi(y \mid x) = \sum_{t=1}^{T} \log \pi(y_t \mid x, y_{<t})$$
+
+  <p>This is the <strong>log-probability of the entire response</strong>. Each term is one number that the model already computes during its forward pass — it's the log of the softmax output for the token it chose. Nothing new to calculate.</p>
+
+
+  <!-- ═══════════════════════════════════
+       § 3 — KL DIVERGENCE
+  ════════════════════════════════════════ -->
+  <h2>3. KL divergence: measuring how different two models are</h2>
+
+  <p>Here's the question the KL term answers: <em>how much has the policy changed from the reference model?</em></p>
+
+  <p>In Lesson 6, we said the KL is built from log-ratios: $\log \frac{\pi(y)}{\pi_\text{ref}(y)}$. Let's now be precise about what that means.</p>
+
+  <div class="feynman">
+    <div class="f-title">KL divergence in one sentence</div>
+    <p>KL divergence measures how "surprised" you would be if you thought the data came from distribution $Q$ but it actually came from distribution $P$. It's always $\geq 0$, and equals $0$ only when the two distributions are identical.</p>
+  </div>
+
+  <div class="math-box">
+    <div class="mb-title">KL divergence — the general formula</div>
+    <p>For two distributions $P$ and $Q$ over the same set of outcomes:</p>
+    $$\text{KL}[P \| Q] = \mathbb{E}_{x \sim P}\!\left[\log \frac{P(x)}{Q(x)}\right] = \sum_{x} P(x) \log \frac{P(x)}{Q(x)}$$
+    <p>Read it as: "sample from $P$, and measure how much $P$ and $Q$ disagree on average."</p>
+    <div class="sym-row"><span class="sym">$\log \frac{P(x)}{Q(x)}$</span> The log-ratio for one outcome $x$. Positive when $P$ assigns more probability than $Q$. Negative when $Q$ assigns more.</div>
+    <div class="sym-row"><span class="sym">$\mathbb{E}_{x \sim P}[\cdot]$</span> Average over outcomes, weighted by $P$. Outcomes that $P$ thinks are likely matter more.</div>
+  </div>
+
+  <p>Two key properties you should keep in your head:</p>
+  <ol>
+    <li><strong>Always $\geq 0$.</strong> KL divergence is never negative. If you compute a negative number, you made a math error.</li>
+    <li><strong>Not symmetric.</strong> $\text{KL}[P \| Q] \neq \text{KL}[Q \| P]$ in general. The order matters: the first distribution ($P$) is the one you sample from.</li>
+  </ol>
+
+  <div class="surprise">
+    <div class="s-title">Why log-ratios and not just differences?</div>
+    <p>You might wonder: why $\log \frac{P}{Q}$ instead of $P - Q$? Two reasons. First, probabilities are multiplicative — a sequence of tokens has probability that's a product, so ratios are the natural comparison. Second, the log-ratio has a nice interpretation: it's the "evidence" that the sample came from $P$ rather than $Q$. A log-ratio of $+2$ means $P$ is about $e^2 \approx 7\times$ more likely than $Q$ to have produced this outcome.</p>
+  </div>
+
+
+  <!-- ═══════════════════════════════════
+       § 4 — KL FOR LANGUAGE MODELS
+  ════════════════════════════════════════ -->
+  <h2>4. KL for language models: the token-by-token trick</h2>
+
+  <p>Here's where it gets concrete. In RLHF, $P = \pi$ (the policy being trained) and $Q = \pi_\text{ref}$ (the frozen SFT model). The "outcomes" are full responses — entire sequences of tokens.</p>
+
+  <p>But we don't need to think about probabilities of whole responses. Thanks to the chain rule from Section 2, the KL over full responses <em>decomposes into a sum of per-token KLs</em>:</p>
+
+  <div class="derivation">
+    <div class="d-title">Derivation — KL decomposes token by token</div>
+    <div class="d-step">
+      <div class="d-step-label">Start with the log-ratio of the full response:</div>
+      $$\log \frac{\pi(y \mid x)}{\pi_\text{ref}(y \mid x)}$$
+    </div>
+    <div class="d-step">
+      <div class="d-step-label">Expand both using the chain rule:</div>
+      $$= \log \frac{\prod_{t=1}^{T} \pi(y_t \mid x, y_{<t})}{\prod_{t=1}^{T} \pi_\text{ref}(y_t \mid x, y_{<t})}$$
+    </div>
+    <div class="d-step">
+      <div class="d-step-label">Log of a ratio of products = sum of log-ratios:</div>
+      $$= \sum_{t=1}^{T} \log \frac{\pi(y_t \mid x, y_{<t})}{\pi_\text{ref}(y_t \mid x, y_{<t})}$$
+    </div>
+    <div class="d-step">
+      <div class="d-step-label">Each term is one number:</div>
+      <p>At position $t$, run both $\pi$ and $\pi_\text{ref}$ on the same input $(x, y_{<t})$. Each gives a probability for token $y_t$. Take the log of their ratio. That's one term.</p>
+    </div>
+  </div>
+
+  <p>This is the key insight of this section: <strong>to compute the KL between two language models on a response, you just run both models on the same input, look up the probability each assigns to each token, and sum the log-ratios.</strong></p>
+
+  <div class="feynman">
+    <div class="f-title">Why this matters practically</div>
+    <p>During RLHF training, you already have to run the policy $\pi$ to generate the response. To compute the KL, you <em>also</em> run the reference model $\pi_\text{ref}$ on the same response (but you don't update $\pi_\text{ref}$ — it's frozen). At each token position, both models output a probability. You take the log-ratio. Sum them up. That's the KL. No extra theory, no complicated integrals — just two forward passes and some subtraction in log-space.</p>
+  </div>
+
+  <div class="worked">
+    <div class="w-title">Worked example: computing the per-token KL</div>
+    <p>Prompt: "Explain gravity." &nbsp; Response: <code>["Earth", "pulls", "things", "down", "."]</code> (5 tokens)</p>
+    <p>We run both $\pi$ and $\pi_\text{ref}$ on the response and look at the probability each assigns to each token:</p>
+
+    <table class="token-table">
+      <tr>
+        <th>$t$</th>
+        <th>Token $y_t$</th>
+        <th>$\pi(y_t \mid \ldots)$</th>
+        <th>$\pi_\text{ref}(y_t \mid \ldots)$</th>
+        <th>$\log \pi$</th>
+        <th>$\log \pi_\text{ref}$</th>
+        <th>log-ratio</th>
+      </tr>
+      <tr>
+        <td>1</td><td class="tok">Earth</td>
+        <td>0.30</td><td>0.25</td>
+        <td>$-1.20$</td><td>$-1.39$</td><td>$+0.19$</td>
+      </tr>
+      <tr>
+        <td>2</td><td class="tok">pulls</td>
+        <td>0.45</td><td>0.40</td>
+        <td>$-0.80$</td><td>$-0.92$</td><td>$+0.12$</td>
+      </tr>
+      <tr>
+        <td>3</td><td class="tok">things</td>
+        <td>0.50</td><td>0.55</td>
+        <td>$-0.69$</td><td>$-0.60$</td><td>$-0.09$</td>
+      </tr>
+      <tr>
+        <td>4</td><td class="tok">down</td>
+        <td>0.60</td><td>0.58</td>
+        <td>$-0.51$</td><td>$-0.54$</td><td>$+0.03$</td>
+      </tr>
+      <tr>
+        <td>5</td><td class="tok">.</td>
+        <td>0.70</td><td>0.65</td>
+        <td>$-0.36$</td><td>$-0.43$</td><td>$+0.07$</td>
+      </tr>
+    </table>
+
+    <div class="step">
+      <div class="step-label">Sum of log-ratios:</div>
+      $0.19 + 0.12 + (-0.09) + 0.03 + 0.07 = +0.32$
+    </div>
+    <div class="step">
+      <div class="step-label">Interpretation:</div>
+      The policy has drifted slightly from the reference — it assigns a bit more probability to this response than $\pi_\text{ref}$ does. The drift is small (0.32), so the KL penalty will be mild.
+    </div>
+  </div>
+
+  <div class="surprise">
+    <div class="s-title">The log-ratio can be negative at individual tokens</div>
+    <p>Notice token 3 ("things") has a negative log-ratio: the reference model actually assigns <em>more</em> probability to it than the policy does. That's fine — individual tokens can go either way. What matters is the <strong>sum over all tokens</strong>. When you take the expectation over all possible responses (not just this one), the KL is guaranteed to be $\geq 0$. For any single response, the sum of log-ratios can be negative — that just means the reference model likes this particular response more than the policy does.</p>
+  </div>
+
+
+  <!-- ═══════════════════════════════════
+       § 5 — THE OBJECTIVE, PIECE BY PIECE
+  ════════════════════════════════════════ -->
+  <h2>5. The full objective, piece by piece</h2>
+
+  <p>Now we can write the RLHF objective in a form where every piece is something you can compute for a single response:</p>
+
+  <div class="math-box">
+    <div class="mb-title">The RLHF objective — expanded</div>
+    $$\max_\pi \;\mathbb{E}_{x,y}\!\left[\; R(x,y) \;-\; \beta \sum_{t=1}^{T} \log \frac{\pi(y_t \mid x, y_{<t})}{\pi_\text{ref}(y_t \mid x, y_{<t})} \;\right]$$
+    <p>For a single response $y$ to prompt $x$, the thing inside the expectation is:</p>
+    $$\underbrace{R(x,y)}_{\text{reward model score}} \;-\; \beta \underbrace{\sum_{t=1}^{T} \log \frac{\pi(y_t \mid x, y_{<t})}{\pi_\text{ref}(y_t \mid x, y_{<t})}}_{\text{sum of per-token log-ratios}}$$
+  </div>
+
+  <p>This is the <strong>per-response score</strong> — the number the RL optimizer tries to make large. It has two parts pulling in opposite directions:</p>
+
+  <ul>
+    <li><strong>The reward $R(x,y)$</strong> wants to go up — generate better responses.</li>
+    <li><strong>The KL penalty</strong> (the sum of log-ratios, scaled by $\beta$) pushes back whenever the policy diverges from the reference. The further you drift, the bigger this penalty.</li>
+  </ul>
+
+  <div class="feynman">
+    <div class="f-title">The effective reward</div>
+    <p>Papers often define the <strong>effective reward</strong> (or "KL-penalized reward") as a single number per response:</p>
+    $$r_\text{eff}(x, y) = R(x,y) - \beta \sum_{t=1}^{T} \log \frac{\pi(y_t \mid x, y_{<t})}{\pi_\text{ref}(y_t \mid x, y_{<t})}$$
+    <p>The RLHF objective is then simply: maximize $\mathbb{E}[r_\text{eff}]$. This is what the RL algorithm (PPO, GRPO, etc.) actually optimizes — it treats $r_\text{eff}$ as the reward signal, not just $R$.</p>
+  </div>
+
+  <div class="worked">
+    <div class="w-title">Worked example: computing the effective reward</div>
+    <p>Using our "Explain gravity" example from Section 4:</p>
+    <div class="step">
+      <div class="step-label">Reward model score:</div>
+      $R = 7.2$ (the reward model thinks this is a good response)
+    </div>
+    <div class="step">
+      <div class="step-label">Sum of per-token log-ratios:</div>
+      $0.32$ (computed above — small drift)
+    </div>
+    <div class="step">
+      <div class="step-label">Let $\beta = 0.1$:</div>
+      $r_\text{eff} = 7.2 - 0.1 \times 0.32 = 7.2 - 0.032 = 7.168$
+    </div>
+    <div class="step">
+      <div class="step-label">Verdict:</div>
+      The KL penalty barely touched the reward. This response is close to what the SFT model would say, so it gets almost the full reward. Good.
+    </div>
+    <br>
+    <p>Now suppose a degenerate response: <code>["great", "great", "great", "great", "!"]</code></p>
+    <div class="step">
+      <div class="step-label">Reward model score:</div>
+      $R = 4.5$ (the word "great" helped a bit, but it's garbage)
+    </div>
+    <div class="step">
+      <div class="step-label">Sum of per-token log-ratios:</div>
+      $6.8$ (the SFT model would almost never produce this exact sequence — huge drift)
+    </div>
+    <div class="step">
+      <div class="step-label">Effective reward:</div>
+      $r_\text{eff} = 4.5 - 0.1 \times 6.8 = 4.5 - 0.68 = 3.82$
+    </div>
+    <div class="step">
+      <div class="step-label">With a higher $\beta = 1.0$:</div>
+      $r_\text{eff} = 4.5 - 1.0 \times 6.8 = 4.5 - 6.8 = -2.3$
+    </div>
+    <div class="step">
+      <div class="step-label">Verdict:</div>
+      With $\beta = 1.0$, the penalty overwhelms the reward — the effective reward is <em>negative</em>. The model learns to avoid this response. Higher $\beta$ means stricter enforcement.
+    </div>
+  </div>
+
+
+  <!-- ═══════════════════════════════════
+       § 6 — BETA
+  ════════════════════════════════════════ -->
+  <h2>6. The $\beta$ knob: what it controls</h2>
+
+  <p>$\beta$ is the single most important hyperparameter in RLHF. It controls the tradeoff between two forces:</p>
+
+  <table class="token-table" style="font-size:0.93rem;">
+    <tr><th style="width:50%;">Low $\beta$ (e.g., 0.01)</th><th style="width:50%;">High $\beta$ (e.g., 1.0 or higher)</th></tr>
+    <tr>
+      <td style="text-align:left;">KL penalty is weak — the model can drift far from $\pi_\text{ref}$</td>
+      <td style="text-align:left;">KL penalty is strong — the model must stay close to $\pi_\text{ref}$</td>
+    </tr>
+    <tr>
+      <td style="text-align:left;">Reward is the dominant signal</td>
+      <td style="text-align:left;">Staying close to SFT is the dominant signal</td>
+    </tr>
+    <tr>
+      <td style="text-align:left;">Risk: reward hacking, mode collapse</td>
+      <td style="text-align:left;">Risk: model barely improves over SFT</td>
+    </tr>
+  </table>
+
+  <p>In practice, $\beta$ is tuned empirically. The InstructGPT paper used values in the range of 0.01–0.1. Too low and the model exploits the reward model; too high and you might as well have just used SFT.</p>
+
+
+  <!-- ═══════════════════════════════════
+       § 7 — THE OPTIMAL POLICY
+  ════════════════════════════════════════ -->
+  <h2>7. The beautiful result: the optimal policy</h2>
+
+  <p>Here's something remarkable. If you could perfectly optimize the RLHF objective — no function approximation, no gradient noise, just pure math — what policy $\pi^*$ would you get?</p>
+
+  <p>It turns out there's a closed-form answer. Let's derive it.</p>
+
+  <div class="derivation">
+    <div class="d-title">Derivation — the optimal policy</div>
+    <div class="d-step">
+      <div class="d-step-label">Step 1: Write the objective for a fixed prompt $x$</div>
+      <p>For a single prompt, we want to maximize over all possible policies $\pi(\cdot | x)$:</p>
+      $$\sum_{y} \pi(y|x) \Big[ R(x,y) - \beta \log \frac{\pi(y|x)}{\pi_\text{ref}(y|x)} \Big]$$
+      <p>This is the expectation $\mathbb{E}_{y \sim \pi}[\cdot]$ written as an explicit sum over all responses.</p>
+    </div>
+    <div class="d-step">
+      <div class="d-step-label">Step 2: Rearrange the log-ratio</div>
+      <p>Rewrite $\log \frac{\pi(y|x)}{\pi_\text{ref}(y|x)}$ as $\log \pi(y|x) - \log \pi_\text{ref}(y|x)$. The objective becomes:</p>
+      $$\sum_{y} \pi(y|x) \Big[ R(x,y) + \beta \log \pi_\text{ref}(y|x) - \beta \log \pi(y|x) \Big]$$
+    </div>
+    <div class="d-step">
+      <div class="d-step-label">Step 3: Recognize the shape</div>
+      <p>The term $-\beta \sum_y \pi(y|x) \log \pi(y|x)$ is $\beta$ times the <strong>entropy</strong> of $\pi$ — it rewards spread-out distributions. The rest pulls $\pi$ toward responses with high $R(x,y) + \beta \log \pi_\text{ref}(y|x)$.</p>
+      <p>This is a classic entropy-regularized optimization problem. The solution is a <strong>Boltzmann distribution</strong> (the same shape as the softmax you already know):</p>
+    </div>
+    <div class="d-step">
+      <div class="d-step-label">Step 4: The answer</div>
+      $$\pi^*(y \mid x) = \frac{1}{Z(x)}\; \pi_\text{ref}(y \mid x)\; \exp\!\left(\frac{R(x,y)}{\beta}\right)$$
+      <p>where $Z(x) = \sum_{y'} \pi_\text{ref}(y' \mid x)\, \exp\!\left(\frac{R(x,y')}{\beta}\right)$ is a normalizing constant (the partition function — it makes the probabilities sum to 1).</p>
+    </div>
+  </div>
+
+  <div class="big-result">
+    <div class="br-label">The optimal RLHF policy</div>
+    $$\pi^*(y \mid x) \;\propto\; \pi_\text{ref}(y \mid x) \cdot \exp\!\left(\frac{R(x,y)}{\beta}\right)$$
+  </div>
+
+  <p>Read this formula in plain English: <strong>the optimal policy takes the reference model's distribution and tilts it toward high-reward responses.</strong> Specifically:</p>
+
+  <ul>
+    <li>Start with $\pi_\text{ref}(y|x)$ — how likely the SFT model thinks response $y$ is.</li>
+    <li>Multiply by $\exp(R/\beta)$ — boost responses proportionally to their reward. Higher reward = bigger boost.</li>
+    <li>Divide by $Z(x)$ — normalize so probabilities sum to 1.</li>
+  </ul>
+
+  <div class="feynman">
+    <div class="f-title">Why this is beautiful</div>
+    <p>This formula tells you exactly what RLHF is doing: it's <strong>reweighting</strong> the reference distribution by reward. It's not learning from scratch — it's adjusting what the SFT model already knows. Responses the reference model would never produce ($\pi_\text{ref} \approx 0$) stay suppressed even if they score well. Responses the reference model already likes get a further boost if the reward model agrees.</p>
+    <p>The $\beta$ parameter controls how aggressively you reweight. As $\beta \to \infty$, $\exp(R/\beta) \to 1$ for all responses, so $\pi^* \to \pi_\text{ref}$ — you don't change anything. As $\beta \to 0$, all probability mass concentrates on the single highest-reward response — pure reward maximization.</p>
+  </div>
+
+  <div class="surprise">
+    <div class="s-title">You've seen this shape before</div>
+    <p>The formula $\pi^*(y|x) \propto \exp(\text{score}(y)/\text{temperature})$ is exactly <strong>softmax with temperature</strong> — the same operation microGPT uses to sample tokens! In Lesson 2, the temperature parameter controlled how "peaked" the distribution was. Here, $\beta$ plays the same role: it's the temperature of a softmax over <em>full responses</em>, weighted by reward. The connection is deep: softmax over scores is the solution to any "maximize expected score minus entropy" problem.</p>
+  </div>
+
+
+  <!-- ═══════════════════════════════════
+       § 8 — THE REVERSE FORMULA
+  ════════════════════════════════════════ -->
+  <h2>8. A formula you'll see everywhere: extracting the reward</h2>
+
+  <p>The optimal policy formula can be rearranged to express the reward in terms of probabilities. Take the log of both sides of $\pi^*(y|x) = \frac{1}{Z(x)} \pi_\text{ref}(y|x) \exp(R/\beta)$:</p>
+
+  $$R(x,y) = \beta \log \frac{\pi^*(y \mid x)}{\pi_\text{ref}(y \mid x)} + \beta \log Z(x)$$
+
+  <div class="feynman">
+    <div class="f-title">Why this matters: the bridge to DPO</div>
+    <p>This rearrangement says: <em>the reward is just the log-ratio between the optimal policy and the reference, up to a constant</em>. This is the key insight behind <strong>DPO</strong> (Direct Preference Optimization), which you'll see in Lesson 12. DPO plugs this formula into the reward model's loss function and eliminates the reward model entirely — training the policy directly on preferences. You don't need to understand DPO yet, but notice: this one equation is the bridge.</p>
+  </div>
+
+
+  <!-- ═══════════════════════════════════
+       § 9 — SUMMARY MAP
+  ════════════════════════════════════════ -->
+  <h2>9. The map so far</h2>
+
+  <p>Here's everything you now know about the RLHF objective, in one view:</p>
+
+  <table class="token-table" style="font-size:0.9rem; text-align:left;">
+    <tr><th style="width:35%;">Piece</th><th>What it computes</th><th>How to calculate it</th></tr>
+    <tr>
+      <td style="text-align:left;"><strong>$R(x,y)$</strong></td>
+      <td style="text-align:left;">Quality of response $y$</td>
+      <td style="text-align:left;">One number from the reward model</td>
+    </tr>
+    <tr>
+      <td style="text-align:left;"><strong>$\log \pi(y|x)$</strong></td>
+      <td style="text-align:left;">How likely the policy thinks $y$ is</td>
+      <td style="text-align:left;">Sum of per-token $\log \pi(y_t | x, y_{<t})$</td>
+    </tr>
+    <tr>
+      <td style="text-align:left;"><strong>$\log \pi_\text{ref}(y|x)$</strong></td>
+      <td style="text-align:left;">How likely the frozen SFT model thinks $y$ is</td>
+      <td style="text-align:left;">Same, but using the reference model</td>
+    </tr>
+    <tr>
+      <td style="text-align:left;"><strong>KL (per response)</strong></td>
+      <td style="text-align:left;">How far the policy drifted</td>
+      <td style="text-align:left;">$\sum_t \log \pi(y_t|\ldots) - \log \pi_\text{ref}(y_t|\ldots)$</td>
+    </tr>
+    <tr>
+      <td style="text-align:left;"><strong>$r_\text{eff}$</strong></td>
+      <td style="text-align:left;">The actual signal the RL optimizer sees</td>
+      <td style="text-align:left;">$R(x,y) - \beta \times \text{KL}$</td>
+    </tr>
+    <tr>
+      <td style="text-align:left;"><strong>$\pi^*(y|x)$</strong></td>
+      <td style="text-align:left;">The perfect policy (if optimization were exact)</td>
+      <td style="text-align:left;">$\propto \pi_\text{ref}(y|x) \cdot \exp(R/\beta)$</td>
+    </tr>
+  </table>
+
+
+  <!-- ═══════════════════════════════════
+       SELF-CHECK MCQ
+  ════════════════════════════════════════ -->
+  <h2>Self-check</h2>
+
+  <div class="quiz" data-answer="3">
+    <p class="q">Q1 — To compute the KL between $\pi$ and $\pi_\text{ref}$ for a specific response, what do you need?</p>
+    <ul class="opts">
+      <li><button class="opt">The reward model's score for the response and the reference model's score</button></li>
+      <li><button class="opt">The total number of tokens in the vocabulary and the response length</button></li>
+      <li><button class="opt">The per-token log-probabilities from both $\pi$ and $\pi_\text{ref}$ for the response</button></li>
+      <li><button class="opt">The gradient of the loss function with respect to each token embedding</button></li>
+    </ul>
+    <p class="feedback right" data-when="right">Correct. The KL for a specific response is the sum of per-token log-ratios: $\sum_t \log \pi(y_t|\ldots) - \log \pi_\text{ref}(y_t|\ldots)$. You need both models' log-probs at each token position — nothing else.</p>
+    <p class="feedback nope" data-when="nope">The KL for a specific response is computed from per-token log-probabilities from both models. At each token position, subtract the reference model's log-prob from the policy's log-prob, then sum. No reward scores, no gradients, no vocabulary size needed.</p>
+  </div>
+
+  <div class="quiz" data-answer="2">
+    <p class="q">Q2 — In the optimal policy $\pi^*(y|x) \propto \pi_\text{ref}(y|x) \cdot \exp(R/\beta)$, what happens as $\beta \to 0$?</p>
+    <ul class="opts">
+      <li><button class="opt">The policy approaches the reference model exactly, ignoring the reward</button></li>
+      <li><button class="opt">The policy puts all probability on the highest-reward response (pure reward maximization)</button></li>
+      <li><button class="opt">The policy distributes probability equally across all responses (uniform distribution)</button></li>
+      <li><button class="opt">The policy collapses to the single most likely response under the reference model</button></li>
+    </ul>
+    <p class="feedback right" data-when="right">Correct. As $\beta \to 0$, $\exp(R/\beta)$ grows exponentially for the highest-reward response and shrinks for everything else — all mass concentrates on the argmax. This is pure reward maximization with no KL constraint. In practice, this leads to reward hacking.</p>
+    <p class="feedback nope" data-when="nope">When $\beta \to 0$, $\exp(R/\beta)$ magnifies reward differences enormously. The response with the highest reward gets $\exp(\text{huge})$ while others get $\exp(\text{less huge})$ — in the limit, all probability goes to the argmax. When $\beta \to \infty$, the opposite happens: $\exp(R/\beta) \to 1$ for all, so $\pi^* \to \pi_\text{ref}$.</p>
+  </div>
+
+  <div class="quiz" data-answer="1">
+    <p class="q">Q3 (hard) — A response has reward $R = 6.0$, and its per-token log-ratio sum is $-0.5$ (negative — the reference model assigns <em>more</em> probability to this response). With $\beta = 0.2$, what is the effective reward, and what does the negative log-ratio sum mean?</p>
+    <ul class="opts">
+      <li><button class="opt">$r_\text{eff} = 6.1$. The negative log-ratio is a KL "bonus" — the response is more SFT-like, so the penalty becomes a reward boost</button></li>
+      <li><button class="opt">$r_\text{eff} = 5.9$. The KL is always a penalty, so even with a negative sum the effective reward must decrease</button></li>
+      <li><button class="opt">$r_\text{eff} = 6.0$. Negative log-ratios are impossible and should be clamped to zero before computing the penalty</button></li>
+      <li><button class="opt">$r_\text{eff} = 6.5$. The penalty is computed as $\beta$ times the absolute value of the log-ratio sum</button></li>
+    </ul>
+    <p class="feedback right" data-when="right">Correct. $r_\text{eff} = 6.0 - 0.2 \times (-0.5) = 6.0 + 0.1 = 6.1$. When the policy assigns <em>less</em> probability than the reference to a response, the log-ratio sum is negative, and subtracting a negative number adds to the reward. It's a "bonus" for being conservative — the model stayed closer to the reference than the reference itself, and the objective rewards that.</p>
+    <p class="feedback nope" data-when="nope">Compute: $r_\text{eff} = R - \beta \times \text{log-ratio sum} = 6.0 - 0.2 \times (-0.5) = 6.0 + 0.1 = 6.1$. The log-ratio sum for a single response <em>can</em> be negative (the reference likes this response more than the policy does), and when it is, the penalty term becomes a bonus. The KL divergence as an <em>expectation</em> over all responses is always $\geq 0$, but for any individual response the log-ratio sum can go either way.</p>
+  </div>
+
+
+  <!-- ═══════════════════════════════════
+       MASTERY CHECK
+  ════════════════════════════════════════ -->
+  <h2>Mastery check</h2>
+
+  <div class="mastery">
+    <h3>Lesson 7 Mastery Check</h3>
+
+    <div class="rung">
+      <span class="rung-label">Rung 1 — Recall (necessary, not sufficient)</span>
+      Write the RLHF objective in expanded form (with the per-token KL). Then write the optimal policy formula. Name every symbol in both.
+    </div>
+
+    <div class="rung">
+      <span class="rung-label">Rung 2 — Apply (must pass)</span>
+      A model generates a 3-token response: <code>["Yes", ",", "absolutely"]</code>. You have the following per-token log-probs:
+      <table style="margin:0.6rem 0; border-collapse:collapse; font-size:0.88rem; color:#f4f1e8;">
+        <tr><td style="padding:0.2rem 0.6rem;">Token</td><td style="padding:0.2rem 0.6rem;">$\log\pi$</td><td style="padding:0.2rem 0.6rem;">$\log\pi_\text{ref}$</td></tr>
+        <tr><td style="padding:0.2rem 0.6rem;">Yes</td><td style="padding:0.2rem 0.6rem;">$-0.5$</td><td style="padding:0.2rem 0.6rem;">$-1.2$</td></tr>
+        <tr><td style="padding:0.2rem 0.6rem;">,</td><td style="padding:0.2rem 0.6rem;">$-0.3$</td><td style="padding:0.2rem 0.6rem;">$-0.4$</td></tr>
+        <tr><td style="padding:0.2rem 0.6rem;">absolutely</td><td style="padding:0.2rem 0.6rem;">$-1.0$</td><td style="padding:0.2rem 0.6rem;">$-2.5$</td></tr>
+      </table>
+      The reward model gives $R = 8.0$. With $\beta = 0.5$:
+      <ol style="margin:0.5rem 0 0; padding-left:1.2rem; font-size:0.93rem;">
+        <li>Compute the per-token log-ratios and their sum.</li>
+        <li>Compute the effective reward $r_\text{eff}$.</li>
+        <li>Is the policy drifting toward or away from the reference for the word "absolutely"? How do you know?</li>
+      </ol>
+    </div>
+
+    <div class="rung">
+      <span class="rung-label">Rung 3 — Explain/Transfer (must pass)</span>
+      Explain — to a colleague who knows the formula but hasn't thought about it — what the optimal policy formula $\pi^* \propto \pi_\text{ref} \cdot \exp(R/\beta)$ tells us about what RLHF is <em>really</em> doing. Why does it start from $\pi_\text{ref}$ instead of building a policy from scratch? What role does $\beta$ play in the formula (not just "it's a tradeoff" — explain the mechanism using the $\exp$ function)?
+    </div>
+
+    <p class="gate-note">Pass = Rung 2 AND Rung 3 both correct. Post answers in chat.</p>
+  </div>
+
+
+  <!-- ═══════════════════════════════════
+       SPACED RECALL
+  ════════════════════════════════════════ -->
+  <h2>For next time: questions to answer from memory</h2>
+
+  <div class="recall-card">
+    <p class="rc-q">SR1 — How do you compute the KL between two language models for a specific response? Write the formula.</p>
+    <button class="rc-reveal" onclick="revealAnswer(this)">Reveal (only after you've tried)</button>
+    <div class="rc-answer" style="display:none">
+      Sum the per-token log-ratios: $\sum_{t=1}^{T} \log \frac{\pi(y_t \mid x, y_{<t})}{\pi_\text{ref}(y_t \mid x, y_{<t})} = \sum_t [\log \pi(y_t | \ldots) - \log \pi_\text{ref}(y_t | \ldots)]$. Run both models on the same input, look up the probability each assigns to each token, take the log-ratio at each position, sum.
+    </div>
+  </div>
+
+  <div class="recall-card">
+    <p class="rc-q">SR2 — What is the effective reward $r_\text{eff}$? Why does the RL optimizer use it instead of just $R$?</p>
+    <button class="rc-reveal" onclick="revealAnswer(this)">Reveal (only after you've tried)</button>
+    <div class="rc-answer" style="display:none">
+      $r_\text{eff}(x,y) = R(x,y) - \beta \sum_t \log \frac{\pi(y_t|\ldots)}{\pi_\text{ref}(y_t|\ldots)}$. The RL optimizer uses it because it bakes in the KL penalty — the model is rewarded for quality but penalized for drifting, so a single number captures both goals.
+    </div>
+  </div>
+
+  <div class="recall-card">
+    <p class="rc-q">SR3 — Write the optimal policy formula. What does it tell you about what RLHF is doing?</p>
+    <button class="rc-reveal" onclick="revealAnswer(this)">Reveal (only after you've tried)</button>
+    <div class="rc-answer" style="display:none">
+      $\pi^*(y|x) \propto \pi_\text{ref}(y|x) \cdot \exp(R(x,y)/\beta)$. RLHF is <strong>reweighting</strong> the reference distribution by reward — boosting high-reward responses and suppressing low-reward ones, while anchoring to what the SFT model already knows. $\beta$ controls how aggressively: high $\beta$ = mild reweighting (stay close to reference), low $\beta$ = aggressive reweighting (chase reward).
+    </div>
+  </div>
+
+
+  <!-- ═══════════════════════════════════
+       PRIMARY SOURCE
+  ════════════════════════════════════════ -->
+  <div class="box" style="border-left-color:#1c6b3c;">
+    <div class="box-title" style="color:#1c6b3c;">Primary source recommendation</div>
+    <p><strong><a href="https://arxiv.org/abs/2009.01325" target="_blank">Learning to summarize from human feedback</a></strong> — Stiennon et al., 2020 (OpenAI). This paper pre-dates InstructGPT and contains the clearest presentation of the KL-penalized reward objective. Read Section 2.3 ("Optimization") — it derives the same objective and optimal policy formula from this lesson, with excellent notation. The InstructGPT paper (<a href="https://arxiv.org/abs/2203.02155" target="_blank">Ouyang et al., 2022</a>) uses the same objective but is more terse about the math.</p>
+  </div>
+
+
+  <!-- ═══════════════════════════════════
+       ASK TEACHER
+  ════════════════════════════════════════ -->
+  <div class="ask-teacher">
+    <strong>Stuck? Confused? Ask.</strong> Post any question in chat — your teacher can re-explain any section, work through more examples, or walk through the derivation step by step. The mastery check is a conversation, not an exam.
+  </div>
+
+
+  <!-- ═══════════════════════════════════
+       NAV
+  ════════════════════════════════════════ -->
+  <div class="lesson-nav">
+    <a href="0006-the-three-step-pipeline.html">&larr; Lesson 6: The Three-Step Pipeline</a>
+    <a href="#" style="color:var(--muted); pointer-events:none;">Lesson 8 &rarr;</a>
+  </div>
+
+</div><!-- /wrap -->
+
+<script>
+  function revealAnswer(btn) {
+    var ans = btn.nextElementSibling;
+    if (ans.style.display === 'none') {
+      ans.style.display = 'block';
+      btn.textContent = 'Hide';
+    } else {
+      ans.style.display = 'none';
+      btn.textContent = 'Reveal';
+    }
+  }
+</script>
+</body>
+</html>
