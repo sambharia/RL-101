@@ -1,0 +1,863 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>The Benchmark Landscape &middot; RL &amp; AI Agent Evaluation</title>
+<link rel="stylesheet" href="assets/lesson.css">
+<style>
+  /* Tab navigation */
+  .tabs {
+    display: flex; flex-wrap: wrap; gap: 0.4rem;
+    margin: 0 0 2rem;
+    border-bottom: 2px solid var(--rule);
+    padding-bottom: 0;
+  }
+  .tab-btn {
+    font-family: ui-sans-serif, system-ui, sans-serif;
+    font-size: 0.82rem; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.06em;
+    background: none; border: none; border-bottom: 3px solid transparent;
+    padding: 0.6rem 1rem; cursor: pointer;
+    color: var(--muted); transition: all 0.15s;
+    margin-bottom: -2px;
+  }
+  .tab-btn:hover { color: var(--ink); }
+  .tab-btn.active { color: var(--accent); border-bottom-color: var(--accent); }
+  .tab-panel { display: none; }
+  .tab-panel.active { display: block; }
+
+  /* Cards */
+  .card {
+    background: #fff; border: 1px solid var(--rule); border-radius: 8px;
+    padding: 1.1rem 1.3rem; margin: 0 0 1rem;
+    transition: box-shadow 0.15s;
+  }
+  .card:hover { box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
+  .card h3 { margin: 0 0 0.3rem; font-size: 1.08rem; }
+  .card .meta {
+    font-family: ui-sans-serif, system-ui, sans-serif;
+    font-size: 0.72rem; color: var(--muted);
+    margin: 0 0 0.6rem;
+  }
+  .card p { margin: 0 0 0.5rem; font-size: 0.94rem; }
+  .card p:last-child { margin-bottom: 0; }
+
+  /* Tags */
+  .tag {
+    display: inline-block;
+    font-family: ui-sans-serif, system-ui, sans-serif;
+    font-size: 0.65rem; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.05em;
+    padding: 0.15em 0.5em; border-radius: 4px;
+    margin-right: 0.3rem;
+  }
+  .tag.gold { background: #fdf3e0; color: #8a6d00; border: 1px solid #e8d48b; }
+  .tag.emerging { background: #e8f4fd; color: #1565a0; border: 1px solid #90caf9; }
+  .tag.classic { background: #f3e9e2; color: var(--accent); border: 1px solid #d4bfb4; }
+  .tag.methodology { background: #e9f6ee; color: var(--good); border: 1px solid #a5d6b5; }
+  .tag.high { background: #e9f6ee; color: var(--good); }
+  .tag.medium { background: #fff8e1; color: #8a6d00; }
+
+  /* Expandable details */
+  details {
+    background: #fff; border: 1px solid var(--rule); border-radius: 8px;
+    margin: 0.8rem 0; padding: 0;
+    transition: box-shadow 0.15s;
+  }
+  details:hover { box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
+  details[open] { box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
+  details summary {
+    cursor: pointer; padding: 0.9rem 1.2rem;
+    font-weight: 700; font-size: 1rem;
+    list-style: none; display: flex; align-items: center; gap: 0.6rem;
+  }
+  details summary::-webkit-details-marker { display: none; }
+  details summary::before {
+    content: "\25B6"; font-size: 0.6rem; color: var(--accent);
+    transition: transform 0.2s;
+  }
+  details[open] summary::before { transform: rotate(90deg); }
+  details .details-body { padding: 0 1.2rem 1rem; }
+
+  /* Taxonomy diagram */
+  .taxonomy {
+    display: grid; grid-template-columns: 1fr 1fr;
+    gap: 0.8rem; margin: 1.2rem 0;
+  }
+  @media (max-width: 600px) { .taxonomy { grid-template-columns: 1fr; } }
+  .tax-cell {
+    background: #fff; border: 1px solid var(--rule); border-radius: 8px;
+    padding: 0.9rem 1rem; border-left: 4px solid var(--accent);
+  }
+  .tax-cell h4 {
+    font-family: ui-sans-serif, system-ui, sans-serif;
+    font-size: 0.78rem; text-transform: uppercase;
+    letter-spacing: 0.08em; color: var(--accent);
+    margin: 0 0 0.4rem; font-weight: 700;
+  }
+  .tax-cell ul {
+    margin: 0; padding-left: 1.1rem; font-size: 0.88rem;
+  }
+  .tax-cell ul li { margin: 0.2rem 0; }
+  .tax-cell.blue { border-left-color: #1d6fb8; }
+  .tax-cell.blue h4 { color: #1d6fb8; }
+  .tax-cell.green { border-left-color: var(--good); }
+  .tax-cell.green h4 { color: var(--good); }
+  .tax-cell.amber { border-left-color: #b8801d; }
+  .tax-cell.amber h4 { color: #b8801d; }
+
+  /* Comparison table */
+  .cmp-table {
+    width: 100%; border-collapse: collapse;
+    font-size: 0.88rem; margin: 1rem 0;
+  }
+  .cmp-table th {
+    font-family: ui-sans-serif, system-ui, sans-serif;
+    font-size: 0.72rem; text-transform: uppercase;
+    letter-spacing: 0.06em; font-weight: 700;
+    text-align: left; padding: 0.6rem 0.8rem;
+    border-bottom: 2px solid var(--accent);
+    color: var(--accent);
+  }
+  .cmp-table td {
+    padding: 0.6rem 0.8rem;
+    border-bottom: 1px solid var(--rule);
+    vertical-align: top;
+  }
+  .cmp-table tr:last-child td { border-bottom: none; }
+  .cmp-table tr:hover td { background: var(--accent-soft); }
+
+  /* Key insight callouts */
+  .insight {
+    border: 1px solid var(--rule); border-left: 4px solid #1d6fb8;
+    background: #f6faff; border-radius: 8px; padding: 1rem 1.2rem;
+    margin: 1.4rem 0;
+  }
+  .insight .box-title { color: #1d6fb8; }
+  .insight.warning { border-left-color: #b8801d; background: #fffcf5; }
+  .insight.warning .box-title { color: #b8801d; }
+  .insight.action { border-left-color: var(--good); background: #f6fbf7; }
+  .insight.action .box-title { color: var(--good); }
+
+  /* Stats row */
+  .stats-row {
+    display: flex; flex-wrap: wrap; gap: 0.8rem;
+    margin: 1.4rem 0;
+  }
+  .stat-box {
+    flex: 1; min-width: 120px;
+    background: #fff; border: 1px solid var(--rule);
+    border-radius: 8px; padding: 0.8rem 1rem;
+    text-align: center;
+  }
+  .stat-box .num {
+    font-size: 1.8rem; font-weight: 700;
+    color: var(--accent); line-height: 1.1;
+  }
+  .stat-box .label {
+    font-family: ui-sans-serif, system-ui, sans-serif;
+    font-size: 0.68rem; text-transform: uppercase;
+    letter-spacing: 0.06em; color: var(--muted);
+    margin-top: 0.2rem;
+  }
+
+  /* Timeline */
+  .timeline { margin: 1.2rem 0; padding-left: 1.6rem; border-left: 3px solid var(--accent-soft); }
+  .timeline-item { margin: 0 0 1.2rem; position: relative; }
+  .timeline-item::before {
+    content: ""; position: absolute; left: -1.95rem; top: 0.35rem;
+    width: 10px; height: 10px; border-radius: 50%;
+    background: var(--accent); border: 2px solid var(--paper);
+  }
+  .timeline-item .year {
+    font-family: "SF Mono", ui-monospace, Menlo, monospace;
+    font-size: 0.72rem; font-weight: 700; color: var(--accent);
+  }
+  .timeline-item p { margin: 0.1rem 0 0; font-size: 0.92rem; }
+
+  /* Source list */
+  .sources {
+    font-size: 0.82rem; color: var(--muted);
+    columns: 1; margin: 1rem 0;
+  }
+  .sources li { margin: 0.3rem 0; break-inside: avoid; }
+
+  /* Confidence badge */
+  .conf {
+    font-family: "SF Mono", ui-monospace, Menlo, monospace;
+    font-size: 0.65rem; font-weight: 700;
+    padding: 0.1em 0.4em; border-radius: 3px;
+  }
+  .conf.high { background: #e9f6ee; color: var(--good); }
+  .conf.medium { background: #fff8e1; color: #8a6d00; }
+
+  /* Scroll anchor offset */
+  [id] { scroll-margin-top: 1rem; }
+
+  /* Print */
+  @media print {
+    .tabs { display: none; }
+    .tab-panel { display: block !important; }
+    details { break-inside: avoid; }
+    details[open] summary::before { content: "\25BC"; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<p class="kicker">Research Report &middot; July 2026</p>
+<h1>The Benchmark Landscape</h1>
+<p class="subtitle">RL gyms, agent benchmarks, evaluation methodology &mdash; the full lay of the land</p>
+
+<div class="meta-row">
+  <span>20 sources</span>
+  <span>99 claims extracted</span>
+  <span>25 adversarially verified</span>
+  <span>23 confirmed, 2 refuted</span>
+</div>
+
+<!-- ============================================================ -->
+<!-- TLDR -->
+<!-- ============================================================ -->
+<div class="box">
+  <div class="box-title">TL;DR</div>
+  <p>The landscape sits on <strong>two pillars</strong>: (1) the <strong>Farama Foundation</strong> ecosystem, which owns the de facto standard APIs for classical RL (Gymnasium + PettingZoo + 17 environment suites), and (2) a rapidly growing set of <strong>LLM agent benchmarks</strong> (AgentBench, WebArena, tau-bench, GAIA, SWE-bench) that test agents on realistic multi-step tasks.</p>
+  <p>A critical meta-finding from Princeton&rsquo;s <em>&ldquo;AI Agents That Matter&rdquo;</em> paper: most benchmarks <strong>lack holdout sets</strong> (only 1 of 8 domain-general benchmarks had them), agents overfit to benchmark-specific policies, and accuracy-only evaluation ignores <strong>cost differences of up to 55&times;</strong>.</p>
+</div>
+
+<!-- ============================================================ -->
+<!-- TABS -->
+<!-- ============================================================ -->
+<div class="tabs" role="tablist">
+  <button class="tab-btn active" data-tab="classic" role="tab">Classic RL</button>
+  <button class="tab-btn" data-tab="agent" role="tab">Agent Benchmarks</button>
+  <button class="tab-btn" data-tab="methodology" role="tab">Methodology</button>
+  <button class="tab-btn" data-tab="builders" role="tab">Who Builds What</button>
+  <button class="tab-btn" data-tab="playbook" role="tab">Build Your Own</button>
+</div>
+
+<!-- ============================================================ -->
+<!-- TAB 1: CLASSIC RL -->
+<!-- ============================================================ -->
+<div class="tab-panel active" id="tab-classic">
+
+<h2>Classic RL Benchmarks &amp; Gyms</h2>
+
+<p>After OpenAI abandoned Gym in 2021, the <strong>Farama Foundation</strong> forked it into <strong>Gymnasium</strong>&mdash;now the undisputed standard. Every major RL library (Stable Baselines 3, CleanRL, etc.) assumes Gymnasium as its environment interface.</p>
+
+<div class="stats-row">
+  <div class="stat-box"><div class="num">12.1k</div><div class="label">GitHub Stars</div></div>
+  <div class="stat-box"><div class="num">21.7k</div><div class="label">Dependents</div></div>
+  <div class="stat-box"><div class="num">1M+</div><div class="label">Monthly Downloads</div></div>
+  <div class="stat-box"><div class="num">17+</div><div class="label">Projects</div></div>
+</div>
+
+<h3>The Farama Ecosystem</h3>
+
+<div class="taxonomy">
+  <div class="tax-cell">
+    <h4>Single-Agent API</h4>
+    <ul>
+      <li><strong>Gymnasium</strong> &mdash; Classic Control, Box2D, Toy Text, MuJoCo</li>
+    </ul>
+  </div>
+  <div class="tax-cell blue">
+    <h4>Multi-Agent API</h4>
+    <ul>
+      <li><strong>PettingZoo</strong></li>
+      <li>MAgent2, MOMAland</li>
+    </ul>
+  </div>
+  <div class="tax-cell green">
+    <h4>Retro Games</h4>
+    <ul>
+      <li><strong>ALE</strong> &mdash; 100+ Atari 2600 games</li>
+      <li>Stable-Retro</li>
+    </ul>
+  </div>
+  <div class="tax-cell amber">
+    <h4>Robotics</h4>
+    <ul>
+      <li>Gymnasium-Robotics</li>
+      <li>Metaworld</li>
+    </ul>
+  </div>
+  <div class="tax-cell">
+    <h4>Grid Worlds</h4>
+    <ul><li>Minigrid</li></ul>
+  </div>
+  <div class="tax-cell blue">
+    <h4>Web Interaction</h4>
+    <ul><li>MiniWoB++</li></ul>
+  </div>
+  <div class="tax-cell green">
+    <h4>Autonomous Driving</h4>
+    <ul><li>HighwayEnv</li></ul>
+  </div>
+  <div class="tax-cell amber">
+    <h4>Procedural Generation</h4>
+    <ul><li>Procgen2</li></ul>
+  </div>
+</div>
+
+<details>
+  <summary>MuJoCo &mdash; The Physics Engine <span class="conf high">HIGH CONFIDENCE</span></summary>
+  <div class="details-body">
+    <p>MuJoCo is now <strong>open-source under Apache 2.0</strong>, maintained by Google DeepMind. It serves as the primary physics engine for continuous-control RL benchmarks&mdash;tasks like Ant, Humanoid, Walker2D, HalfCheetah.</p>
+    <p>It ships as a first-class Gymnasium environment suite, meaning you can <code>pip install gymnasium[mujoco]</code> and start training immediately.</p>
+    <p class="cite">Source: <a href="https://github.com/google-deepmind/mujoco">github.com/google-deepmind/mujoco</a></p>
+  </div>
+</details>
+
+<details>
+  <summary>The Gymnasium API &mdash; How It Works</summary>
+  <div class="details-body">
+    <p>Gymnasium provides a unified Pythonic API with five core components:</p>
+    <ol>
+      <li><strong>Environment interface</strong> &mdash; <code>reset()</code>, <code>step(action)</code>, <code>render()</code></li>
+      <li><strong>Registry</strong> &mdash; <code>gymnasium.make("CartPole-v1")</code></li>
+      <li><strong>Space definitions</strong> &mdash; <code>Box</code>, <code>Discrete</code>, <code>MultiBinary</code>, etc.</li>
+      <li><strong>Wrappers</strong> &mdash; composable env transformations</li>
+      <li><strong>Vectorization</strong> &mdash; parallel environment execution</li>
+    </ol>
+    <p>Bundled environment families: Classic Control (CartPole, Pendulum), Box2D (LunarLander, BipedalWalker), Toy Text, and MuJoCo.</p>
+    <p class="cite">Source: <a href="https://gymnasium.farama.org/">gymnasium.farama.org</a></p>
+  </div>
+</details>
+
+<div class="insight">
+  <div class="box-title">Key Insight</div>
+  <p>DeepMind&rsquo;s <code>dm_env</code> (401 stars) is the only alternative API, but adoption is negligible compared to Gymnasium. For multi-agent, PettingZoo is the closest to standard, though DeepMind&rsquo;s <strong>Melting Pot</strong> uses its own interface&mdash;the multi-agent space remains more fragmented.</p>
+</div>
+
+</div><!-- /tab-classic -->
+
+<!-- ============================================================ -->
+<!-- TAB 2: AGENT BENCHMARKS -->
+<!-- ============================================================ -->
+<div class="tab-panel" id="tab-agent">
+
+<h2>LLM / AI Agent Benchmarks</h2>
+
+<p>This is where the landscape has exploded since 2023. Unlike classic RL gyms (which test algorithms), these test <em>language model agents</em> on realistic, multi-step tasks.</p>
+
+<h3>Benchmark Taxonomy</h3>
+
+<div class="taxonomy">
+  <div class="tax-cell">
+    <h4>General Agent Capabilities</h4>
+    <ul>
+      <li>AgentBench, GAIA, TheAgentCompany</li>
+    </ul>
+  </div>
+  <div class="tax-cell blue">
+    <h4>Web Navigation</h4>
+    <ul>
+      <li>WebArena, MiniWoB++</li>
+    </ul>
+  </div>
+  <div class="tax-cell green">
+    <h4>Conversational / Rule-Compliance</h4>
+    <ul>
+      <li>tau-bench, tau2-bench, tau3-bench</li>
+    </ul>
+  </div>
+  <div class="tax-cell amber">
+    <h4>Code / Software Engineering</h4>
+    <ul>
+      <li>SWE-bench, HumanEval</li>
+    </ul>
+  </div>
+</div>
+
+<!-- AgentBench -->
+<details>
+  <summary>AgentBench <span class="tag gold">Gold Standard</span> <span class="conf high">HIGH</span></summary>
+  <div class="details-body">
+    <table class="cmp-table">
+      <tr><th>Property</th><th>Detail</th></tr>
+      <tr><td>Authors</td><td>THUDM (Tsinghua), ICLR 2024</td></tr>
+      <tr><td>What it tests</td><td>LLMs as agents across <strong>8 environments</strong> in 3 categories</td></tr>
+      <tr><td>Code-grounded</td><td>Operating System, Database, Knowledge Graph</td></tr>
+      <tr><td>Game-grounded</td><td>Digital Card Game, Lateral Thinking Puzzles, House Holding</td></tr>
+      <tr><td>Web-grounded</td><td>Web Shopping, Web Browsing</td></tr>
+      <tr><td>Key finding</td><td>Large performance gap between commercial APIs and open-source models (though tested on pre-Llama-3 era models, so likely narrowed)</td></tr>
+    </table>
+    <p class="cite">Source: <a href="https://arxiv.org/abs/2308.03688">arxiv.org/abs/2308.03688</a></p>
+  </div>
+</details>
+
+<!-- WebArena -->
+<details>
+  <summary>WebArena <span class="tag gold">Gold Standard</span> <span class="conf high">HIGH</span></summary>
+  <div class="details-body">
+    <table class="cmp-table">
+      <tr><th>Property</th><th>Detail</th></tr>
+      <tr><td>Authors</td><td>CMU</td></tr>
+      <tr><td>Tasks</td><td><strong>812</strong> long-horizon web tasks across 4 domains</td></tr>
+      <tr><td>Domains</td><td>E-commerce, Social Forum, Collaborative Dev, Content Management</td></tr>
+      <tr><td>Key innovation</td><td><strong>Docker-based deterministic resets</strong> &mdash; each website runs in its own container, enabling full offline reproducibility</td></tr>
+      <tr><td>Evaluation</td><td>Functional correctness (not action-sequence matching)</td></tr>
+    </table>
+    <div class="insight action">
+      <div class="box-title">Why This Matters for You</div>
+      <p>WebArena&rsquo;s Docker-based approach is the <strong>gold standard for contamination prevention</strong> in interactive benchmarks. If you&rsquo;re building a benchmark with dynamic environments, this is the architecture to study.</p>
+    </div>
+    <p class="cite">Source: <a href="https://arxiv.org/abs/2307.13854">arxiv.org/abs/2307.13854</a></p>
+  </div>
+</details>
+
+<!-- tau-bench -->
+<details>
+  <summary>tau-bench / tau2-bench / tau3-bench <span class="tag gold">Gold Standard</span> <span class="conf high">HIGH</span></summary>
+  <div class="details-body">
+    <table class="cmp-table">
+      <tr><th>Property</th><th>Detail</th></tr>
+      <tr><td>Authors</td><td>Sierra Research (Bret Taylor) + Princeton NLP (Shunyu Yao, Karthik Narasimhan)</td></tr>
+      <tr><td>What it tests</td><td>Language agents in <strong>dynamic user conversations</strong> with domain-specific API tools and policy guidelines</td></tr>
+      <tr><td>Domains</td><td>Airline, Retail (tau-bench) &rarr; + Banking (tau3-bench) &rarr; + Voice (tau3)</td></tr>
+      <tr><td>Key innovations</td><td>
+        <strong>1. Database state comparison</strong> &mdash; compares DB state at end vs annotated goal state (not text matching)<br>
+        <strong>2. pass<sup>k</sup> reliability metric</strong> &mdash; measures consistency across k trials<br>
+        <strong>3. Rule compliance testing</strong> &mdash; can the agent follow domain-specific policies?
+      </td></tr>
+      <tr><td>Unique niche</td><td>Only benchmark that explicitly tests interaction with <em>human users</em> and ability to follow domain-specific rules</td></tr>
+    </table>
+    <div class="insight">
+      <div class="box-title">pass<sup>k</sup> Explained</div>
+      <p>Most benchmarks report single-shot accuracy. tau-bench runs each task <em>k</em> times and reports pass<sup>k</sup>&mdash;the probability of passing <em>all k</em> trials. This surfaces reliability issues that single-shot metrics hide. An agent that succeeds 70% of the time has a pass<sup>5</sup> of only 17%.</p>
+    </div>
+    <p class="cite">Source: <a href="https://arxiv.org/abs/2406.12045">arxiv.org/abs/2406.12045</a> &middot; <a href="https://github.com/sierra-research/tau-bench">GitHub</a></p>
+  </div>
+</details>
+
+<!-- GAIA -->
+<details>
+  <summary>GAIA <span class="tag gold">Gold Standard</span> <span class="conf high">HIGH</span></summary>
+  <div class="details-body">
+    <table class="cmp-table">
+      <tr><th>Property</th><th>Detail</th></tr>
+      <tr><td>Authors</td><td>Meta, HuggingFace, AutoGPT researchers</td></tr>
+      <tr><td>Tasks</td><td><strong>466</strong> real-world questions (300 on public leaderboard)</td></tr>
+      <tr><td>Tests</td><td>Reasoning, multi-modality, web browsing, tool use</td></tr>
+      <tr><td>Human score</td><td><strong>92%</strong></td></tr>
+      <tr><td>GPT-4 score</td><td><strong>15%</strong> (late 2023, likely higher now)</td></tr>
+    </table>
+    <div class="insight">
+      <div class="box-title">The Inverted Paradigm</div>
+      <p>GAIA deliberately inverts the typical benchmark difficulty curve: questions are <em>easy for humans but hard for AI</em>. This philosophy &ldquo;departs from the current trend in AI benchmarks suggesting to target tasks that are ever more difficult for humans.&rdquo;</p>
+    </div>
+    <p class="cite">Source: <a href="https://arxiv.org/abs/2311.12983">arxiv.org/abs/2311.12983</a></p>
+  </div>
+</details>
+
+<!-- SWE-bench -->
+<details>
+  <summary>SWE-bench <span class="tag gold">Gold Standard</span></summary>
+  <div class="details-body">
+    <table class="cmp-table">
+      <tr><th>Property</th><th>Detail</th></tr>
+      <tr><td>Authors</td><td>Princeton NLP</td></tr>
+      <tr><td>Tasks</td><td><strong>2,294</strong> real software engineering problems from GitHub</td></tr>
+      <tr><td>Source</td><td>Real issues + pull requests from 12 popular Python repos</td></tr>
+      <tr><td>Tests</td><td>Can a language model agent resolve real-world software issues?</td></tr>
+    </table>
+    <p class="cite">Source: <a href="https://arxiv.org/abs/2310.06770">arxiv.org/abs/2310.06770</a></p>
+  </div>
+</details>
+
+<!-- TheAgentCompany -->
+<details>
+  <summary>TheAgentCompany <span class="tag emerging">Emerging</span></summary>
+  <div class="details-body">
+    <table class="cmp-table">
+      <tr><th>Property</th><th>Detail</th></tr>
+      <tr><td>Tasks</td><td><strong>175</strong> professional workplace tasks</td></tr>
+      <tr><td>Categories</td><td>SDE, HR, Finance, PM, Data Science, Admin, Other</td></tr>
+      <tr><td>Environment</td><td>Self-contained simulated company with GitLab, OwnCloud, Plane, RocketChat</td></tr>
+    </table>
+    <p class="cite">Source: <a href="https://arxiv.org/abs/2412.14161">arxiv.org/abs/2412.14161</a></p>
+  </div>
+</details>
+
+<!-- CRAB -->
+<details>
+  <summary>CRAB <span class="tag emerging">Emerging</span></summary>
+  <div class="details-body">
+    <p>The first agent benchmark framework designed for <strong>cross-environment tasks</strong>&mdash;agents must work across multiple environments simultaneously, not just one at a time.</p>
+    <p class="cite">Source: <a href="https://arxiv.org/abs/2407.01511">arxiv.org/abs/2407.01511</a></p>
+  </div>
+</details>
+
+<h3>Head-to-Head Comparison</h3>
+
+<div style="overflow-x: auto;">
+<table class="cmp-table">
+  <tr>
+    <th>Benchmark</th>
+    <th>Type</th>
+    <th>Tasks</th>
+    <th>Environment</th>
+    <th>Evaluation Method</th>
+    <th>Anti-Contamination</th>
+  </tr>
+  <tr>
+    <td><strong>AgentBench</strong></td>
+    <td>General</td>
+    <td>8 envs</td>
+    <td>Interactive</td>
+    <td>Per-env metrics</td>
+    <td>Limited</td>
+  </tr>
+  <tr>
+    <td><strong>WebArena</strong></td>
+    <td>Web nav</td>
+    <td>812</td>
+    <td>Docker containers</td>
+    <td>Functional correctness</td>
+    <td>Docker resets</td>
+  </tr>
+  <tr>
+    <td><strong>tau-bench</strong></td>
+    <td>Conversational</td>
+    <td>Dynamic</td>
+    <td>Simulated user + API</td>
+    <td>DB state + pass<sup>k</sup></td>
+    <td>State comparison</td>
+  </tr>
+  <tr>
+    <td><strong>GAIA</strong></td>
+    <td>General assistant</td>
+    <td>466</td>
+    <td>Static questions</td>
+    <td>Exact answer match</td>
+    <td>Limited</td>
+  </tr>
+  <tr>
+    <td><strong>SWE-bench</strong></td>
+    <td>Code/SE</td>
+    <td>2,294</td>
+    <td>Real repos</td>
+    <td>Test suite pass</td>
+    <td>Real issues</td>
+  </tr>
+  <tr>
+    <td><strong>TheAgentCompany</strong></td>
+    <td>Workplace</td>
+    <td>175</td>
+    <td>Simulated company</td>
+    <td>Task completion</td>
+    <td>Self-contained</td>
+  </tr>
+</table>
+</div>
+
+</div><!-- /tab-agent -->
+
+<!-- ============================================================ -->
+<!-- TAB 3: METHODOLOGY -->
+<!-- ============================================================ -->
+<div class="tab-panel" id="tab-methodology">
+
+<h2>What&rsquo;s Broken &amp; How to Fix It</h2>
+
+<p>The most important paper for anyone building a benchmark: <strong>&ldquo;AI Agents That Matter&rdquo;</strong> (Princeton, July 2024, 307 citations).</p>
+
+<h3>The Three Systemic Failures</h3>
+
+<div class="card" style="border-left: 4px solid var(--bad);">
+  <h3>1. Cost Blindness <span class="conf high">HIGH CONFIDENCE</span></h3>
+  <div class="meta">Verified 3-0 by adversarial panel</div>
+  <p>Benchmarks only measure accuracy, ignoring cost. LATS (GPT-4) achieves <strong>88% on HumanEval at $134.50</strong>. A simple baseline achieves <strong>93.2% at $2.45</strong>&mdash;better accuracy at <em>55&times; less cost</em>.</p>
+  <p>This means leaderboards reward expensive, over-engineered agents while simpler, cheaper approaches often perform better.</p>
+</div>
+
+<div class="card" style="border-left: 4px solid var(--bad);">
+  <h3>2. No Holdout Sets <span class="conf high">HIGH CONFIDENCE</span></h3>
+  <div class="meta">Verified 3-0 by adversarial panel</div>
+  <p>Only <strong>1 of 8</strong> domain-general agent benchmarks surveyed had appropriate task holdouts. This enables agents to overfit to specific benchmark tasks.</p>
+  <p>Case study: STeP hardcodes policies for specific WebArena tasks (e.g., appending URL suffixes) that would fail on tasks from unseen websites.</p>
+</div>
+
+<div class="card" style="border-left: 4px solid var(--bad);">
+  <h3>3. Contamination Is Devastating</h3>
+  <div class="meta">From benchmark contamination analysis papers</div>
+  <p>A <strong>1.3B parameter model</strong> trained on leaked benchmark data can outperform models <strong>10&times; its size</strong> (87.31% vs 26.49% on MMLU).</p>
+  <p>Three levels of contamination, from least to most harmful:</p>
+  <ol>
+    <li><strong>Guideline contamination</strong> &mdash; exposure to annotation guidelines</li>
+    <li><strong>Raw text contamination</strong> &mdash; exposure to original text before annotation</li>
+    <li><strong>Annotation contamination</strong> &mdash; exposure to evaluation splits with labels (worst)</li>
+  </ol>
+</div>
+
+<h3>Anti-Contamination Approaches</h3>
+
+<table class="cmp-table">
+  <tr>
+    <th>Approach</th>
+    <th>Used By</th>
+    <th>How It Works</th>
+  </tr>
+  <tr>
+    <td><strong>Docker-based resets</strong></td>
+    <td>WebArena</td>
+    <td>Each website runs in a container; restart from original image to reset</td>
+  </tr>
+  <tr>
+    <td><strong>Frequently-updated questions</strong></td>
+    <td>LiveBench</td>
+    <td>Monthly refreshes from recent information sources</td>
+  </tr>
+  <tr>
+    <td><strong>Objective scoring</strong></td>
+    <td>LiveBench</td>
+    <td>Ground-truth values, no LLM-as-judge</td>
+  </tr>
+  <tr>
+    <td><strong>Database state comparison</strong></td>
+    <td>tau-bench</td>
+    <td>Compare end-state DB vs annotated goal state</td>
+  </tr>
+  <tr>
+    <td><strong>Dynamic evolution</strong></td>
+    <td>Research proposals</td>
+    <td>Multi-agent reframing frameworks that generate new variants</td>
+  </tr>
+</table>
+
+<h3>The 5-Dimension Evaluation Framework</h3>
+<p>From a 2025 ACL survey on LLM-based agent evaluation:</p>
+
+<div class="taxonomy">
+  <div class="tax-cell">
+    <h4>1. Data Curation</h4>
+    <ul><li>How tasks are sourced (real issues vs synthetic)</li></ul>
+  </div>
+  <div class="tax-cell blue">
+    <h4>2. Environment</h4>
+    <ul><li>Static (fixed prompts) vs Dynamic (Docker containers, live systems)</li></ul>
+  </div>
+  <div class="tax-cell green">
+    <h4>3. Interface</h4>
+    <ul><li>Code / Tools / GUI</li></ul>
+  </div>
+  <div class="tax-cell amber">
+    <h4>4. Metric Type</h4>
+    <ul><li>Accuracy, cost-aware, reliability (pass<sup>k</sup>), functional correctness</li></ul>
+  </div>
+  <div class="tax-cell">
+    <h4>5. Safety</h4>
+    <ul><li>Currently underdeveloped across the board</li></ul>
+  </div>
+</div>
+
+<div class="insight warning">
+  <div class="box-title">Caveat: Time Sensitivity</div>
+  <p>The AgentBench performance gap data uses pre-Llama-3 era open-source models (all under 70B params). The GAIA GPT-4 score of 15% is from late 2023. The holdout set survey covers benchmarks as of July 2024. All of these numbers have likely shifted&mdash;the structural insights about methodology remain valid.</p>
+</div>
+
+</div><!-- /tab-methodology -->
+
+<!-- ============================================================ -->
+<!-- TAB 4: WHO BUILDS WHAT -->
+<!-- ============================================================ -->
+<div class="tab-panel" id="tab-builders">
+
+<h2>Labs &amp; Organizations</h2>
+
+<div class="card">
+  <h3>Farama Foundation</h3>
+  <div class="meta">Community foundation &middot; De facto RL standard</div>
+  <p><strong>Gymnasium</strong>, PettingZoo, ALE, and 17+ projects. Owns the standard API for both single-agent and multi-agent RL. Everything from Atari to MuJoCo to autonomous driving environments.</p>
+</div>
+
+<div class="card">
+  <h3>Sierra Research</h3>
+  <div class="meta">Bret Taylor&rsquo;s company &middot; Conversational agent evaluation</div>
+  <p><strong>tau-bench, tau2-bench, tau3-bench</strong>. Pioneered the idea of testing agents on rule compliance and user interaction quality, not just task completion. Collaboration with Princeton NLP.</p>
+</div>
+
+<div class="card">
+  <h3>Princeton NLP</h3>
+  <div class="meta">Karthik Narasimhan&rsquo;s group &middot; Benchmark methodology</div>
+  <p><strong>SWE-bench</strong> (code), <strong>tau-bench</strong> (collab with Sierra), <strong>&ldquo;AI Agents That Matter&rdquo;</strong> (meta-analysis). The most influential group in agent benchmark methodology.</p>
+</div>
+
+<div class="card">
+  <h3>Google DeepMind</h3>
+  <div class="meta">Industry lab &middot; Physics &amp; multi-agent</div>
+  <p><strong>MuJoCo</strong> (physics engine, now open-source), <strong>Melting Pot</strong> (multi-agent). Also maintains dm_env (alternative API, very low adoption).</p>
+</div>
+
+<div class="card">
+  <h3>CMU</h3>
+  <div class="meta">Academic &middot; Web agent evaluation</div>
+  <p><strong>WebArena</strong> &mdash; the gold standard for reproducible web agent benchmarks. Docker-based architecture has been widely imitated.</p>
+</div>
+
+<div class="card">
+  <h3>THUDM (Tsinghua)</h3>
+  <div class="meta">Academic &middot; General agent evaluation</div>
+  <p><strong>AgentBench</strong> &mdash; broadest coverage across environment types (ICLR 2024). 8 environments spanning code, games, and web.</p>
+</div>
+
+<div class="card">
+  <h3>Meta / HuggingFace</h3>
+  <div class="meta">Industry &middot; General assistant evaluation</div>
+  <p><strong>GAIA</strong> &mdash; the &ldquo;inverted paradigm&rdquo; benchmark (easy for humans, hard for AI). 466 real-world questions testing reasoning, multimodality, and tool use.</p>
+</div>
+
+<h3>Timeline</h3>
+
+<div class="timeline">
+  <div class="timeline-item">
+    <div class="year">2013</div>
+    <p><strong>ALE</strong> released &mdash; Atari games become the first widely-adopted RL benchmark</p>
+  </div>
+  <div class="timeline-item">
+    <div class="year">2016</div>
+    <p><strong>OpenAI Gym</strong> released &mdash; establishes the standard RL environment API</p>
+  </div>
+  <div class="timeline-item">
+    <div class="year">2021</div>
+    <p>OpenAI <strong>abandons Gym</strong>; <strong>MuJoCo goes open-source</strong> (Apache 2.0)</p>
+  </div>
+  <div class="timeline-item">
+    <div class="year">2022</div>
+    <p><strong>Farama Foundation</strong> forks Gym into <strong>Gymnasium</strong>; becomes new standard</p>
+  </div>
+  <div class="timeline-item">
+    <div class="year">2023</div>
+    <p><strong>AgentBench</strong>, <strong>WebArena</strong>, <strong>GAIA</strong>, <strong>SWE-bench</strong> &mdash; agent benchmark explosion begins</p>
+  </div>
+  <div class="timeline-item">
+    <div class="year">2024</div>
+    <p><strong>tau-bench</strong> (Sierra/Princeton), <strong>&ldquo;AI Agents That Matter&rdquo;</strong> (Princeton), <strong>TheAgentCompany</strong>, <strong>LiveBench</strong></p>
+  </div>
+  <div class="timeline-item">
+    <div class="year">2025&ndash;26</div>
+    <p><strong>tau2/tau3-bench</strong> (voice, banking), <strong>CRAB</strong> (cross-environment), ACL survey on agent evaluation taxonomy</p>
+  </div>
+</div>
+
+</div><!-- /tab-builders -->
+
+<!-- ============================================================ -->
+<!-- TAB 5: BUILD YOUR OWN -->
+<!-- ============================================================ -->
+<div class="tab-panel" id="tab-playbook">
+
+<h2>Playbook: Building Your Own Benchmark</h2>
+
+<p>Based on the verified findings from 20 sources, here are the lessons for building a benchmark that actually measures something meaningful.</p>
+
+<div class="card" style="border-left: 4px solid var(--good);">
+  <h3>1. Have a Proper Holdout Set</h3>
+  <p>Almost nobody does this&mdash;only 1 of 8 domain-general benchmarks had appropriate holdouts. Without holdouts, agents will overfit to your specific tasks and game the leaderboard. Split tasks into public dev / private test sets.</p>
+</div>
+
+<div class="card" style="border-left: 4px solid var(--good);">
+  <h3>2. Measure Cost, Not Just Accuracy</h3>
+  <p>Cost differences of <strong>up to 55&times;</strong> are common between agents with similar accuracy. Report cost-per-task alongside accuracy. Consider Pareto frontiers (accuracy vs cost) instead of single-number leaderboards.</p>
+</div>
+
+<div class="card" style="border-left: 4px solid var(--good);">
+  <h3>3. Use Docker-Based Environments</h3>
+  <p>WebArena&rsquo;s model: each environment runs in its own Docker container, reset by restarting from the original image. This gives you reproducibility, contamination prevention, and full offline operation.</p>
+</div>
+
+<div class="card" style="border-left: 4px solid var(--good);">
+  <h3>4. Use pass<sup>k</sup> for Reliability</h3>
+  <p>tau-bench&rsquo;s innovation: run each task <em>k</em> times and report the probability of passing all <em>k</em>. A 70% single-shot agent has a pass<sup>5</sup> of only 17%. This surfaces flakiness that single-shot metrics hide.</p>
+</div>
+
+<div class="card" style="border-left: 4px solid var(--good);">
+  <h3>5. Test Rule Compliance, Not Just Task Completion</h3>
+  <p>tau-bench&rsquo;s key insight: agents deployed in production must follow domain-specific policies. Test whether agents can follow rules like refund policies, data handling procedures, escalation protocols&mdash;not just &ldquo;did they complete the task.&rdquo;</p>
+</div>
+
+<div class="card" style="border-left: 4px solid var(--good);">
+  <h3>6. Evaluate End-State, Not Action Sequences</h3>
+  <p>Compare database state / system state at the end of the task vs the annotated goal state (tau-bench) or check functional correctness of outputs (WebArena). Don&rsquo;t match action-by-action&mdash;there are many valid paths to a correct outcome.</p>
+</div>
+
+<div class="card" style="border-left: 4px solid var(--good);">
+  <h3>7. Plan for Evolution</h3>
+  <p>Static benchmarks get contaminated and saturated. LiveBench refreshes monthly. Consider procedural generation, dynamic question variants, or time-sensitive questions sourced from recent data. At minimum, version your benchmark and track saturation curves.</p>
+</div>
+
+<div class="insight action">
+  <div class="box-title">Decision Checklist</div>
+  <p>Before finalizing your benchmark design, answer these questions:</p>
+  <ol>
+    <li>Is your evaluation <strong>static</strong> (fixed questions) or <strong>dynamic</strong> (interactive environments)?</li>
+    <li>What&rsquo;s your contamination prevention strategy?</li>
+    <li>Do you have a proper holdout set?</li>
+    <li>Are you measuring cost alongside accuracy?</li>
+    <li>Are you measuring reliability (pass<sup>k</sup>) or just single-shot performance?</li>
+    <li>Are you testing task completion, rule compliance, or both?</li>
+    <li>How will you evaluate&mdash;text matching, functional correctness, or end-state comparison?</li>
+    <li>What&rsquo;s your plan for benchmark evolution over time?</li>
+  </ol>
+</div>
+
+<h3>Open Research Gaps</h3>
+
+<p>Areas where the benchmark landscape is still thin:</p>
+<ul>
+  <li><strong>Multi-modal agents</strong> &mdash; benchmarks for agents that see, hear, and interact with GUIs</li>
+  <li><strong>OS-level / computer-use agents</strong> &mdash; beyond web navigation</li>
+  <li><strong>Safety &amp; policy compliance</strong> &mdash; tau-bench is pioneering but the field is underdeveloped</li>
+  <li><strong>Private vs public evaluation suites</strong> &mdash; frontier labs use internal evals that differ significantly from public benchmarks</li>
+  <li><strong>Cross-environment tasks</strong> &mdash; CRAB is first, but early</li>
+</ul>
+
+</div><!-- /tab-playbook -->
+
+<!-- ============================================================ -->
+<!-- SOURCES -->
+<!-- ============================================================ -->
+<h2>Sources</h2>
+<p style="font-size: 0.88rem; color: var(--muted);">All claims were adversarially verified by a 3-vote panel. Claims required &ge;2/3 votes to survive.</p>
+
+<ol class="sources">
+  <li><a href="https://arxiv.org/abs/2407.01502">AI Agents That Matter</a> &mdash; Kapoor, Stroebl, Narayanan et al., Princeton, July 2024 (307 citations)</li>
+  <li><a href="https://arxiv.org/abs/2308.03688">AgentBench</a> &mdash; THUDM, ICLR 2024</li>
+  <li><a href="https://arxiv.org/abs/2307.13854">WebArena</a> &mdash; CMU, 2023</li>
+  <li><a href="https://arxiv.org/abs/2406.12045">tau-bench</a> &mdash; Sierra Research / Princeton NLP, 2024</li>
+  <li><a href="https://arxiv.org/abs/2311.12983">GAIA</a> &mdash; Meta / HuggingFace, 2023</li>
+  <li><a href="https://gymnasium.farama.org/">Gymnasium</a> &mdash; Farama Foundation</li>
+  <li><a href="https://farama.org/projects">Farama Projects</a> &mdash; 17+ environment suites</li>
+  <li><a href="https://github.com/Farama-Foundation/Arcade-Learning-Environment">ALE</a> &mdash; Arcade Learning Environment</li>
+  <li><a href="https://github.com/google-deepmind/mujoco">MuJoCo</a> &mdash; Google DeepMind, Apache 2.0</li>
+  <li><a href="https://arxiv.org/abs/2406.19314">LiveBench</a> &mdash; contamination-limited LLM benchmark</li>
+  <li><a href="https://arxiv.org/abs/2310.06770">SWE-bench</a> &mdash; Princeton NLP, 2023</li>
+  <li><a href="https://arxiv.org/abs/2503.16416">Survey on Evaluation of LLM-based Agents</a> &mdash; ACL 2025</li>
+  <li><a href="https://arxiv.org/abs/2412.14161">TheAgentCompany</a> &mdash; workplace agent benchmark</li>
+  <li><a href="https://arxiv.org/abs/2407.01511">CRAB</a> &mdash; cross-environment agent benchmark</li>
+  <li><a href="https://arxiv.org/abs/2311.01964">Benchmark Data Contamination</a> &mdash; leakage analysis</li>
+  <li><a href="https://arxiv.org/abs/2310.18018">Data Contamination Survey</a> &mdash; contamination taxonomy</li>
+  <li><a href="https://arxiv.org/abs/2402.11443">Dynamic Benchmark Evolution</a> &mdash; multi-agent reframing</li>
+  <li><a href="https://arxiv.org/abs/2407.17032">Gymnasium paper</a> &mdash; Farama Foundation, 2024</li>
+  <li><a href="https://github.com/sierra-research/tau-bench">tau-bench GitHub</a> &mdash; Sierra Research</li>
+  <li><a href="https://github.com/Farama-Foundation/Gymnasium">Gymnasium GitHub</a> &mdash; 12.1k stars</li>
+</ol>
+
+</div><!-- /wrap -->
+
+<script>
+// Tab switching
+document.querySelectorAll('.tab-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById('tab-' + btn.dataset.tab).classList.add('active');
+  });
+});
+</script>
+</body>
+</html>

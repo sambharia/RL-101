@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Table of Contents &middot; RLHF for Beginners</title>
+<link rel="stylesheet" href="../assets/lesson.css">
+<style>
+  .phase {
+    margin: 2.4rem 0 0;
+  }
+  .phase-title {
+    font-size: 1.05rem;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--accent);
+    font-family: ui-sans-serif, system-ui, sans-serif;
+    font-weight: 700;
+    margin: 0 0 1.2rem;
+    padding-bottom: 0.3rem;
+    border-bottom: 2px solid var(--accent);
+  }
+  .lesson-card {
+    background: #fff;
+    border: 1px solid var(--rule);
+    border-radius: 8px;
+    padding: 1rem 1.2rem;
+    margin: 0 0 1rem;
+  }
+  .lesson-card h3 {
+    margin: 0 0 0.15rem;
+    font-size: 1.08rem;
+  }
+  .lesson-card h3 a {
+    text-decoration: none;
+    color: var(--ink);
+  }
+  .lesson-card h3 a:hover {
+    color: var(--accent);
+    background: none;
+    text-decoration: underline;
+  }
+  .lesson-num {
+    font-family: "SF Mono", ui-monospace, Menlo, monospace;
+    font-size: 0.78rem;
+    color: var(--accent);
+    font-weight: 700;
+  }
+  .lesson-card .desc {
+    font-style: italic;
+    color: var(--muted);
+    font-size: 0.92rem;
+    margin: 0 0 0.6rem;
+  }
+  .lesson-card ol {
+    margin: 0;
+    padding-left: 1.3rem;
+    font-size: 0.92rem;
+    columns: 1;
+  }
+  .lesson-card ol li {
+    margin: 0.2rem 0;
+  }
+  .lesson-card .sub-topics {
+    list-style: disc;
+    padding-left: 1.2rem;
+    font-size: 0.86rem;
+    color: var(--muted);
+    margin: 0.15rem 0 0;
+  }
+  .badge {
+    display: inline-block;
+    font-family: ui-sans-serif, system-ui, sans-serif;
+    font-size: 0.68rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    padding: 0.15em 0.5em;
+    border-radius: 4px;
+    margin-left: 0.5rem;
+    vertical-align: middle;
+  }
+  .badge.done {
+    background: #e9f6ee;
+    color: var(--good);
+  }
+  .badge.current {
+    background: #fff3e0;
+    color: #b8801d;
+  }
+  .badge.capstone {
+    background: var(--accent-soft);
+    color: var(--accent);
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <p class="kicker">RLHF for Beginners</p>
+  <h1>Table of Contents</h1>
+  <p class="subtitle">Every lesson and what it covers &mdash; your map of the whole curriculum.</p>
+  <div class="meta-row">
+    <span>9 lessons</span>
+    <span>Phase 0 &amp; 1</span>
+  </div>
+
+  <!-- ===== Phase 0 ===== -->
+  <div class="phase">
+    <p class="phase-title">Phase 0 &mdash; Foundations</p>
+
+    <div class="lesson-card">
+      <h3><span class="lesson-num">0001</span> <a href="0001-the-big-picture.html">The Big Picture</a><span class="badge done">done</span></h3>
+      <p class="desc">How a text-completer becomes a helpful assistant</p>
+      <ol>
+        <li>A base model just continues text</li>
+        <li>Post-training turns it into an assistant</li>
+        <li>Why not just write rules?</li>
+      </ol>
+    </div>
+
+    <div class="lesson-card">
+      <h3><span class="lesson-num">0002</span> <a href="0002-what-a-language-model-really-is.html">What a Language Model Really Is</a><span class="badge done">done</span></h3>
+      <p class="desc">Tokens, next-token prediction, autoregression</p>
+      <ol>
+        <li>The exact algorithm ChatGPT runs</li>
+        <li><code>tokenize(prompt)</code> &mdash; what is a token?</li>
+        <li><code>softmax(logits)</code> &mdash; why probabilities at all?</li>
+        <li><code>sample(probs)</code> &mdash; how a token gets picked</li>
+        <li><code>tokens.append(next)</code> &mdash; the generation loop</li>
+        <li>What the model is &mdash; parameters and the policy</li>
+      </ol>
+    </div>
+
+    <div class="lesson-card">
+      <h3><span class="lesson-num">0003</span> <a href="0003-how-models-learn.html">How Models Learn</a><span class="badge done">done</span></h3>
+      <p class="desc">Parameters, loss, gradient descent (the &ldquo;downhill&rdquo; idea)</p>
+      <ol>
+        <li>The problem you actually have</li>
+        <li>Measuring wrongness: the loss</li>
+        <li>Which direction? The gradient</li>
+        <li>The efficiency problem: backpropagation</li>
+        <li>The training loop &mdash; every line makes sense</li>
+        <li>One problem with plain gradient descent: noise</li>
+      </ol>
+    </div>
+
+    <div class="lesson-card">
+      <h3><span class="lesson-num">0003b</span> <a href="0003b-inside-the-transformer.html">Inside the Transformer</a><span class="badge done">done</span></h3>
+      <p class="desc">Embeddings, attention, MLP &mdash; what&rsquo;s inside the transformer</p>
+      <ol>
+        <li>The problem with integers</li>
+        <li>Embeddings: giving each token a meaningful address</li>
+        <li>Position matters: the second embedding (WPE)</li>
+        <li>Self-attention: the core idea
+          <ul class="sub-topics">
+            <li>The party analogy</li>
+            <li>Create Q, K, V from embeddings</li>
+            <li>Compute attention scores</li>
+            <li>Scale and softmax</li>
+            <li>Weighted sum of Values</li>
+            <li>The full equation</li>
+            <li>Causal masking: no peeking ahead</li>
+            <li>Multi-head attention: 12 perspectives</li>
+          </ul>
+        </li>
+        <li>After attention: the MLP</li>
+        <li>LayerNorm: keeping the numbers sane</li>
+        <li>The information highway: residual connections</li>
+        <li>The full picture: <code>gpt()</code> from input to logits</li>
+      </ol>
+    </div>
+
+    <div class="lesson-card">
+      <h3><span class="lesson-num">0004</span> <a href="0004-probability-you-actually-need.html">Probability You Actually Need</a><span class="badge done">done</span></h3>
+      <p class="desc">Distributions, expectation, sampling, log-probs</p>
+      <ol>
+        <li>Where we&rsquo;re headed</li>
+        <li>Probability distributions: assigning chances <em>(P(x) and &pi;(y|x))</em></li>
+        <li>Expectation: the weighted average</li>
+        <li>Sampling: drawing from a distribution</li>
+        <li>Log-probabilities: why log P is everywhere</li>
+        <li>Reading the equation</li>
+      </ol>
+    </div>
+
+    <div class="lesson-card">
+      <h3><span class="lesson-num">0005</span> <a href="0005-what-is-reinforcement-learning.html">What Is Reinforcement Learning?</a><span class="badge done">done</span></h3>
+      <p class="desc">Agent, state, action, reward, policy, return</p>
+      <ol>
+        <li>Why reinforcement learning?</li>
+        <li>The RL framework: agent and environment</li>
+        <li>State, action, reward: the core triple</li>
+        <li>Policy: the agent&rsquo;s strategy (deterministic vs. stochastic)</li>
+        <li>Return: the total payoff (discounted return)</li>
+        <li>The RL objective: maximize expected return</li>
+        <li>Language models as RL agents</li>
+        <li><em>Going deeper:</em> MDP, trajectory probability, RL objective formally</li>
+      </ol>
+    </div>
+
+    <div class="lesson-card">
+      <h3><span class="lesson-num">0005b</span> <a href="0005b-capstone-microgpt.html">CAPSTONE: Rebuild microGPT</a><span class="badge capstone">capstone</span><span class="badge done">done</span></h3>
+      <p class="desc">Rebuild microGPT from scratch (pseudocode)</p>
+      <ol>
+        <li>What this capstone is &mdash; and isn&rsquo;t</li>
+        <li>The map: microGPT in seven blocks</li>
+        <li>Concept-to-code: what you know vs. what you&rsquo;ll write</li>
+        <li>How to do the rebuild (one block at a time)</li>
+      </ol>
+    </div>
+
+  </div>
+
+  <!-- ===== Phase 1 ===== -->
+  <div class="phase">
+    <p class="phase-title">Phase 1 &mdash; The RLHF Big Picture</p>
+
+    <div class="lesson-card">
+      <h3><span class="lesson-num">0006</span> <a href="0006-the-three-step-pipeline.html">The Three-Step RLHF Pipeline</a><span class="badge done">done</span></h3>
+      <p class="desc">SFT &rarr; Reward Model &rarr; RL</p>
+      <ol>
+        <li>From raw text to helpful assistant</li>
+        <li>The three steps (overview)</li>
+        <li>Step 1: Supervised Fine-Tuning (SFT)</li>
+        <li>Step 2: Train a Reward Model</li>
+        <li>Step 3: RL optimization (the RLHF step)</li>
+        <li>Putting it all together</li>
+        <li>The post-training landscape (beyond the three steps)</li>
+      </ol>
+    </div>
+
+    <div class="lesson-card">
+      <h3><span class="lesson-num">0007</span> <a href="0007-the-rlhf-objective.html">The RLHF Objective &mdash; Inside the Math</a><span class="badge current">in progress</span></h3>
+      <p class="desc">The full RLHF loss function, KL divergence, optimal policy</p>
+      <ol>
+        <li>The formula you already know &mdash; but can you compute it?</li>
+        <li>The probability of a full response</li>
+        <li>KL divergence: measuring how different two models are</li>
+        <li>KL for language models: the token-by-token trick</li>
+        <li>The full objective, piece by piece</li>
+        <li>The beta knob: what it controls</li>
+        <li>The beautiful result: the optimal policy</li>
+        <li>A formula you&rsquo;ll see everywhere: extracting the reward</li>
+        <li>The map so far</li>
+      </ol>
+    </div>
+
+  </div>
+
+</div>
+</body>
+</html>

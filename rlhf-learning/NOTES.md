@@ -74,5 +74,9 @@ The full picture arrives at the end, not the start.
 - Each lesson self-contained.
 - No bolted-on "Going Deeper" sections — math is part of the main narrative.
 
+## Table of Contents
+- See [lessons/TOC.html](lessons/TOC.html) for a full table of contents of every lesson and its sections.
+- **Update lessons/TOC.html whenever a new lesson is added or lesson sections change.**
+
 ## Open lesson files
 - macOS: `open lessons/0001-the-big-picture.html`
